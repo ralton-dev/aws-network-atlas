@@ -24,6 +24,7 @@ export function ResourceNode({ data, selected }: NodeProps<AtlasNode>): React.Re
         selected ? 'is-selected' : '',
         data.ghost ? 'is-ghost' : '',
         data.drillVpcId ? 'is-drillable' : '',
+        data.emphasis ? 'is-emphasized' : '',
       ].join(' ')}
       title={data.drillVpcId ? 'Double-click to open VPC diagram' : undefined}
     >

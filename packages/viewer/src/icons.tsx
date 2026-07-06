@@ -114,6 +114,8 @@ export const ICONS: Record<string, IconComponent> = {
   sg: Shield,
   internet: Internet,
   'dns-target': HostedZone,
+  /** Focus view: trusted accounts rendered as flat nodes. */
+  account: AwsAccount,
   // container headers
   'group-vpc': VpcGroup,
   'group-subnet-public': PublicSubnet,

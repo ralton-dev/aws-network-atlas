@@ -30,11 +30,12 @@ g.window.__ATLAS_ANNOTATIONS__ = {};
 const { buildIndex } = await import('./src/data.js');
 const { buildOverview } = await import('./src/model/overview.js');
 const { buildVpcDetail } = await import('./src/model/vpc-detail.js');
+const { buildFocus } = await import('./src/model/focus.js');
 type AtlasGraph = import('./src/model/graph-types.js').AtlasGraph;
 
 let failures = 0;
 
-function validate(name: string, graph: AtlasGraph): void {
+function validate(name: string, graph: AtlasGraph, quiet = false): void {
   const problems: string[] = [];
   const ids = new Set<string>();
   const position = new Map<string, number>();
@@ -65,7 +66,7 @@ function validate(name: string, graph: AtlasGraph): void {
 
   const summary = `${graph.nodes.length} nodes, ${graph.edges.length} edges, ${graph.edges.length - dangling}/${graph.edges.length} edges resolve`;
   if (problems.length === 0) {
-    console.log(`PASS  ${name}: ${summary}`);
+    if (!quiet) console.log(`PASS  ${name}: ${summary}`);
   } else {
     failures += problems.length;
     console.log(`FAIL  ${name}: ${summary}`);
@@ -83,10 +84,95 @@ function runAll(label: string): void {
       }
     }
   }
+
+  // Focus view: EVERY scanned resource is a legal center (instances, VPCs,
+  // SGs, roles, zones, TGWs…) — each ego graph must satisfy the invariants,
+  // and the center must actually be on it. Quiet: only failures are logged.
+  let centers = 0;
+  for (const ref of index.all) {
+    if (ref.kind === 'generic') continue;
+    const graph = buildFocus(index, ref.id);
+    validate(`${label} / focus ${ref.kind} ${ref.id}`, graph, true);
+    const center = graph.nodes.find((n) => n.id === ref.id);
+    if (!center) {
+      failures++;
+      console.log(`FAIL  ${label} / focus ${ref.kind} ${ref.id}: center node missing`);
+    } else if (!center.data.emphasis) {
+      failures++;
+      console.log(`FAIL  ${label} / focus ${ref.kind} ${ref.id}: center node not emphasized`);
+    }
+    centers++;
+  }
+  // A center that was never scanned must yield a ghost-centered graph, not dangling edges.
+  validate(`${label} / focus ghost center`, buildFocus(index, 'vpc-doesnotexist0000001'), true);
+  console.log(`PASS  ${label} / focus: ${centers + 1} centers validated`);
+}
+
+/** Fixture-only neighborhood expectations: the ego graph must contain the
+ *  relationships the feature promises (SGs, roles, routing, DNS, LB path). */
+function expectFocus(centerKey: string, expectNodes: string[], expectEdgeLabels: string[]): void {
+  const index = buildIndex();
+  const graph = buildFocus(index, centerKey);
+  const ids = new Set(graph.nodes.map((n) => n.id));
+  const labels = new Set(graph.edges.map((e) => e.data?.label).filter(Boolean));
+  const problems: string[] = [];
+  for (const id of expectNodes) {
+    if (!ids.has(id)) problems.push(`missing node ${id}`);
+  }
+  for (const label of expectEdgeLabels) {
+    if (!labels.has(label)) problems.push(`missing edge label "${label}"`);
+  }
+  if (problems.length === 0) {
+    console.log(`PASS  fixture / focus ${centerKey}: ${graph.nodes.length} nodes, ${graph.edges.length} edges, expectations hold`);
+  } else {
+    failures += problems.length;
+    console.log(`FAIL  fixture / focus ${centerKey}`);
+    for (const p of problems) console.log(`      - ${p}`);
+  }
 }
 
 // --- 1. the committed fixture ------------------------------------------------
 runAll('fixture');
+
+// An EC2 instance: SG + subnet + role + LB + VPC context + routing + DNS.
+expectFocus(
+  'i-0prodapp0000000001',
+  [
+    'sg-0prodapp000000001', // its security group
+    'subnet-0prodapp0000001', // placement
+    'prod-app-role', // assumed IAM role
+    'vpc-0prod00000000000a1', // VPC context
+    'arn:aws:elasticloadbalancing:eu-west-1:111111111111:loadbalancer/app/prod-alb/abc123', // targets it
+    'nat-0prod00000000001', // subnet default route
+    'tgw-0a1b2c3d4e5f00001', // subnet TGW routes
+    'Z0PRODPRIV0001', // private zone on the VPC
+  ],
+  ['in subnet', 'assumes role', 'applies to', 'private DNS'],
+);
+// A security group: blast radius (workloads) + rule graph + its VPC.
+expectFocus(
+  'sg-0prodapp000000001',
+  [
+    'i-0prodapp0000000001',
+    'i-0prodapp0021000001',
+    'sg-0prodalb000000001',
+    'sg-0proddb0000000001',
+    'vpc-0prod00000000000a1',
+  ],
+  ['tcp 8080', 'tcp 5432'],
+);
+// A VPC: subnets, gateways, peering/TGW spokes, DNS — without workload noise.
+expectFocus(
+  'vpc-0prod00000000000a1',
+  ['subnet-0prodapp0000001', 'tgw-0a1b2c3d4e5f00001', 'pcx-0proddev000000001', 'Z0PRODPRIV0001'],
+  ['private DNS'],
+);
+// An IAM role: who assumes it, via which instance profile.
+expectFocus(
+  'prod-app-role',
+  ['i-0prodapp0000000001', 'prod-app-profile'],
+  ['assumes role', 'instance profile'],
+);
 
 // --- 2. adversarial snapshot — exercises every ghost/cap/malformed path ------
 function adversarialAccount(): AccountSnapshot {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { buildIndex, type ResourceRef } from '../data.js';
+import { buildFocus } from '../model/focus.js';
 import { buildOverview } from '../model/overview.js';
 import { buildVpcDetail } from '../model/vpc-detail.js';
 import { layoutGraph } from '../model/layout.js';
@@ -20,15 +21,23 @@ import { DetailsPanel, type Selection } from './DetailsPanel.js';
 import { InventoryPanel } from './InventoryPanel.js';
 import { LayersPanel } from './LayersPanel.js';
 
-type Route = { view: 'overview' } | { view: 'vpc'; vpcId: string };
+type Route =
+  | { view: 'overview' }
+  | { view: 'vpc'; vpcId: string }
+  | { view: 'focus'; key: string };
 
 function parseHash(): Route {
-  const match = /^#\/vpc\/([^/?]+)/.exec(window.location.hash);
-  return match?.[1] ? { view: 'vpc', vpcId: match[1] } : { view: 'overview' };
+  const vpc = /^#\/vpc\/([^/?]+)/.exec(window.location.hash);
+  if (vpc?.[1]) return { view: 'vpc', vpcId: vpc[1] };
+  const focus = /^#\/focus\/(.+)$/.exec(window.location.hash);
+  if (focus?.[1]) return { view: 'focus', key: decodeURIComponent(focus[1]) };
+  return { view: 'overview' };
 }
 
 function routeHash(route: Route): string {
-  return route.view === 'vpc' ? `#/vpc/${route.vpcId}` : '#/';
+  if (route.view === 'vpc') return `#/vpc/${route.vpcId}`;
+  if (route.view === 'focus') return `#/focus/${encodeURIComponent(route.key)}`;
+  return '#/';
 }
 
 export function App(): React.ReactElement {
@@ -70,7 +79,11 @@ export function App(): React.ReactElement {
     let cancelled = false;
     setLoading(true);
     const built =
-      route.view === 'vpc' ? buildVpcDetail(index, route.vpcId) : buildOverview(index);
+      route.view === 'vpc'
+        ? buildVpcDetail(index, route.vpcId)
+        : route.view === 'focus'
+          ? buildFocus(index, route.key)
+          : buildOverview(index);
     void layoutGraph(built).then((laidOut) => {
       if (cancelled) return;
       setGraph(laidOut);
@@ -172,6 +185,9 @@ export function App(): React.ReactElement {
   }, []);
 
   const currentVpc = route.view === 'vpc' ? index.byKey.get(route.vpcId) : undefined;
+  const focusRef = route.view === 'focus' ? index.byKey.get(route.key) : undefined;
+  // The center's VPC gives the focus breadcrumb a way back to the VPC diagram.
+  const focusVpcId = focusRef?.kind === 'vpc' ? focusRef.id : focusRef?.vpcId;
   const hasData = index.snapshot.accounts.length > 0;
   // Latest actual scan time (bundle time is misleading — annotations rebundle too).
   const lastScanned = index.snapshot.accounts
@@ -209,6 +225,23 @@ export function App(): React.ReactElement {
             <>
               <span className="crumb-sep">/</span>
               <span className="crumb active">{currentVpc?.name ?? route.vpcId}</span>
+            </>
+          )}
+          {route.view === 'focus' && (
+            <>
+              {focusVpcId && index.byKey.has(focusVpcId) && (
+                <>
+                  <span className="crumb-sep">/</span>
+                  <button
+                    className="crumb"
+                    onClick={() => setRoute({ view: 'vpc', vpcId: focusVpcId })}
+                  >
+                    {index.byKey.get(focusVpcId)?.name ?? focusVpcId}
+                  </button>
+                </>
+              )}
+              <span className="crumb-sep">/</span>
+              <span className="crumb active">Focus: {focusRef?.name ?? route.key}</span>
             </>
           )}
         </nav>
@@ -282,6 +315,7 @@ export function App(): React.ReactElement {
             selection={selection}
             onClose={() => setSelection(undefined)}
             onOpenVpc={(vpcId) => setRoute({ view: 'vpc', vpcId })}
+            onFocus={(ref) => setRoute({ view: 'focus', key: ref.id })}
             onSelectRef={(ref) => setSelection({ type: 'resource', ref })}
             onHide={onHideRef}
           />

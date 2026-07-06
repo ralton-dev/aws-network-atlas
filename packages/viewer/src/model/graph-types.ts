@@ -27,6 +27,8 @@ export type AtlasNodeData = {
   drillVpcId?: string;
   /** Ghost = referenced by an edge but not scanned. */
   ghost?: boolean;
+  /** Visually emphasized (the center resource of a focus view). */
+  emphasis?: boolean;
 };
 
 export type AtlasNode = Node<AtlasNodeData>;
@@ -59,7 +61,9 @@ export type EdgeKind =
   /** Edge/ingress traffic: internet → CloudFront/API GW/Client VPN → origin. */
   | 'edge-service'
   /** DNS resolution paths: resolver rules, private hosted zone associations. */
-  | 'dns';
+  | 'dns'
+  /** Focus view: where a resource lives (instance → subnet, subnet → VPC…). */
+  | 'placement';
 
 export type AtlasEdgeData = {
   label?: string;

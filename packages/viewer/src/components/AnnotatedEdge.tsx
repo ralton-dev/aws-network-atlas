@@ -16,6 +16,7 @@ const EDGE_STYLES: Record<EdgeKind, React.CSSProperties> = {
   trust: { stroke: '#b91c1c', strokeDasharray: '5 4', strokeWidth: 1.5 },
   'edge-service': { stroke: '#0972d3', strokeWidth: 2 },
   dns: { stroke: '#1f7a4d', strokeDasharray: '3 5', strokeWidth: 1.5 },
+  placement: { stroke: '#9aa5b1', strokeDasharray: '6 4', strokeWidth: 1.2 },
 };
 
 /**

@@ -50,12 +50,14 @@ export interface DetailsPanelProps {
   selection: Selection;
   onClose(): void;
   onOpenVpc(vpcId: string): void;
+  /** Open the focus view: this resource plus everything connected to it. */
+  onFocus?(ref: ResourceRef): void;
   onSelectRef(ref: ResourceRef): void;
   /** Hide this resource's node on the diagram (declutter). */
   onHide?(ref: ResourceRef): void;
 }
 
-export function DetailsPanel({ index, selection, onClose, onOpenVpc, onSelectRef, onHide }: DetailsPanelProps): React.ReactElement {
+export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, onSelectRef, onHide }: DetailsPanelProps): React.ReactElement {
   if (selection.type === 'edge') {
     const { data } = selection;
     const underlying = data.refId ? index.byKey.get(data.refId) : undefined;
@@ -125,6 +127,15 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onSelectRef
       {ref.vpcId && ref.kind !== 'vpc' && (
         <button className="link-btn" onClick={() => onOpenVpc(ref.vpcId!)}>
           Open VPC diagram ({ref.vpcId}) →
+        </button>
+      )}
+      {onFocus && (
+        <button
+          className="link-btn"
+          onClick={() => onFocus(ref)}
+          title="Open a view scoped to this resource and everything connected to it"
+        >
+          Focus on connections →
         </button>
       )}
       {onHide && (

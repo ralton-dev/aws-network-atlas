@@ -103,6 +103,11 @@ html, body, #root { margin: 0; height: 100%; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 .resource-node.is-selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(9, 114, 211, 0.35); }
+/* Focus view center: the resource everything else orbits. */
+.resource-node.is-emphasized {
+  border: 2px solid var(--accent); background: #f2f8ff;
+  box-shadow: 0 0 0 4px rgba(9, 114, 211, 0.16), 0 2px 8px rgba(0, 0, 0, 0.14);
+}
 .resource-node.is-ghost { border-style: dashed; opacity: 0.65; background: #fbfbfb; }
 .resource-node.is-drillable { cursor: zoom-in; }
 .resource-icon { flex-shrink: 0; display: flex; }
@@ -188,6 +193,7 @@ html, body, #root { margin: 0; height: 100%; }
 .edge-label-trust { border-color: #b91c1c; color: #b91c1c; }
 .edge-label-edge-service { border-color: var(--accent); color: var(--accent); }
 .edge-label-dns { border-color: #1f7a4d; color: #1f7a4d; }
+.edge-label-placement { font-weight: 400; color: var(--muted); }
 
 /* ---------- details panel ---------- */
 .details-panel {

@@ -12,7 +12,10 @@ const NODE_KIND_LABELS: Record<string, string> = {
   'group-external': 'External / connectivity',
   'group-security': 'Security & identity lanes',
   'group-edge': 'Edge & global lanes',
+  account: 'Accounts',
+  asg: 'Auto Scaling groups',
   vpc: 'VPCs',
+  subnet: 'Subnets',
   tgw: 'Transit gateways',
   cgw: 'Customer gateways',
   dxgw: 'Direct Connect gateways',
@@ -68,6 +71,7 @@ const EDGE_KIND_LABELS: Record<EdgeKind, string> = {
   trust: 'IAM trust',
   'edge-service': 'Edge traffic',
   dns: 'DNS',
+  placement: 'Placement',
 };
 
 const nodeKindLabel = (kind: string): string => NODE_KIND_LABELS[kind] ?? kind;
