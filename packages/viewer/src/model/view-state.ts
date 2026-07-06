@@ -70,6 +70,36 @@ export function saveHiddenState(viewKey: string, state: HiddenState): void {
   }
 }
 
+// --- interaction mode --------------------------------------------------------
+
+/**
+ * How click-drag on the canvas behaves:
+ *   'pan'     — nodes are locked; dragging anywhere (nodes included) pans.
+ *   'arrange' — dragging a node moves it; dragging empty canvas still pans.
+ * Global (not per view) — it's a tool preference, not view state.
+ */
+export type InteractionMode = 'pan' | 'arrange';
+
+const MODE_KEY = 'atlas:mode';
+
+export function loadInteractionMode(): InteractionMode {
+  try {
+    const raw = window.localStorage.getItem(MODE_KEY);
+    if (raw === 'pan' || raw === 'arrange') return raw;
+  } catch {
+    /* storage unavailable — fall through to default */
+  }
+  return 'pan';
+}
+
+export function saveInteractionMode(mode: InteractionMode): void {
+  try {
+    window.localStorage.setItem(MODE_KEY, mode);
+  } catch {
+    /* storage unavailable — session-only */
+  }
+}
+
 export type SavedPositions = Record<string, { x: number; y: number }>;
 
 export function loadPositions(viewKey: string): SavedPositions | undefined {

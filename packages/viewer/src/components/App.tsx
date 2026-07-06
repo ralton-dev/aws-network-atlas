@@ -8,8 +8,11 @@ import {
   emptyHiddenState,
   hiddenCount,
   loadHiddenState,
+  loadInteractionMode,
   saveHiddenState,
+  saveInteractionMode,
   type HiddenState,
+  type InteractionMode,
 } from '../model/view-state.js';
 import { FlowView } from './FlowView.js';
 import { SearchBar } from './SearchBar.js';
@@ -37,6 +40,13 @@ export function App(): React.ReactElement {
   const [showInventory, setShowInventory] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [hidden, setHidden] = useState<HiddenState>(() => loadHiddenState(routeHash(parseHash())));
+  const [mode, setMode] = useState<InteractionMode>(loadInteractionMode);
+
+  const toggleMode = useCallback(() => {
+    const next: InteractionMode = mode === 'pan' ? 'arrange' : 'pan';
+    setMode(next);
+    saveInteractionMode(next);
+  }, [mode]);
 
   const setRoute = useCallback((next: Route) => {
     // Hash-based navigation — the History API doesn't work on file://.
@@ -212,6 +222,17 @@ export function App(): React.ReactElement {
             <span className="toolbar-badge">{hiddenCount(hidden)} hidden</span>
           )}
         </button>
+        <button
+          className="toolbar-btn"
+          onClick={toggleMode}
+          title={
+            mode === 'pan'
+              ? 'Pan mode: nodes are locked, drag anywhere to pan. Click to switch to Arrange.'
+              : 'Arrange mode: drag nodes to move them. Click to switch to Pan.'
+          }
+        >
+          {mode === 'pan' ? '🔒 Pan' : '✋ Arrange'}
+        </button>
         <span className="scan-time">
           scanned {lastScanned ? new Date(lastScanned).toLocaleString() : '—'}
         </span>
@@ -235,6 +256,7 @@ export function App(): React.ReactElement {
               }
               selectedEdgeId={selection?.type === 'edge' ? selection.id : undefined}
               hidden={hidden}
+              mode={mode}
               onNodeClick={onNodeClick}
               onNodeDoubleClick={onNodeDoubleClick}
               onNodeHide={onNodeHide}

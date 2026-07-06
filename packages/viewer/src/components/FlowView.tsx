@@ -14,6 +14,7 @@ import {
   loadPositions,
   savePositions,
   type HiddenState,
+  type InteractionMode,
 } from '../model/view-state.js';
 import { AnnotatedEdge, EdgeLabelClickContext } from './AnnotatedEdge.js';
 import { ContainerNode, NoteNode, ResourceNode } from './nodes.js';
@@ -32,6 +33,12 @@ export interface FlowViewProps {
   selectedId?: string;
   selectedEdgeId?: string;
   hidden: HiddenState;
+  /**
+   * 'pan' locks nodes so a drag anywhere pans the canvas; 'arrange' makes
+   * nodes draggable (empty-canvas drags still pan). Clicks, double-click
+   * drill-down and right-click hide work in both modes.
+   */
+  mode: InteractionMode;
   onNodeClick(node: AtlasNode): void;
   onNodeDoubleClick(node: AtlasNode): void;
   /** Right-click on a node hides it (App owns the hidden state). */
@@ -151,7 +158,7 @@ export function FlowView(props: FlowViewProps): React.ReactElement {
       // d3-zoom's dblclick handler stops propagation before React sees the
       // event, which would break onNodeDoubleClick (our drill-down).
       zoomOnDoubleClick={false}
-      nodesDraggable
+      nodesDraggable={props.mode === 'arrange'}
       nodesConnectable={false}
       elementsSelectable
       selectNodesOnDrag={false}

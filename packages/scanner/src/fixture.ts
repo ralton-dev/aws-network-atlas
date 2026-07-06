@@ -406,6 +406,19 @@ function prodEuWest1(): RegionSnapshot {
     subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'], ipAddresses: ['10.0.10.53', '10.0.11.53'],
     securityGroupIds: ['sg-0prodapp000000001'], status: 'OPERATIONAL',
   });
+  r.resolverRules.push({
+    id: 'rslvr-rr-0prod0000000001', arn: `arn:aws:route53resolver:${EU}:${ACCT.prod}:resolver-rule/rslvr-rr-0prod0000000001`,
+    name: 'corp-onprem-forward', tags: { env: 'prod' }, domainName: 'corp.acme.example.', ruleType: 'FORWARD',
+    resolverEndpointId: 'rslvr-out-0prod0000000001', targetIps: ['192.0.2.53', '192.0.2.54'],
+    vpcAssociationIds: ['vpc-0prod00000000000a1'], shareStatus: 'NOT_SHARED',
+  });
+  r.clientVpnEndpoints.push({
+    id: 'cvpn-endpoint-0prod00000001', arn: `arn:aws:ec2:${EU}:${ACCT.prod}:client-vpn-endpoint/cvpn-endpoint-0prod00000001`,
+    name: 'prod-admin-vpn', tags: { env: 'prod' }, description: 'Engineer break-glass access to prod',
+    vpcId: 'vpc-0prod00000000000a1', clientCidrBlock: '203.0.113.0/24', dnsServers: ['10.0.0.2'],
+    securityGroupIds: ['sg-0prodapp000000001'], associatedSubnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    status: 'available', splitTunnel: true,
+  });
   r.apiGateways.push({
     id: 'a1b2c3d4e5', arn: `arn:aws:apigateway:${EU}::/restapis/a1b2c3d4e5`,
     name: 'prod-public-api', tags: { env: 'prod' }, protocolType: 'REST', endpointType: 'REGIONAL',
