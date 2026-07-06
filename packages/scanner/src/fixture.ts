@@ -97,7 +97,7 @@ function addSubnet(r: RegionSnapshot, vpcId: string, s: SubnetSpec): void {
 
 function addInstance(
   r: RegionSnapshot,
-  o: { id: string; name: string; vpcId: string; subnetId: string; az: string; ip: string; sg: string; type?: string; role?: string },
+  o: { id: string; name: string; vpcId: string; subnetId: string; az: string; ip: string; sg: string; type?: string; role?: string; profile?: string },
 ): void {
   r.instances.push({
     id: o.id,
@@ -110,6 +110,7 @@ function addInstance(
     availabilityZone: o.az,
     privateIp: o.ip,
     securityGroupIds: [o.sg],
+    instanceProfileArn: o.profile,
   });
 }
 
@@ -122,6 +123,7 @@ function prodEuWest1(): RegionSnapshot {
   const vpc = 'vpc-0prod00000000000a1';
   const sg = 'sg-0prodapp000000001';
   const albSg = 'sg-0prodalb000000001';
+  const dbSg = 'sg-0proddb0000000001';
 
   r.vpcs.push({
     id: vpc,
@@ -229,6 +231,15 @@ function prodEuWest1(): RegionSnapshot {
       ingress: [{ protocol: 'tcp', fromPort: 8080, toPort: 8080, cidrs: [], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [{ groupId: albSg }], description: 'from ALB' }],
       egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }],
     },
+    {
+      id: dbSg,
+      name: 'prod-db',
+      tags: {},
+      vpcId: vpc,
+      description: 'database tier',
+      ingress: [{ protocol: 'tcp', fromPort: 5432, toPort: 5432, cidrs: [], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [{ groupId: sg }], description: 'postgres from app tier' }],
+      egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }],
+    },
   );
 
   // ALB (public) → target group → 6 app instances across 3 AZs.
@@ -239,7 +250,7 @@ function prodEuWest1(): RegionSnapshot {
     for (let n = 0; n < 2; n++) {
       const id = `i-0prodapp00${i}${n}000001`;
       appInstanceIds.push(id);
-      addInstance(r, { id, name: `prod-app-${az}-${n + 1}`, vpcId: vpc, subnetId: `subnet-0prodapp0000${i}01`, az: `${EU}${az}`, ip: `10.0.1${i}.${20 + n}`, sg, role: 'app' });
+      addInstance(r, { id, name: `prod-app-${az}-${n + 1}`, vpcId: vpc, subnetId: `subnet-0prodapp0000${i}01`, az: `${EU}${az}`, ip: `10.0.1${i}.${20 + n}`, sg, role: 'app', profile: `arn:aws:iam::${ACCT.prod}:instance-profile/prod-app-profile` });
     }
   });
   r.loadBalancers.push({
@@ -294,7 +305,7 @@ function prodEuWest1(): RegionSnapshot {
     vpcId: vpc,
     subnetGroupName: 'prod-db',
     subnetIds: ['subnet-0proddb0000001', 'subnet-0proddb0000101'].map((_, i) => `subnet-0proddb00000${i}01`),
-    securityGroupIds: [sg],
+    securityGroupIds: [dbSg],
     endpoint: 'prod-aurora.cluster-abc.eu-west-1.rds.amazonaws.com',
     readerEndpoint: 'prod-aurora.cluster-ro-abc.eu-west-1.rds.amazonaws.com',
     multiAz: true,
@@ -311,7 +322,7 @@ function prodEuWest1(): RegionSnapshot {
       vpcId: vpc,
       subnetGroupName: 'prod-db',
       subnetIds: [`subnet-0proddb00000${i}01`],
-      securityGroupIds: [sg],
+      securityGroupIds: [dbSg],
       multiAz: true,
       publiclyAccessible: false,
       availabilityZone: `${EU}${['a', 'b'][i]}`,
@@ -339,6 +350,7 @@ function prodEuWest1(): RegionSnapshot {
     tags: {},
     runtime: 'nodejs22.x',
     description: 'async job worker',
+    roleArn: `arn:aws:iam::${ACCT.prod}:role/prod-lambda-role`,
     vpcConfig: { vpcId: vpc, subnetIds: azs.map((_, i) => `subnet-0prodapp0000${i}01`), securityGroupIds: [sg] },
   });
   r.vpcEndpoints.push(

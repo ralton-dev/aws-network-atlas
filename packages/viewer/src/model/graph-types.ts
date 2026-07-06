@@ -8,6 +8,7 @@ export type ContainerStyle =
   | 'subnet-public'
   | 'subnet-private'
   | 'external'
+  | 'security'
   | 'ghost';
 
 // NOTE: these must stay `type` aliases (not interfaces) — React Flow v12's
@@ -38,13 +39,35 @@ export interface RouteDetail {
   routeType?: string;
 }
 
-export type EdgeKind = 'peering' | 'tgw' | 'vpn' | 'dx' | 'route' | 'assoc';
+export type EdgeKind =
+  | 'peering'
+  | 'tgw'
+  | 'vpn'
+  | 'dx'
+  | 'route'
+  | 'assoc'
+  /** Security-group allow rule (SG → SG reference). */
+  | 'sg-rule'
+  /** World-open ingress: Internet → security group. */
+  | 'sg-open'
+  /** Security group applies-to (SG → the workload it protects). */
+  | 'sg-attach'
+  /** Static dependency: workload → IAM role, LB → ACM cert, secret → KMS key… */
+  | 'uses'
+  /** Cross-account IAM assume-role trust (account → role). */
+  | 'trust'
+  /** Edge/ingress traffic: internet → CloudFront/API GW/Client VPN → origin. */
+  | 'edge-service'
+  /** DNS resolution paths: resolver rules, private hosted zone associations. */
+  | 'dns';
 
 export type AtlasEdgeData = {
   label?: string;
   edgeKind: EdgeKind;
   /** Full route breakdown, shown in the details panel on edge click. */
   routes?: RouteDetail[];
+  /** Header override for the `routes` table (defaults to From/Destination/State). */
+  columns?: [string, string, string];
   /** Underlying resource (pcx-…, tgw-attach-…, vpn-…) for details lookup. */
   refId?: string;
   title?: string;

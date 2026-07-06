@@ -46,6 +46,10 @@ import ClientVpn from 'aws-icons/icons/architecture-service/AWSClientVPN.svg?rea
 import NetworkFirewall from 'aws-icons/icons/architecture-service/AWSNetworkFirewall.svg?react';
 import ApiGw from 'aws-icons/icons/architecture-service/AmazonAPIGateway.svg?react';
 import CloudFront from 'aws-icons/icons/architecture-service/AmazonCloudFront.svg?react';
+// security groups, internet, on-prem DNS targets
+import Shield from 'aws-icons/icons/resource/Shield.svg?react';
+import Internet from 'aws-icons/icons/resource/Internetalt1.svg?react';
+import Globe from 'aws-icons/icons/resource/Globe.svg?react';
 // Group icons (container headers)
 import VpcGroup from 'aws-icons/icons/architecture-group/VirtualprivatecloudVPC.svg?react';
 import PublicSubnet from 'aws-icons/icons/architecture-group/Publicsubnet.svg?react';
@@ -106,6 +110,10 @@ export const ICONS: Record<string, IconComponent> = {
   'network-firewall': NetworkFirewall,
   apigw: ApiGw,
   cloudfront: CloudFront,
+  // security groups, internet, DNS targets
+  sg: Shield,
+  internet: Internet,
+  'dns-target': HostedZone,
   // container headers
   'group-vpc': VpcGroup,
   'group-subnet-public': PublicSubnet,
@@ -113,6 +121,8 @@ export const ICONS: Record<string, IconComponent> = {
   'group-account': AwsAccount,
   'group-region': RegionGroup,
   'group-external': DataCenter,
+  'group-security': IamService,
+  'group-edge': Globe,
 };
 
 export function iconFor(kind: string): IconComponent | undefined {

@@ -9,6 +9,13 @@ const EDGE_STYLES: Record<EdgeKind, React.CSSProperties> = {
   dx: { stroke: '#7d8998', strokeWidth: 2 },
   route: { stroke: '#546e7a', strokeWidth: 1.4 },
   assoc: { stroke: '#a7b6bf', strokeDasharray: '2 4', strokeWidth: 1.2 },
+  'sg-rule': { stroke: '#b01e63', strokeWidth: 1.8 },
+  'sg-open': { stroke: '#d13212', strokeWidth: 2.4 },
+  'sg-attach': { stroke: '#d3a8c0', strokeDasharray: '2 4', strokeWidth: 1.1 },
+  uses: { stroke: '#8fa3b0', strokeDasharray: '2 4', strokeWidth: 1.1 },
+  trust: { stroke: '#b91c1c', strokeDasharray: '5 4', strokeWidth: 1.5 },
+  'edge-service': { stroke: '#0972d3', strokeWidth: 2 },
+  dns: { stroke: '#1f7a4d', strokeDasharray: '3 5', strokeWidth: 1.5 },
 };
 
 /**

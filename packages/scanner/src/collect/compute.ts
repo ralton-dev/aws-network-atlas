@@ -36,6 +36,7 @@ export async function collectCompute(ctx: AwsContext, region: string, out: Regio
             imageId: i.ImageId,
             launchTime: i.LaunchTime?.toISOString(),
             platform: i.PlatformDetails,
+            instanceProfileArn: i.IamInstanceProfile?.Arn,
           });
         }
       }
@@ -79,6 +80,7 @@ export async function collectCompute(ctx: AwsContext, region: string, out: Regio
           tags: {}, // ListFunctions doesn't return tags; the generic sweep fills the search index.
           runtime: fn.Runtime,
           description: fn.Description || undefined,
+          roleArn: fn.Role,
           vpcConfig:
             fn.VpcConfig?.SubnetIds && fn.VpcConfig.SubnetIds.length > 0
               ? {

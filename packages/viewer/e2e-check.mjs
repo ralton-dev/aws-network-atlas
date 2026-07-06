@@ -22,9 +22,23 @@ const overview = {
   edges: await page.locator('.react-flow__edge').count(),
   edgeLabels: await page.locator('.edge-label').count(),
   ghosts: await page.locator('.resource-node.is-ghost').count(),
+  // everything-on-canvas additions
+  securityLanes: await page.locator('.container-node.style-security').count(),
+  internetNode: await page.locator('.resource-node', { hasText: 'Internet' }).count(),
+  cloudfront: await page.locator('.resource-node', { hasText: 'prod-web-cdn' }).count(),
+  iamRoles: await page.locator('.resource-node', { hasText: 'prod-app-role' }).count(),
+  kms: await page.locator('.resource-node', { hasText: 'prod-rds' }).count(),
+  secrets: await page.locator('.resource-node', { hasText: 'prod/db' }).count(),
+  trustEdges: await page.locator('.edge-label', { hasText: 'assume-role' }).count(),
+  dnsEdges: await page.locator('.edge-label', { hasText: 'DNS corp.acme.example' }).count(),
+  openSgBadge: await page.locator('.badge', { hasText: 'internet-open SG' }).count(),
 };
 console.log('overview:', JSON.stringify(overview));
-await page.screenshot({ path: '/tmp/atlas-overview.png' });
+if (overview.securityLanes === 0) problems.push('overview: no Identity & security lane');
+if (overview.internetNode === 0) problems.push('overview: no Internet node');
+if (overview.cloudfront === 0) problems.push('overview: CloudFront distribution missing');
+if (overview.trustEdges === 0) problems.push('overview: no cross-account IAM trust edges');
+await page.screenshot({ path: '/tmp/atlas-everything-overview.png', fullPage: false });
 
 // Drill into the prod VPC (dispatch dblclick directly — edge labels can
 // overlap the node's hitbox in the small fixture graph).
@@ -39,23 +53,67 @@ const detail = {
   azContainers: await page.locator('.container-node.style-az').count(),
   resourceNodes: await page.locator('.resource-node').count(),
   edges: await page.locator('.react-flow__edge').count(),
+  // security-on-canvas additions
+  sgNodes: await page.locator('.resource-node', { hasText: 'in / ' }).count(),
+  openBadges: await page.locator('.badge', { hasText: 'open to internet' }).count(),
+  sgRuleLabels: await page.locator('.edge-label.edge-label-sg-rule').count(),
+  exposureLabels: await page.locator('.edge-label.edge-label-sg-open').count(),
+  securityLane: await page.locator('.container-node.style-security').count(),
+  cloudfront: await page.locator('.resource-node', { hasText: 'prod-web-cdn' }).count(),
+  clientVpn: await page.locator('.resource-node', { hasText: 'prod-admin-vpn' }).count(),
+  firewall: await page.locator('.resource-node', { hasText: 'prod-inspection-fw' }).count(),
+  resolver: await page.locator('.resource-node', { hasText: 'prod-outbound' }).count(),
 };
 console.log('vpc-detail:', JSON.stringify(detail));
-await page.screenshot({ path: '/tmp/atlas-vpc.png' });
+if (detail.sgNodes === 0) problems.push('vpc: no security group nodes');
+if (detail.sgRuleLabels === 0) problems.push('vpc: no SG rule edges');
+if (detail.exposureLabels === 0) problems.push('vpc: no internet-exposure edges');
+if (detail.securityLane === 0) problems.push('vpc: no Security & identity lane');
+if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connectivity');
+await page.screenshot({ path: '/tmp/atlas-everything-vpc.png', fullPage: false });
 
-// Details panel with annotation (the VPC container header click).
-await page.locator('.resource-node', { hasText: 'prod-postgres' }).first().click();
+// SG rule edge click → rules table with the SG-specific columns.
+await page.locator('.edge-label.edge-label-sg-open').first().click();
+await page.waitForTimeout(400);
+const sgRule = {
+  rulesTable: await page.locator('.routes-table').count(),
+  ruleRows: await page.locator('.routes-table tbody tr').count(),
+  sourceHeader: await page.locator('.routes-table thead th', { hasText: 'Source' }).count(),
+};
+console.log('sg-open-details:', JSON.stringify(sgRule));
+if (sgRule.sourceHeader === 0) problems.push('vpc: exposure edge details missing rule columns');
+await page.locator('.details-panel .close-btn').click();
+
+// Layers panel: the new kinds must auto-derive rows and toggle edges off/on.
+await page.locator('.toolbar-btn', { hasText: 'Layers' }).click();
+await page.waitForTimeout(300);
+const layers = {
+  sgRow: await page.locator('.layer-row', { hasText: 'Security groups' }).count(),
+  exposureRow: await page.locator('.layer-row', { hasText: 'Internet exposure' }).count(),
+  attachRow: await page.locator('.layer-row', { hasText: 'SG attachments' }).count(),
+};
+console.log('layers:', JSON.stringify(layers));
+if (layers.sgRow === 0 || layers.exposureRow === 0) problems.push('layers: SG rows missing');
+const beforeToggle = await page.locator('.edge-label.edge-label-sg-open').count();
+await page.locator('.layer-row', { hasText: 'Internet exposure' }).locator('input').click();
+await page.waitForTimeout(300);
+const afterToggle = await page.locator('.edge-label.edge-label-sg-open').count();
+if (!(beforeToggle > 0 && afterToggle === 0)) problems.push('layers: exposure toggle did not hide edges');
+await page.locator('.layer-row', { hasText: 'Internet exposure' }).locator('input').click();
+await page.waitForTimeout(300);
+await page.locator('.layers-panel .close-btn').click();
+console.log('layers-toggle:', JSON.stringify({ beforeToggle, afterToggle }));
+
+// Details panel with annotation (Aurora cluster node).
+await page.locator('.resource-node', { hasText: 'prod-aurora-writer' }).first().click();
 await page.waitForTimeout(500);
 const details = {
   panelOpen: (await page.locator('.details-panel').count()) === 1,
-  hasAnnotation: (await page.locator('.details-panel .annotation').count()) === 1,
-  annotationText: await page.locator('.details-panel .annotation').textContent().catch(() => null),
 };
 console.log('details:', JSON.stringify(details));
-await page.screenshot({ path: '/tmp/atlas-details.png' });
 
-// Edge click → route breakdown.
-await page.locator('.edge-label').first().click();
+// Edge click → route breakdown (a route edge with CIDR labels).
+await page.locator('.edge-label', { hasText: '0.0.0.0/0' }).first().click();
 await page.waitForTimeout(400);
 console.log(
   'edge-details:',
@@ -70,7 +128,6 @@ await page.fill('.search-bar input', 'prod-sessions');
 await page.waitForTimeout(500);
 const searchCount = await page.locator('.search-result').count();
 console.log('search:', JSON.stringify({ results: searchCount }));
-await page.screenshot({ path: '/tmp/atlas-search.png' });
 if (searchCount > 0) {
   await page.locator('.search-result').first().click();
   await page.waitForTimeout(400);

@@ -72,10 +72,14 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onSelectRef
         )}
         {data.routes && data.routes.length > 0 ? (
           <>
-            <h3>Routes</h3>
+            <h3>{data.columns ? 'Rules' : 'Routes'}</h3>
             <table className="kv-table routes-table">
               <thead>
-                <tr><th>From</th><th>Destination</th><th>State</th></tr>
+                <tr>
+                  <th>{data.columns?.[0] ?? 'From'}</th>
+                  <th>{data.columns?.[1] ?? 'Destination'}</th>
+                  <th>{data.columns?.[2] ?? 'State'}</th>
+                </tr>
               </thead>
               <tbody>
                 {data.routes.map((r, i) => (

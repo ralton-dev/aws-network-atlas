@@ -159,6 +159,8 @@ html, body, #root { margin: 0; height: 100%; }
 .style-subnet-private > .container-header { color: #00707e; }
 .style-external { border-color: #7d8998; background: repeating-linear-gradient(45deg, rgba(125, 137, 152, 0.05), rgba(125, 137, 152, 0.05) 8px, transparent 8px, transparent 16px); }
 .style-external > .container-header { color: #545b64; }
+.style-security { border-color: var(--danger); border-style: dashed; background: rgba(221, 52, 76, 0.03); }
+.style-security > .container-header { color: #b02a3d; }
 .style-ghost { border-color: #b8c0c8; border-style: dashed; opacity: 0.8; }
 .style-ghost > .container-header { color: #8b95a0; }
 
@@ -179,6 +181,13 @@ html, body, #root { margin: 0; height: 100%; }
 .edge-label-tgw { border-color: var(--vpc-purple); color: #6b2fd6; }
 .edge-label-vpn { border-color: var(--danger); color: var(--danger); }
 .edge-label-assoc { font-weight: 400; color: var(--muted); }
+.edge-label-sg-rule { border-color: #b01e63; color: #b01e63; }
+.edge-label-sg-open { border-color: #d13212; color: #d13212; background: #fff3f0; }
+.edge-label-sg-attach { font-weight: 400; color: var(--muted); }
+.edge-label-uses { font-weight: 400; color: var(--muted); }
+.edge-label-trust { border-color: #b91c1c; color: #b91c1c; }
+.edge-label-edge-service { border-color: var(--accent); color: var(--accent); }
+.edge-label-dns { border-color: #1f7a4d; color: #1f7a4d; }
 
 /* ---------- details panel ---------- */
 .details-panel {

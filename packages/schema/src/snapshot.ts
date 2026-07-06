@@ -331,6 +331,8 @@ export interface Ec2Instance extends BaseResource {
   imageId?: string;
   launchTime?: string;
   platform?: string;
+  /** IAM instance profile attached to the instance (links to the role it assumes). */
+  instanceProfileArn?: string;
 }
 
 export interface AutoScalingGroup extends BaseResource {
@@ -345,6 +347,8 @@ export interface AutoScalingGroup extends BaseResource {
 export interface LambdaFunction extends BaseResource {
   runtime?: string;
   description?: string;
+  /** Execution role the function assumes. */
+  roleArn?: string;
   vpcConfig?: { vpcId?: string; subnetIds: string[]; securityGroupIds: string[] };
 }
 

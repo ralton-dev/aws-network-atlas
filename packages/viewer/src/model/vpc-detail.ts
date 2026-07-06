@@ -1,17 +1,22 @@
 import { MarkerType } from '@xyflow/react';
-import type { RegionSnapshot } from '@atlas/schema';
+import type { RegionSnapshot, SecurityGroupRule } from '@atlas/schema';
 import type { AtlasIndex } from '../data.js';
 import {
   destsLabel,
   type AtlasEdge,
+  type AtlasEdgeData,
   type AtlasGraph,
   type AtlasNode,
   type EdgeKind,
+  type RouteDetail,
 } from './graph-types.js';
+import { portLabel, worldOpenIngress } from './relations.js';
 import { subnetRoutes, type SubnetRoute } from './routes.js';
 
 const MAX_INSTANCES_PER_SUBNET = 12;
 const EXT_CONTAINER = 'ext:connectivity';
+const SEC_CONTAINER = 'sec:identity';
+const SG_RULE_COLUMNS: [string, string, string] = ['Source', 'Port / protocol', 'Description'];
 
 function leaf(
   id: string,
@@ -191,6 +196,275 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     return id;
   };
 
+  let secUsed = false;
+  const ensureSec = (id: string, kind: string, label: string, subtitle?: string, refId?: string): string => {
+    secUsed = true;
+    if (!leaves.has(id)) {
+      leaves.set(id, leaf(id, SEC_CONTAINER, kind, label, subtitle, refId));
+    }
+    return id;
+  };
+
+  const internetNode = (): string => ensureExt('inet:public', 'internet', 'Internet', 'public traffic');
+
+  const addEdge = (key: string, source: string, target: string, data: AtlasEdgeData): void => {
+    edges.set(key, {
+      id: `edge:${key}`,
+      source,
+      target,
+      type: 'annotated',
+      markerEnd: { type: MarkerType.ArrowClosed },
+      data,
+    });
+  };
+
+  // --- DNS: resolver endpoints in this VPC + their forwarding rules ----------
+  for (const ep of region.resolverEndpoints.filter((e) => e.vpcId === vpcId)) {
+    const parent = ep.subnetIds.length === 1 ? subnetNode(ep.subnetIds[0]) ?? vpcNodeId : vpcNodeId;
+    leaves.set(`res:${ep.id}`, leaf(
+      `res:${ep.id}`, parent, 'resolver-endpoint',
+      ep.name ?? ep.id, `${(ep.direction ?? 'resolver').toLowerCase()} resolver`, ep.id,
+    ));
+    for (const rule of region.resolverRules) {
+      if (rule.resolverEndpointId !== ep.id || rule.targetIps.length === 0) continue;
+      const target = ensureExt(`dnst:${rule.id}`, 'dns-target', rule.domainName ?? rule.id, rule.targetIps.join(', '), rule.id);
+      addEdge(`rslvr:${rule.id}`, `res:${ep.id}`, target, {
+        edgeKind: 'dns',
+        label: `DNS ${rule.domainName ?? ''}`.trim(),
+        title: `Resolver rule ${rule.name ?? rule.id}`,
+        refId: rule.id,
+      });
+    }
+  }
+
+  // --- Network Firewall endpoints (live in subnets) ---------------------------
+  for (const fw of region.networkFirewalls.filter((f) => f.vpcId === vpcId)) {
+    leaves.set(`res:${fw.id}`, leaf(
+      `res:${fw.id}`, subnetNode(fw.subnetIds[0]) ?? vpcNodeId, 'network-firewall',
+      fw.name ?? fw.id, 'network firewall', fw.id,
+      fw.status && fw.status !== 'READY' ? [fw.status] : undefined,
+    ));
+  }
+
+  // --- Client VPN: remote-access entry point ---------------------------------
+  for (const cvpn of region.clientVpnEndpoints.filter((c) => c.vpcId === vpcId)) {
+    const node = ensureExt(
+      `res:${cvpn.id}`, 'client-vpn', cvpn.name ?? cvpn.id,
+      cvpn.clientCidrBlock ? `clients ${cvpn.clientCidrBlock}` : 'Client VPN', cvpn.id,
+    );
+    addEdge(`inet-cvpn:${cvpn.id}`, internetNode(), node, {
+      edgeKind: 'edge-service',
+      label: 'client VPN',
+      title: `Internet → Client VPN ${cvpn.name ?? cvpn.id}`,
+      refId: cvpn.id,
+    });
+    for (const subnetId of cvpn.associatedSubnetIds) {
+      const tgt = subnetNode(subnetId);
+      if (!tgt) continue;
+      addEdge(`cvpnsub:${cvpn.id}|${subnetId}`, node, tgt, {
+        edgeKind: 'vpn',
+        label: cvpn.clientCidrBlock ?? 'client VPN',
+        title: `Client VPN ${cvpn.name ?? cvpn.id} association`,
+        refId: cvpn.id,
+      });
+    }
+  }
+
+  // --- CloudFront: internet → distribution → the origin LB in this VPC -------
+  for (const account of index.snapshot.accounts) {
+    for (const dist of account.global.cloudFrontDistributions) {
+      for (const origin of dist.origins) {
+        const lb = region.loadBalancers.find((l) => l.vpcId === vpcId && l.dnsName === origin);
+        if (!lb || !leaves.has(`res:${lb.id}`)) continue;
+        const cfNode = ensureExt(`cf:${dist.id}`, 'cloudfront', dist.name ?? dist.id, dist.domainName, dist.arn ?? dist.id);
+        addEdge(`inet-cf:${dist.id}`, internetNode(), cfNode, {
+          edgeKind: 'edge-service',
+          label: destsLabel(dist.aliases, 2) || 'HTTPS',
+          title: `Internet → CloudFront ${dist.name ?? dist.id}`,
+          refId: dist.arn ?? dist.id,
+        });
+        addEdge(`cforig:${dist.id}|${lb.id}`, cfNode, `res:${lb.id}`, {
+          edgeKind: 'edge-service',
+          label: 'origin',
+          title: `CloudFront origin ${origin}`,
+          refId: dist.arn ?? dist.id,
+        });
+      }
+    }
+  }
+
+  // --- IGW → internet (completes the egress path) -----------------------------
+  for (const igw of region.internetGateways.filter((g) => g.vpcIds.includes(vpcId))) {
+    addEdge(`inet-igw:${igw.id}`, `res:${igw.id}`, internetNode(), {
+      edgeKind: 'route',
+      title: `${igw.name ?? igw.id} → internet`,
+      refId: igw.id,
+    });
+  }
+
+  // --- security groups: nodes, attachments, allow rules, internet exposure ---
+  const vpcSgs = region.securityGroups.filter((g) => g.vpcId === vpcId);
+  const sgName = (groupId: string): string =>
+    region.securityGroups.find((g) => g.id === groupId)?.name ?? index.byKey.get(groupId)?.name ?? groupId;
+
+  for (const sg of vpcSgs) {
+    const open = worldOpenIngress(sg);
+    leaves.set(`sg:${sg.id}`, {
+      ...leaf(`sg:${sg.id}`, vpcNodeId, 'sg', sg.name ?? sg.id, sg.description, sg.id, [
+        `${sg.ingress.length} in / ${sg.egress.length} out`,
+        ...(open.length > 0 ? ['open to internet'] : []),
+      ]),
+      width: 190,
+      height: 104,
+    });
+  }
+
+  // Referenced SGs that live outside this VPC (peer VPCs / other accounts).
+  const sgRefNode = (ref: { groupId: string; accountId?: string; vpcId?: string }): string => {
+    const id = `sg:${ref.groupId}`;
+    if (leaves.has(id)) return id;
+    const known = index.byKey.get(ref.groupId);
+    ensureExt(id, 'sg', known?.name ?? ref.groupId,
+      [ref.vpcId ?? known?.vpcId, ref.accountId].filter(Boolean).join(' · ') || 'external security group',
+      ref.groupId);
+    leaves.get(id)!.data.ghost = true;
+    return id;
+  };
+
+  // SG → workload "applies to" edges (only for nodes actually on the diagram).
+  const sgAttachSources: Array<{ nodeId: string; sgIds: string[] }> = [
+    ...region.instances.filter((i) => i.vpcId === vpcId).map((i) => ({ nodeId: `res:${i.id}`, sgIds: i.securityGroupIds })),
+    ...region.loadBalancers.filter((l) => l.vpcId === vpcId).map((l) => ({ nodeId: `res:${l.id}`, sgIds: l.securityGroupIds })),
+    ...region.rdsInstances.filter((r) => r.vpcId === vpcId).map((r) => ({ nodeId: `res:${r.id}`, sgIds: r.securityGroupIds })),
+    ...region.rdsClusters.filter((c) => c.vpcId === vpcId).map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.elastiCacheClusters.filter((c) => c.vpcId === vpcId).map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.lambdaFunctions.map((f) => ({ nodeId: `res:${f.id}`, sgIds: f.vpcConfig?.securityGroupIds ?? [] })),
+    ...region.ecsServices.map((s) => ({ nodeId: `res:${s.id}`, sgIds: s.securityGroupIds })),
+    ...region.eksClusters.filter((e) => e.vpcId === vpcId).map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
+    ...region.resolverEndpoints.filter((e) => e.vpcId === vpcId).map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
+    ...region.clientVpnEndpoints.filter((c) => c.vpcId === vpcId).map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+  ];
+  for (const { nodeId, sgIds } of sgAttachSources) {
+    if (!leaves.has(nodeId)) continue;
+    for (const sgId of sgIds) {
+      if (!leaves.has(`sg:${sgId}`)) continue;
+      addEdge(`sgatt:${sgId}|${nodeId}`, `sg:${sgId}`, nodeId, {
+        edgeKind: 'sg-attach',
+        title: `${sgName(sgId)} applies to ${leaves.get(nodeId)?.data.label ?? nodeId}`,
+        refId: sgId,
+      });
+    }
+  }
+
+  // SG ↔ SG allow rules, merged per (source, target) pair.
+  const sgRules = new Map<string, { src: string; tgt: string; refId: string; rows: RouteDetail[] }>();
+  const addSgRule = (src: string, tgt: string, rule: SecurityGroupRule, refId: string, sourceLabel: string): void => {
+    if (src === tgt) return; // self-references stay in the details panel
+    const key = `sgrule:${src}|${tgt}`;
+    const agg = sgRules.get(key) ?? { src, tgt, refId, rows: [] };
+    const row: RouteDetail = { from: sourceLabel, dest: portLabel(rule), state: rule.description };
+    if (!agg.rows.some((r) => r.from === row.from && r.dest === row.dest && r.state === row.state)) {
+      agg.rows.push(row);
+    }
+    sgRules.set(key, agg);
+  };
+  for (const sg of vpcSgs) {
+    for (const rule of sg.ingress) {
+      for (const ref of rule.securityGroupRefs) {
+        addSgRule(sgRefNode(ref), `sg:${sg.id}`, rule, sg.id, sgName(ref.groupId));
+      }
+    }
+    for (const rule of sg.egress) {
+      for (const ref of rule.securityGroupRefs) {
+        addSgRule(`sg:${sg.id}`, sgRefNode(ref), rule, ref.groupId, sgName(sg.id));
+      }
+    }
+  }
+  for (const [key, agg] of sgRules) {
+    addEdge(key, agg.src, agg.tgt, {
+      edgeKind: 'sg-rule',
+      label: destsLabel(agg.rows.map((r) => r.dest), 2),
+      title: `Allows ${leaves.get(agg.src)?.data.label ?? agg.src} → ${leaves.get(agg.tgt)?.data.label ?? agg.tgt}`,
+      columns: SG_RULE_COLUMNS,
+      routes: agg.rows,
+      refId: agg.refId,
+    });
+  }
+
+  // Internet exposure: world-open ingress gets its own loud edge.
+  for (const sg of vpcSgs) {
+    const open = worldOpenIngress(sg);
+    if (open.length === 0) continue;
+    addEdge(`sgopen:${sg.id}`, internetNode(), `sg:${sg.id}`, {
+      edgeKind: 'sg-open',
+      label: destsLabel(open.map(portLabel), 2),
+      title: `Open to internet: ${sg.name ?? sg.id}`,
+      columns: SG_RULE_COLUMNS,
+      routes: open.map((r) => ({
+        from: r.cidrs.includes('0.0.0.0/0') ? '0.0.0.0/0' : '::/0',
+        dest: portLabel(r),
+        state: r.description,
+      })),
+      refId: sg.id,
+    });
+  }
+
+  // --- identity: IAM roles assumed by workloads here, certs on the LBs -------
+  const account = index.snapshot.accounts.find((a) => a.accountId === vpcRef.accountId);
+  if (account) {
+    const roles = account.global.iamRoles;
+    const roleByName = new Map(roles.map((r) => [r.name ?? r.id, r]));
+    const profileByKey = new Map<string, (typeof account.global.iamInstanceProfiles)[number]>();
+    for (const p of account.global.iamInstanceProfiles) {
+      profileByKey.set(p.id, p);
+      if (p.arn) profileByKey.set(p.arn, p);
+    }
+    const roleNode = (role: (typeof roles)[number]): string =>
+      ensureSec(`iam:${role.arn ?? role.id}`, 'iam-role', role.name ?? role.id, role.description ?? 'IAM role', role.arn ?? role.id);
+
+    for (const inst of region.instances.filter((i) => i.vpcId === vpcId)) {
+      if (!inst.instanceProfileArn || !leaves.has(`res:${inst.id}`)) continue;
+      const profile = profileByKey.get(inst.instanceProfileArn);
+      const role = profile?.roleNames.map((n) => roleByName.get(n)).find((r) => r !== undefined);
+      if (!role) continue;
+      addEdge(`assume:${inst.id}`, `res:${inst.id}`, roleNode(role), {
+        edgeKind: 'uses',
+        title: `${inst.name ?? inst.id} assumes ${role.name ?? role.id}`,
+        refId: role.arn ?? role.id,
+      });
+    }
+    for (const fn of region.lambdaFunctions) {
+      if (!fn.roleArn || !leaves.has(`res:${fn.id}`)) continue;
+      const role =
+        roles.find((r) => r.arn === fn.roleArn) ?? roleByName.get(fn.roleArn.split('/').pop() ?? '');
+      if (!role) continue;
+      addEdge(`assume:${fn.id}`, `res:${fn.id}`, roleNode(role), {
+        edgeKind: 'uses',
+        title: `${fn.name ?? fn.id} assumes ${role.name ?? role.id}`,
+        refId: role.arn ?? role.id,
+      });
+    }
+  }
+
+  for (const cert of region.acmCertificates) {
+    for (const userArn of cert.inUseBy) {
+      if (!leaves.has(`res:${userArn}`)) continue;
+      const certNode = ensureSec(
+        `acm:${cert.id}`, 'acm', cert.domainName ?? cert.name ?? cert.id,
+        [cert.status, cert.notAfter ? `expires ${cert.notAfter.slice(0, 10)}` : undefined]
+          .filter(Boolean)
+          .join(' · ') || 'certificate',
+        cert.arn ?? cert.id,
+      );
+      addEdge(`certuse:${cert.id}|${userArn}`, `res:${userArn}`, certNode, {
+        edgeKind: 'uses',
+        label: 'TLS',
+        title: `${index.byKey.get(userArn)?.name ?? userArn} uses certificate ${cert.domainName ?? cert.id}`,
+        refId: cert.arn ?? cert.id,
+      });
+    }
+  }
+
   const routes = subnetRoutes(region, vpcId).filter((r) => r.subnetId);
   const grouped = new Map<string, SubnetRoute[]>();
   for (const r of routes) {
@@ -321,6 +595,19 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
         kind: 'group-external',
         isContainer: true,
         containerStyle: 'external',
+      },
+    });
+  }
+  if (secUsed) {
+    nodes.push({
+      id: SEC_CONTAINER,
+      type: 'container',
+      position: { x: 0, y: 0 },
+      data: {
+        label: 'Security & identity',
+        kind: 'group-security',
+        isContainer: true,
+        containerStyle: 'security',
       },
     });
   }
