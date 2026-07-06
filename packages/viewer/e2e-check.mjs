@@ -63,14 +63,32 @@ const detail = {
   clientVpn: await page.locator('.resource-node', { hasText: 'prod-admin-vpn' }).count(),
   firewall: await page.locator('.resource-node', { hasText: 'prod-inspection-fw' }).count(),
   resolver: await page.locator('.resource-node', { hasText: 'prod-outbound' }).count(),
+  // the fixture's 3-tier SG chain: internet 443 → alb-sg 8080 → app-sg 5432 → db-sg
+  sgRule8080: await page.locator('.edge-label.edge-label-sg-rule', { hasText: 'tcp 8080' }).count(),
+  sgRule5432: await page.locator('.edge-label.edge-label-sg-rule', { hasText: 'tcp 5432' }).count(),
+  exposure443: await page.locator('.edge-label.edge-label-sg-open', { hasText: 'tcp 443' }).count(),
 };
 console.log('vpc-detail:', JSON.stringify(detail));
 if (detail.sgNodes === 0) problems.push('vpc: no security group nodes');
 if (detail.sgRuleLabels === 0) problems.push('vpc: no SG rule edges');
 if (detail.exposureLabels === 0) problems.push('vpc: no internet-exposure edges');
+if (detail.sgRule8080 === 0) problems.push('vpc: missing SG rule edge tcp 8080 (alb-sg → app-sg)');
+if (detail.sgRule5432 === 0) problems.push('vpc: missing SG rule edge tcp 5432 (app-sg → db-sg)');
+if (detail.exposure443 === 0) problems.push('vpc: missing internet-exposure edge tcp 443 (internet → alb-sg)');
 if (detail.securityLane === 0) problems.push('vpc: no Security & identity lane');
 if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connectivity');
+// Rendered edge count must match what the builder produced — React Flow
+// SILENTLY drops any edge whose source/target id is not a rendered node.
+// The expected numbers come from running the builders directly over the
+// same fixture (npx tsx graph-check.mts, which also asserts every edge
+// endpoint resolves to a node). Update both together on fixture changes.
+const EXPECTED_EDGES = { overview: 24, prodVpc: 55 };
+if (overview.edges !== EXPECTED_EDGES.overview)
+  problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
+if (detail.edges !== EXPECTED_EDGES.prodVpc)
+  problems.push(`vpc: ${detail.edges} edges rendered but the builder produced ${EXPECTED_EDGES.prodVpc} — dangling edges dropped?`);
 await page.screenshot({ path: '/tmp/atlas-everything-vpc.png', fullPage: false });
+await page.screenshot({ path: '/tmp/atlas-review-vpc.png', fullPage: false });
 
 // SG rule edge click → rules table with the SG-specific columns.
 await page.locator('.edge-label.edge-label-sg-open').first().click();
