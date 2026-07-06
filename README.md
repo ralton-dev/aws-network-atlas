@@ -133,3 +133,22 @@ npm workspaces monorepo:
 - **`packages/viewer`** — React + React Flow (@xyflow/react) + ELK auto-layout
   (nested containers laid out in one pass), official AWS Architecture Icons,
   MiniSearch, react-markdown. Built with Vite into a single offline-capable HTML file.
+
+## License
+
+[MIT](LICENSE) © Ben Ralton.
+
+### Third-party assets
+
+This project renders the official **AWS Architecture Icons** (via the
+[`aws-icons`](https://www.npmjs.com/package/aws-icons) package). The icon
+artwork is © Amazon Web Services and is used under AWS's grant to customers and
+partners to create architecture diagrams; it is **not** covered by the MIT
+license above and remains subject to the
+[AWS Site Terms](https://aws.amazon.com/terms/) and
+[AWS Trademark Guidelines](https://aws.amazon.com/trademark-guidelines/). Do not
+redistribute the icons as a standalone set or imply AWS endorsement.
+
+Bundled runtime dependencies (React, Vite, React Flow, elkjs, MiniSearch,
+react-markdown, the AWS SDK for JavaScript, …) are licensed under their
+respective MIT / Apache-2.0 / EPL-2.0 terms.

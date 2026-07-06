@@ -4,6 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Scan AWS accounts read-only and render an interactive, committable network diagram",
+  "license": "MIT",
+  "author": "Ben Ralton",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ralton-dev/aws-network-atlas.git"
+  },
   "workspaces": [
     "packages/*"
   ],
