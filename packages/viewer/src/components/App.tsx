@@ -3,11 +3,19 @@ import { buildIndex, type ResourceRef } from '../data.js';
 import { buildOverview } from '../model/overview.js';
 import { buildVpcDetail } from '../model/vpc-detail.js';
 import { layoutGraph } from '../model/layout.js';
-import type { AtlasEdge, AtlasGraph, AtlasNode } from '../model/graph-types.js';
+import type { AtlasEdge, AtlasGraph, AtlasNode, EdgeKind } from '../model/graph-types.js';
+import {
+  emptyHiddenState,
+  hiddenCount,
+  loadHiddenState,
+  saveHiddenState,
+  type HiddenState,
+} from '../model/view-state.js';
 import { FlowView } from './FlowView.js';
 import { SearchBar } from './SearchBar.js';
 import { DetailsPanel, type Selection } from './DetailsPanel.js';
 import { InventoryPanel } from './InventoryPanel.js';
+import { LayersPanel } from './LayersPanel.js';
 
 type Route = { view: 'overview' } | { view: 'vpc'; vpcId: string };
 
@@ -27,6 +35,8 @@ export function App(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [selection, setSelection] = useState<Selection | undefined>();
   const [showInventory, setShowInventory] = useState(false);
+  const [showLayers, setShowLayers] = useState(false);
+  const [hidden, setHidden] = useState<HiddenState>(() => loadHiddenState(routeHash(parseHash())));
 
   const setRoute = useCallback((next: Route) => {
     // Hash-based navigation — the History API doesn't work on file://.
@@ -60,6 +70,67 @@ export function App(): React.ReactElement {
       cancelled = true;
     };
   }, [index, route]);
+
+  // Hidden state is scoped per view; reload it when the view changes.
+  useEffect(() => {
+    setHidden(loadHiddenState(routeHash(route)));
+  }, [route]);
+
+  // All mutations go through here so the per-view persistence stays in sync.
+  const applyHidden = useCallback(
+    (next: HiddenState) => {
+      setHidden(next);
+      saveHiddenState(routeHash(route), next);
+    },
+    [route],
+  );
+
+  const onNodeHide = useCallback(
+    (node: AtlasNode) => {
+      applyHidden({ ...hidden, nodeIds: new Set(hidden.nodeIds).add(node.id) });
+      // Don't leave the details panel pointing at a node that just vanished.
+      setSelection((sel) =>
+        sel?.type === 'resource' && node.data.refId !== undefined && sel.ref.id === node.data.refId
+          ? undefined
+          : sel,
+      );
+    },
+    [hidden, applyHidden],
+  );
+
+  const onHideRef = useCallback(
+    (ref: ResourceRef) => {
+      // Nodes match hidden ids by graph id OR data.refId, so the raw AWS id works.
+      applyHidden({ ...hidden, nodeIds: new Set(hidden.nodeIds).add(ref.id) });
+      setSelection(undefined);
+    },
+    [hidden, applyHidden],
+  );
+
+  const toggleNodeKind = useCallback(
+    (kind: string) => {
+      const nodeKinds = new Set(hidden.nodeKinds);
+      if (!nodeKinds.delete(kind)) nodeKinds.add(kind);
+      applyHidden({ ...hidden, nodeKinds });
+    },
+    [hidden, applyHidden],
+  );
+
+  const toggleEdgeKind = useCallback(
+    (kind: EdgeKind) => {
+      const edgeKinds = new Set(hidden.edgeKinds);
+      if (!edgeKinds.delete(kind)) edgeKinds.add(kind);
+      applyHidden({ ...hidden, edgeKinds });
+    },
+    [hidden, applyHidden],
+  );
+
+  const showHiddenNodes = useCallback(
+    () => applyHidden({ ...hidden, nodeIds: new Set() }),
+    [hidden, applyHidden],
+  );
+
+  const showAll = useCallback(() => applyHidden(emptyHiddenState()), [applyHidden]);
 
   const selectRef = useCallback(
     (ref: ResourceRef) => {
@@ -135,6 +206,12 @@ export function App(): React.ReactElement {
         <button className="toolbar-btn" onClick={() => setShowInventory((v) => !v)}>
           {showInventory ? 'Hide inventory' : 'Inventory'}
         </button>
+        <button className="toolbar-btn" onClick={() => setShowLayers((v) => !v)}>
+          {showLayers ? 'Hide layers' : 'Layers'}
+          {hiddenCount(hidden) > 0 && (
+            <span className="toolbar-badge">{hiddenCount(hidden)} hidden</span>
+          )}
+        </button>
         <span className="scan-time">
           scanned {lastScanned ? new Date(lastScanned).toLocaleString() : '—'}
         </span>
@@ -146,6 +223,9 @@ export function App(): React.ReactElement {
             <div className="loading">Laying out diagram…</div>
           ) : (
             <FlowView
+              // Remount on view change: re-seeds node state from the fresh ELK
+              // layout (useState initializer) and re-applies fitView.
+              key={routeHash(route)}
               graph={graph}
               viewKey={routeHash(route)}
               selectedId={
@@ -154,10 +234,23 @@ export function App(): React.ReactElement {
                   : undefined
               }
               selectedEdgeId={selection?.type === 'edge' ? selection.id : undefined}
+              hidden={hidden}
               onNodeClick={onNodeClick}
               onNodeDoubleClick={onNodeDoubleClick}
+              onNodeHide={onNodeHide}
               onEdgeClick={onEdgeClick}
               onPaneClick={() => setSelection(undefined)}
+            />
+          )}
+          {showLayers && (
+            <LayersPanel
+              graph={graph}
+              hidden={hidden}
+              onToggleNodeKind={toggleNodeKind}
+              onToggleEdgeKind={toggleEdgeKind}
+              onShowHiddenNodes={showHiddenNodes}
+              onShowAll={showAll}
+              onClose={() => setShowLayers(false)}
             />
           )}
         </div>
@@ -168,6 +261,7 @@ export function App(): React.ReactElement {
             onClose={() => setSelection(undefined)}
             onOpenVpc={(vpcId) => setRoute({ view: 'vpc', vpcId })}
             onSelectRef={(ref) => setSelection({ type: 'resource', ref })}
+            onHide={onHideRef}
           />
         )}
       </main>

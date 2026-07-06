@@ -51,9 +51,11 @@ export interface DetailsPanelProps {
   onClose(): void;
   onOpenVpc(vpcId: string): void;
   onSelectRef(ref: ResourceRef): void;
+  /** Hide this resource's node on the diagram (declutter). */
+  onHide?(ref: ResourceRef): void;
 }
 
-export function DetailsPanel({ index, selection, onClose, onOpenVpc, onSelectRef }: DetailsPanelProps): React.ReactElement {
+export function DetailsPanel({ index, selection, onClose, onOpenVpc, onSelectRef, onHide }: DetailsPanelProps): React.ReactElement {
   if (selection.type === 'edge') {
     const { data } = selection;
     const underlying = data.refId ? index.byKey.get(data.refId) : undefined;
@@ -119,6 +121,15 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onSelectRef
       {ref.vpcId && ref.kind !== 'vpc' && (
         <button className="link-btn" onClick={() => onOpenVpc(ref.vpcId!)}>
           Open VPC diagram ({ref.vpcId}) →
+        </button>
+      )}
+      {onHide && (
+        <button
+          className="link-btn hide-btn"
+          onClick={() => onHide(ref)}
+          title="Hide this node on the diagram (Layers → Show all to restore)"
+        >
+          Hide from diagram
         </button>
       )}
 
