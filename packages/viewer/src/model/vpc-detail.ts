@@ -376,7 +376,8 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     }
     for (const rule of sg.egress) {
       for (const ref of rule.securityGroupRefs) {
-        addSgRule(`sg:${sg.id}`, sgRefNode(ref), rule, ref.groupId, sgName(sg.id));
+        // refId is the rule's *owner* SG (same as ingress) — the referenced group may be external and unresolvable.
+        addSgRule(`sg:${sg.id}`, sgRefNode(ref), rule, sg.id, sgName(sg.id));
       }
     }
   }
