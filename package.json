@@ -1,0 +1,21 @@
+{
+  "name": "aws-network-atlas",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Scan AWS accounts read-only and render an interactive, committable network diagram",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "scan": "npm run --workspace @atlas/scanner scan --",
+    "bundle": "npm run --workspace @atlas/scanner bundle --",
+    "dev": "npm run --workspace @atlas/viewer dev",
+    "build": "npm run --workspace @atlas/viewer build",
+    "serve": "npm run --workspace @atlas/viewer serve",
+    "typecheck": "npm run --workspaces --if-present typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build output (dist/viewer is committed intentionally — see README)
+packages/viewer/dist/
+*.tsbuildinfo
+
+# OS / editor / session-local tooling
+.DS_Store
+*.local
+.claude/
+
+# Logs
+npm-debug.log*
+*.log

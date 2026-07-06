@@ -1,0 +1,119 @@
+import pLimit from 'p-limit';
+import {
+  emptyRegionSnapshot,
+  type AccountConfig,
+  type AccountSnapshot,
+  type RegionSnapshot,
+} from '@atlas/schema';
+import { AwsContext, resolveHomeRegion } from './aws.js';
+import { verifyCredentials, accountAlias } from './preflight.js';
+import { enabledRegions } from './regions.js';
+import { collectNetwork } from './collect/network.js';
+import { collectTgw } from './collect/tgw.js';
+import { collectElb } from './collect/elb.js';
+import { collectCompute } from './collect/compute.js';
+import { collectDataStores } from './collect/data-stores.js';
+import { collectContainers } from './collect/containers.js';
+import { collectGeneric } from './collect/generic.js';
+import { collectGlobal } from './collect/global.js';
+import { deriveRegion, sortErrors } from './derive.js';
+
+const SCANNER_VERSION = '0.1.0';
+
+export interface ScanProgress {
+  (message: string): void;
+}
+
+/** Scan one account (one profile) across its regions. */
+export async function scanAccount(
+  account: AccountConfig,
+  opts: { regionConcurrency: number; emptyRegions: 'exclude' | 'annotate' },
+  progress: ScanProgress,
+): Promise<AccountSnapshot> {
+  const ctx = new AwsContext(account.profile, await resolveHomeRegion(account.profile));
+
+  progress(`[${account.profile}] verifying credentials…`);
+  const identity = await verifyCredentials(ctx);
+  const alias = account.name ?? (await accountAlias(ctx));
+  progress(`[${account.profile}] account ${identity.accountId}${alias ? ` (${alias})` : ''} — ${identity.arn}`);
+
+  let regions: string[];
+  if (account.regions && account.regions.length > 0) {
+    regions = [...new Set(account.regions)].sort();
+  } else {
+    progress(`[${account.profile}] discovering enabled regions…`);
+    regions = [...new Set(await enabledRegions(ctx))];
+  }
+  const excluded = new Set(account.excludeRegions ?? []);
+  regions = regions.filter((r) => !excluded.has(r));
+  progress(`[${account.profile}] scanning ${regions.length} region(s): ${regions.join(', ')}`);
+
+  const limit = pLimit(opts.regionConcurrency);
+  const regionSnapshots = await Promise.all(
+    regions.map((region) =>
+      limit(async (): Promise<RegionSnapshot> => {
+        const out = emptyRegionSnapshot(region);
+        // Different collectors hit different service APIs; run them together.
+        // Within EC2, adaptive retry + client caching keeps throttling in check.
+        await Promise.all([
+          collectNetwork(ctx, region, identity.accountId, out),
+          collectTgw(ctx, region, out),
+          collectElb(ctx, region, out),
+          collectCompute(ctx, region, out),
+          collectDataStores(ctx, region, out),
+          collectContainers(ctx, region, out),
+          collectGeneric(ctx, region, out),
+        ]);
+        deriveRegion(out);
+        progress(
+          `[${account.profile}] ${region}: ${out.vpcs.length} VPCs, ${out.subnets.length} subnets, ` +
+            `${out.instances.length} instances, ${out.generic.length} tagged resources` +
+            (out.empty ? ' (empty)' : '') +
+            (out.errors.length > 0 ? ` — ${out.errors.length} error(s)` : ''),
+        );
+        return out;
+      }),
+    ),
+  );
+
+  const global: AccountSnapshot['global'] = {
+    hostedZones: [],
+    directConnectGateways: [],
+    s3Buckets: [],
+    errors: [],
+  };
+  progress(`[${account.profile}] collecting global resources (Route 53, Direct Connect, S3)…`);
+  await collectGlobal(ctx, global);
+  global.hostedZones.sort((a, b) => a.id.localeCompare(b.id));
+  for (const z of global.hostedZones) {
+    z.vpcAssociations.sort((a, b) => `${a.vpcId}|${a.region}`.localeCompare(`${b.vpcId}|${b.region}`));
+  }
+  global.directConnectGateways.sort((a, b) => a.id.localeCompare(b.id));
+  for (const gw of global.directConnectGateways) {
+    gw.associations.sort((a, b) =>
+      `${a.associatedGatewayId ?? ''}|${a.associatedGatewayType ?? ''}`.localeCompare(
+        `${b.associatedGatewayId ?? ''}|${b.associatedGatewayType ?? ''}`,
+      ),
+    );
+  }
+  global.s3Buckets.sort((a, b) => a.id.localeCompare(b.id));
+  sortErrors(global.errors);
+
+  const keep = regionSnapshots.filter((r) => !r.empty);
+  const emptyRegions = regionSnapshots.filter((r) => r.empty).map((r) => r.region);
+  const regionsOut =
+    opts.emptyRegions === 'exclude'
+      ? keep
+      : regionSnapshots; // annotate mode keeps them, flagged empty: true
+
+  return {
+    accountId: identity.accountId,
+    alias,
+    profile: account.profile,
+    scannedAt: new Date().toISOString(),
+    scannerVersion: SCANNER_VERSION,
+    regions: regionsOut.sort((a, b) => a.region.localeCompare(b.region)),
+    emptyRegions: emptyRegions.sort(),
+    global,
+  };
+}

@@ -1,0 +1,17 @@
+# Committable annotations, merged into the diagram by `npm run scan -- bundle`.
+# Keys are resource ARNs (preferred) or AWS-native IDs (vpc-…, subnet-…, i-…).
+# Every field is optional. Descriptions are markdown.
+#
+# "vpc-0123456789abcdef0":
+#   title: Production VPC
+#   description: |
+#     **Core prod network.** Peered to shared-services.
+#     See the runbook before resizing CIDRs.
+#   links:
+#     - label: Terraform
+#       url: https://github.com/your-org/infra/blob/main/network/vpc.tf
+#     - label: Runbook
+#       url: https://wiki.example.com/prod-vpc
+#   labels: [prod, networking]
+
+annotations: {}

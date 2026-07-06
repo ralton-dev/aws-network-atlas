@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AWS Network Atlas</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Classic (non-module) scripts: untouched by the Vite build, and they
+         load fine from file:// — the scanner rewrites these on every scan,
+         so the committed viewer never needs rebuilding for new data. -->
+    <script src="./data/data.js" vite-ignore></script>
+    <script src="./data/annotations.js" vite-ignore></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

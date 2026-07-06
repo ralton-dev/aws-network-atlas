@@ -1,0 +1,9 @@
+{
+  "accounts": [
+    {
+      "profile": "default"
+    }
+  ],
+  "emptyRegions": "exclude",
+  "regionConcurrency": 4
+}
