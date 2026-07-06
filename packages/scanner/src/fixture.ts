@@ -21,6 +21,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   SNAPSHOT_VERSION,
+  emptyGlobal,
   emptyRegionSnapshot,
   type AccountSnapshot,
   type AnnotationMap,
@@ -29,6 +30,11 @@ import {
   type Snapshot,
 } from '@atlas/schema';
 import { jsonScriptPayload } from './bundle.js';
+
+/** Build an account-global container, defaulting the many empty arrays. */
+function mkGlobal(partial: Partial<AccountSnapshot['global']>): AccountSnapshot['global'] {
+  return { ...emptyGlobal(), ...partial };
+}
 
 // ---------------------------------------------------------------------------
 // Shared identifiers (kept consistent across accounts so links stitch up)
@@ -375,10 +381,48 @@ function prodEuWest1(): RegionSnapshot {
     },
   );
 
+  // Security services (regional).
+  r.kmsKeys.push(
+    { id: '1234abcd-12ab-34cd-56ef-1234567890ab', arn: `arn:aws:kms:${EU}:${ACCT.prod}:key/1234abcd-12ab-34cd-56ef-1234567890ab`, tags: { env: 'prod' }, aliases: ['alias/prod-rds', 'alias/prod-app-data'], description: 'Prod application data key', keyManager: 'CUSTOMER', keyState: 'Enabled', keyUsage: 'ENCRYPT_DECRYPT', rotationEnabled: true, multiRegion: false },
+    { id: 'aws-managed-s3-key', arn: `arn:aws:kms:${EU}:${ACCT.prod}:key/aws-managed-s3-key`, tags: {}, aliases: ['alias/aws/s3'], description: 'Default master key that protects S3 objects', keyManager: 'AWS', keyState: 'Enabled', keyUsage: 'ENCRYPT_DECRYPT', rotationEnabled: true },
+  );
+  r.acmCertificates.push({
+    id: `arn:aws:acm:${EU}:${ACCT.prod}:certificate/aaaa1111-2222-3333`,
+    arn: `arn:aws:acm:${EU}:${ACCT.prod}:certificate/aaaa1111-2222-3333`,
+    name: 'acme.example', tags: {}, domainName: 'acme.example',
+    subjectAlternativeNames: ['acme.example', '*.acme.example'], status: 'ISSUED', certType: 'AMAZON_ISSUED',
+    inUseBy: [`arn:aws:elasticloadbalancing:${EU}:${ACCT.prod}:loadbalancer/app/prod-alb/abc123`],
+    notAfter: '2027-01-15T00:00:00.000Z', renewalEligibility: 'ELIGIBLE',
+  });
+  r.secrets.push(
+    { id: `arn:aws:secretsmanager:${EU}:${ACCT.prod}:secret:prod/db-abc`, arn: `arn:aws:secretsmanager:${EU}:${ACCT.prod}:secret:prod/db-abc`, name: 'prod/db', tags: { env: 'prod' }, description: 'Aurora master credentials', rotationEnabled: true, lastRotatedDate: '2026-06-20T02:00:00.000Z', lastChangedDate: '2026-06-20T02:00:00.000Z', kmsKeyId: 'alias/prod-app-data' },
+    { id: `arn:aws:secretsmanager:${EU}:${ACCT.prod}:secret:prod/api-key-def`, arn: `arn:aws:secretsmanager:${EU}:${ACCT.prod}:secret:prod/api-key-def`, name: 'prod/third-party-api-key', tags: {}, description: 'Payment provider API key', rotationEnabled: false },
+  );
+
+  // Additional network services (regional).
+  r.resolverEndpoints.push({
+    id: 'rslvr-out-0prod0000000001', arn: `arn:aws:route53resolver:${EU}:${ACCT.prod}:resolver-endpoint/rslvr-out-0prod0000000001`,
+    name: 'prod-outbound', tags: {}, direction: 'OUTBOUND', vpcId: 'vpc-0prod00000000000a1',
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'], ipAddresses: ['10.0.10.53', '10.0.11.53'],
+    securityGroupIds: ['sg-0prodapp000000001'], status: 'OPERATIONAL',
+  });
+  r.apiGateways.push({
+    id: 'a1b2c3d4e5', arn: `arn:aws:apigateway:${EU}::/restapis/a1b2c3d4e5`,
+    name: 'prod-public-api', tags: { env: 'prod' }, protocolType: 'REST', endpointType: 'REGIONAL',
+    apiEndpoint: 'https://a1b2c3d4e5.execute-api.eu-west-1.amazonaws.com', stages: ['prod', 'canary'], vpcEndpointIds: [],
+  });
+  r.networkFirewalls.push({
+    id: 'prod-inspection-fw', arn: `arn:aws:network-firewall:${EU}:${ACCT.prod}:firewall/prod-inspection-fw`,
+    name: 'prod-inspection-fw', tags: {}, vpcId: 'vpc-0prod00000000000a1',
+    subnetIds: ['subnet-0prodpub0000001'], firewallPolicyArn: `arn:aws:network-firewall:${EU}:${ACCT.prod}:firewall-policy/prod-policy`,
+    deleteProtection: true, status: 'READY',
+  });
+
   r.generic.push(
-    { arn: `arn:aws:dynamodb:${EU}:${ACCT.prod}:table/prod-sessions`, service: 'dynamodb', resourceType: 'table', name: 'prod-sessions', tags: { env: 'prod' } },
-    { arn: `arn:aws:sqs:${EU}:${ACCT.prod}:prod-jobs`, service: 'sqs', resourceType: '', name: 'prod-jobs', tags: { env: 'prod' } },
-    { arn: `arn:aws:secretsmanager:${EU}:${ACCT.prod}:secret:prod/db-abc`, service: 'secretsmanager', resourceType: 'secret', name: 'prod/db', tags: { env: 'prod' } },
+    { arn: `arn:aws:dynamodb:${EU}:${ACCT.prod}:table/prod-sessions`, service: 'dynamodb', resourceType: 'table', name: 'prod-sessions', tags: { env: 'prod' }, source: 'tagging' },
+    { arn: `arn:aws:sqs:${EU}:${ACCT.prod}:prod-jobs`, service: 'sqs', resourceType: '', name: 'prod-jobs', tags: { env: 'prod' }, source: 'tagging' },
+    // An untagged log group only the Cloud Control sweep can see.
+    { arn: `arn:aws:logs:${EU}:${ACCT.prod}:log-group:/aws/lambda/prod-worker`, service: 'logs', resourceType: 'loggroup', name: '/aws/lambda/prod-worker', tags: {}, source: 'cloudcontrol' },
   );
 
   return r;
@@ -438,14 +482,32 @@ function prodAccount(): AccountSnapshot {
     scannerVersion: '0.1.0',
     regions: [prodEuWest1(), prodUsEast1()],
     emptyRegions: ['ap-south-1', 'ap-southeast-2', 'sa-east-1', 'us-west-2'],
-    global: {
+    global: mkGlobal({
       hostedZones: [
         { id: 'Z0PRODPRIV0001', name: 'prod.internal.', tags: {}, zoneName: 'prod.internal.', privateZone: true, recordCount: 128, vpcAssociations: [{ vpcId: 'vpc-0prod00000000000a1', region: EU }, { vpcId: 'vpc-0proddr0000000a1', region: US }] },
       ],
-      directConnectGateways: [],
       s3Buckets: [{ id: 'acme-prod-artifacts', name: 'acme-prod-artifacts', tags: {}, region: EU, creationDate: '2024-03-01T00:00:00.000Z' }],
-      errors: [],
-    },
+      iamRoles: [
+        { id: 'prod-app-role', arn: `arn:aws:iam::${ACCT.prod}:role/prod-app-role`, name: 'prod-app-role', tags: { env: 'prod' }, path: '/', assumeRolePolicyDocument: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}', attachedManagedPolicyArns: ['arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'], inlinePolicyNames: ['s3-read'], description: 'EC2 instance role for the prod app tier', maxSessionDuration: 3600, lastUsed: '2026-07-05T22:14:00.000Z' },
+        { id: 'prod-lambda-role', arn: `arn:aws:iam::${ACCT.prod}:role/prod-lambda-role`, name: 'prod-lambda-role', tags: {}, path: '/', assumeRolePolicyDocument: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}', attachedManagedPolicyArns: ['arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'], inlinePolicyNames: [] },
+        { id: 'OrganizationAccountAccessRole', arn: `arn:aws:iam::${ACCT.prod}:role/OrganizationAccountAccessRole`, name: 'OrganizationAccountAccessRole', tags: {}, path: '/', assumeRolePolicyDocument: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::222222222222:root"},"Action":"sts:AssumeRole"}]}', attachedManagedPolicyArns: ['arn:aws:iam::aws:policy/AdministratorAccess'], inlinePolicyNames: [] },
+      ],
+      iamUsers: [
+        { id: 'ci-deployer', arn: `arn:aws:iam::${ACCT.prod}:user/ci-deployer`, name: 'ci-deployer', tags: { team: 'platform' }, path: '/', groups: ['deployers'], attachedManagedPolicyArns: [], inlinePolicyNames: ['deploy'], hasConsoleAccess: false, mfaDeviceCount: 0, accessKeyIds: ['AKIAEXAMPLE0001'], passwordLastUsed: undefined },
+      ],
+      iamGroups: [
+        { id: 'deployers', arn: `arn:aws:iam::${ACCT.prod}:group/deployers`, name: 'deployers', tags: {}, path: '/', attachedManagedPolicyArns: ['arn:aws:iam::aws:policy/PowerUserAccess'], inlinePolicyNames: [], userNames: ['ci-deployer'] },
+      ],
+      iamPolicies: [
+        { id: 'prod-boundary', arn: `arn:aws:iam::${ACCT.prod}:policy/prod-boundary`, name: 'prod-boundary', tags: {}, path: '/', attachmentCount: 4, isAttachable: true, description: 'Permissions boundary for prod roles', defaultVersionDocument: '{"Version":"2012-10-17","Statement":[{"Effect":"Deny","Action":"iam:*","Resource":"*"}]}' },
+      ],
+      iamInstanceProfiles: [
+        { id: 'prod-app-profile', arn: `arn:aws:iam::${ACCT.prod}:instance-profile/prod-app-profile`, name: 'prod-app-profile', tags: {}, path: '/', roleNames: ['prod-app-role'] },
+      ],
+      cloudFrontDistributions: [
+        { id: 'E1PRODCDN00001', arn: `arn:aws:cloudfront::${ACCT.prod}:distribution/E1PRODCDN00001`, name: 'prod-web-cdn', tags: { env: 'prod' }, domainName: 'd111111abcdef8.cloudfront.net', aliases: ['www.acme.example', 'acme.example'], enabled: true, status: 'Deployed', origins: ['prod-alb-123.eu-west-1.elb.amazonaws.com', 'acme-prod-artifacts.s3.amazonaws.com'], priceClass: 'PriceClass_100', webAclId: 'arn:aws:wafv2:us-east-1:111111111111:global/webacl/prod-waf/abc' },
+      ],
+    }),
   };
 }
 
@@ -532,14 +594,14 @@ function sharedAccount(): AccountSnapshot {
     scannerVersion: '0.1.0',
     regions: [r],
     emptyRegions: ['us-east-1', 'ap-south-1'],
-    global: {
-      hostedZones: [],
+    global: mkGlobal({
       directConnectGateways: [
         { id: DXGW, name: 'corp-dxgw', tags: {}, ownerAccount: ACCT.shared, amazonSideAsn: 64512, state: 'available', associations: [{ associatedGatewayId: TGW_EU, associatedGatewayType: 'transitGateway', associatedGatewayOwnerAccount: ACCT.shared, associatedGatewayRegion: EU, state: 'associated' }] },
       ],
-      s3Buckets: [],
-      errors: [],
-    },
+      iamRoles: [
+        { id: 'shared-network-admin', arn: `arn:aws:iam::${ACCT.shared}:role/shared-network-admin`, name: 'shared-network-admin', tags: { team: 'network' }, path: '/', assumeRolePolicyDocument: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::111111111111:root"},"Action":"sts:AssumeRole","Condition":{"Bool":{"aws:MultiFactorAuthPresent":"true"}}}]}', attachedManagedPolicyArns: ['arn:aws:iam::aws:policy/job-function/NetworkAdministrator'], inlinePolicyNames: [], description: 'Cross-account network administration' },
+      ],
+    }),
   };
 }
 
@@ -597,7 +659,12 @@ function devAccount(): AccountSnapshot {
     scannerVersion: '0.1.0',
     regions: [r],
     emptyRegions: [],
-    global: { hostedZones: [], directConnectGateways: [], s3Buckets: [{ id: 'acme-dev-sandbox', name: 'acme-dev-sandbox', tags: { env: 'dev' }, region: EU }], errors: [] },
+    global: mkGlobal({
+      s3Buckets: [{ id: 'acme-dev-sandbox', name: 'acme-dev-sandbox', tags: { env: 'dev' }, region: EU }],
+      iamRoles: [
+        { id: 'dev-app-role', arn: `arn:aws:iam::${ACCT.dev}:role/dev-app-role`, name: 'dev-app-role', tags: { env: 'dev' }, path: '/', assumeRolePolicyDocument: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}', attachedManagedPolicyArns: ['arn:aws:iam::aws:policy/ReadOnlyAccess'], inlinePolicyNames: [] },
+      ],
+    }),
   };
 }
 

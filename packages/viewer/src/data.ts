@@ -77,6 +77,16 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('ecs', region.ecsServices as unknown as Array<Record<string, unknown>>);
   add('eks', region.eksClusters as unknown as Array<Record<string, unknown>>);
   add('elasticache', region.elastiCacheClusters as unknown as Array<Record<string, unknown>>);
+  // security services
+  add('kms', region.kmsKeys as unknown as Array<Record<string, unknown>>);
+  add('acm', region.acmCertificates as unknown as Array<Record<string, unknown>>);
+  add('secret', region.secrets as unknown as Array<Record<string, unknown>>);
+  // additional network services
+  add('resolver-endpoint', region.resolverEndpoints as unknown as Array<Record<string, unknown>>);
+  add('resolver-rule', region.resolverRules as unknown as Array<Record<string, unknown>>);
+  add('client-vpn', region.clientVpnEndpoints as unknown as Array<Record<string, unknown>>);
+  add('network-firewall', region.networkFirewalls as unknown as Array<Record<string, unknown>>);
+  add('apigw', region.apiGateways as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {
@@ -124,6 +134,24 @@ export function buildIndex(): AtlasIndex {
         kind: 's3', id: b.id, name: b.name, accountId: account.accountId, region: b.region ?? '',
         raw: b as unknown as Record<string, unknown>,
       });
+    }
+    // IAM + CloudFront are account-global (region '').
+    const globalKinds: Array<[string, Array<{ id: string; arn?: string; name?: string }>]> = [
+      ['iam-role', account.global.iamRoles],
+      ['iam-user', account.global.iamUsers],
+      ['iam-group', account.global.iamGroups],
+      ['iam-policy', account.global.iamPolicies],
+      ['iam-instance-profile', account.global.iamInstanceProfiles],
+      ['cloudfront', account.global.cloudFrontDistributions],
+    ];
+    for (const [kind, items] of globalKinds) {
+      for (const item of items) {
+        all.push({
+          kind, id: item.id, arn: item.arn, name: item.name,
+          accountId: account.accountId, region: '',
+          raw: item as unknown as Record<string, unknown>,
+        });
+      }
     }
   }
 

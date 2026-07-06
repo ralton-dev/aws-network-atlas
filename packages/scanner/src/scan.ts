@@ -1,5 +1,6 @@
 import pLimit from 'p-limit';
 import {
+  emptyGlobal,
   emptyRegionSnapshot,
   type AccountConfig,
   type AccountSnapshot,
@@ -14,9 +15,15 @@ import { collectElb } from './collect/elb.js';
 import { collectCompute } from './collect/compute.js';
 import { collectDataStores } from './collect/data-stores.js';
 import { collectContainers } from './collect/containers.js';
+import { collectSecurity } from './collect/security.js';
+import { collectEdgeNetwork } from './collect/edge-network.js';
+import { collectCloudControl } from './collect/cloudcontrol.js';
 import { collectGeneric } from './collect/generic.js';
 import { collectGlobal } from './collect/global.js';
+import { collectIam } from './collect/iam.js';
+import { collectCloudFront } from './collect/cloudfront.js';
 import { deriveRegion, sortErrors } from './derive.js';
+import { sortById } from './util.js';
 
 const SCANNER_VERSION = '0.1.0';
 
@@ -62,7 +69,10 @@ export async function scanAccount(
           collectCompute(ctx, region, out),
           collectDataStores(ctx, region, out),
           collectContainers(ctx, region, out),
+          collectSecurity(ctx, region, out),
+          collectEdgeNetwork(ctx, region, identity.accountId, out),
           collectGeneric(ctx, region, out),
+          collectCloudControl(ctx, region, out),
         ]);
         deriveRegion(out);
         progress(
@@ -76,14 +86,9 @@ export async function scanAccount(
     ),
   );
 
-  const global: AccountSnapshot['global'] = {
-    hostedZones: [],
-    directConnectGateways: [],
-    s3Buckets: [],
-    errors: [],
-  };
-  progress(`[${account.profile}] collecting global resources (Route 53, Direct Connect, S3)…`);
-  await collectGlobal(ctx, global);
+  const global = emptyGlobal();
+  progress(`[${account.profile}] collecting global resources (Route 53, DX, S3, IAM, CloudFront)…`);
+  await Promise.all([collectGlobal(ctx, global), collectIam(ctx, global), collectCloudFront(ctx, global)]);
   global.hostedZones.sort((a, b) => a.id.localeCompare(b.id));
   for (const z of global.hostedZones) {
     z.vpcAssociations.sort((a, b) => `${a.vpcId}|${a.region}`.localeCompare(`${b.vpcId}|${b.region}`));
@@ -97,6 +102,34 @@ export async function scanAccount(
     );
   }
   global.s3Buckets.sort((a, b) => a.id.localeCompare(b.id));
+  // Deterministic ordering for the account-global collections (nested arrays
+  // too — AWS list order is unspecified, and snapshots are committed to git).
+  sortById(global.iamRoles);
+  for (const r of global.iamRoles) {
+    r.attachedManagedPolicyArns.sort();
+    r.inlinePolicyNames.sort();
+  }
+  sortById(global.iamUsers);
+  for (const u of global.iamUsers) {
+    u.groups.sort();
+    u.attachedManagedPolicyArns.sort();
+    u.inlinePolicyNames.sort();
+    u.accessKeyIds.sort();
+  }
+  sortById(global.iamGroups);
+  for (const g of global.iamGroups) {
+    g.attachedManagedPolicyArns.sort();
+    g.inlinePolicyNames.sort();
+    g.userNames.sort();
+  }
+  sortById(global.iamPolicies);
+  sortById(global.iamInstanceProfiles);
+  for (const p of global.iamInstanceProfiles) p.roleNames.sort();
+  sortById(global.cloudFrontDistributions);
+  for (const d of global.cloudFrontDistributions) {
+    d.aliases.sort();
+    d.origins.sort();
+  }
   sortErrors(global.errors);
 
   const keep = regionSnapshots.filter((r) => !r.empty);

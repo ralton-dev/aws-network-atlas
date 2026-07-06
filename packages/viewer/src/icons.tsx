@@ -33,6 +33,19 @@ import TransitGw from 'aws-icons/icons/architecture-service/AWSTransitGateway.sv
 import Eks from 'aws-icons/icons/architecture-service/AmazonElasticKubernetesService.svg?react';
 import DirectConnect from 'aws-icons/icons/architecture-service/AWSDirectConnect.svg?react';
 import VpcService from 'aws-icons/icons/architecture-service/AmazonVirtualPrivateCloud.svg?react';
+// identity & security
+import IamService from 'aws-icons/icons/architecture-service/AWSIdentityandAccessManagement.svg?react';
+import IamRole from 'aws-icons/icons/resource/AWSIdentityAccessManagementRole.svg?react';
+import IamPermissions from 'aws-icons/icons/resource/AWSIdentityAccessManagementPermissions.svg?react';
+import Kms from 'aws-icons/icons/architecture-service/AWSKeyManagementService.svg?react';
+import Acm from 'aws-icons/icons/architecture-service/AWSCertificateManager.svg?react';
+import SecretsManager from 'aws-icons/icons/architecture-service/AWSSecretsManager.svg?react';
+// additional network services
+import Resolver from 'aws-icons/icons/resource/AmazonRoute53Resolver.svg?react';
+import ClientVpn from 'aws-icons/icons/architecture-service/AWSClientVPN.svg?react';
+import NetworkFirewall from 'aws-icons/icons/architecture-service/AWSNetworkFirewall.svg?react';
+import ApiGw from 'aws-icons/icons/architecture-service/AmazonAPIGateway.svg?react';
+import CloudFront from 'aws-icons/icons/architecture-service/AmazonCloudFront.svg?react';
 // Group icons (container headers)
 import VpcGroup from 'aws-icons/icons/architecture-group/VirtualprivatecloudVPC.svg?react';
 import PublicSubnet from 'aws-icons/icons/architecture-group/Publicsubnet.svg?react';
@@ -77,6 +90,22 @@ export const ICONS: Record<string, IconComponent> = {
   'lb-network': Nlb,
   'lb-classic': Clb,
   'lb-gateway': Gwlb,
+  // identity & security
+  'iam-role': IamRole,
+  'iam-user': IamService,
+  'iam-group': IamService,
+  'iam-policy': IamPermissions,
+  'iam-instance-profile': IamRole,
+  kms: Kms,
+  acm: Acm,
+  secret: SecretsManager,
+  // additional network services
+  'resolver-endpoint': Resolver,
+  'resolver-rule': Resolver,
+  'client-vpn': ClientVpn,
+  'network-firewall': NetworkFirewall,
+  apigw: ApiGw,
+  cloudfront: CloudFront,
   // container headers
   'group-vpc': VpcGroup,
   'group-subnet-public': PublicSubnet,

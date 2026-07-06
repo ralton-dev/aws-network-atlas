@@ -408,6 +408,156 @@ export interface ElastiCacheCluster extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Identity & access (IAM — account-global)
+// ---------------------------------------------------------------------------
+
+export interface IamRole extends BaseResource {
+  path?: string;
+  /** URL-decoded assume-role (trust) policy JSON document. */
+  assumeRolePolicyDocument?: string;
+  attachedManagedPolicyArns: string[];
+  inlinePolicyNames: string[];
+  description?: string;
+  maxSessionDuration?: number;
+  /** ISO timestamp of RoleLastUsed, if available. */
+  lastUsed?: string;
+}
+
+export interface IamUser extends BaseResource {
+  path?: string;
+  groups: string[];
+  attachedManagedPolicyArns: string[];
+  inlinePolicyNames: string[];
+  hasConsoleAccess?: boolean;
+  mfaDeviceCount: number;
+  accessKeyIds: string[];
+  passwordLastUsed?: string;
+}
+
+export interface IamGroup extends BaseResource {
+  path?: string;
+  attachedManagedPolicyArns: string[];
+  inlinePolicyNames: string[];
+  userNames: string[];
+}
+
+export interface IamPolicy extends BaseResource {
+  path?: string;
+  attachmentCount?: number;
+  isAttachable?: boolean;
+  /** URL-decoded default-version policy document JSON. */
+  defaultVersionDocument?: string;
+  description?: string;
+}
+
+export interface IamInstanceProfile extends BaseResource {
+  path?: string;
+  roleNames: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Security services (regional): KMS, ACM, Secrets Manager
+// ---------------------------------------------------------------------------
+
+export interface KmsKey extends BaseResource {
+  aliases: string[];
+  description?: string;
+  /** "AWS" (AWS-managed) or "CUSTOMER" (customer-managed). */
+  keyManager?: string;
+  keyState?: string;
+  keyUsage?: string;
+  keySpec?: string;
+  rotationEnabled?: boolean;
+  multiRegion?: boolean;
+}
+
+export interface AcmCertificate extends BaseResource {
+  domainName?: string;
+  subjectAlternativeNames: string[];
+  status?: string;
+  /** AMAZON_ISSUED or IMPORTED. */
+  certType?: string;
+  /** ARNs of resources using the certificate (ELB, CloudFront, …). */
+  inUseBy: string[];
+  notAfter?: string;
+  renewalEligibility?: string;
+}
+
+/** Secrets Manager secret METADATA only — the value is never fetched. */
+export interface SecretMetadata extends BaseResource {
+  description?: string;
+  rotationEnabled?: boolean;
+  lastRotatedDate?: string;
+  lastChangedDate?: string;
+  kmsKeyId?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Additional network services (regional unless noted)
+// ---------------------------------------------------------------------------
+
+export interface Route53ResolverEndpoint extends BaseResource {
+  /** INBOUND or OUTBOUND. */
+  direction?: string;
+  vpcId?: string;
+  subnetIds: string[];
+  ipAddresses: string[];
+  securityGroupIds: string[];
+  status?: string;
+}
+
+export interface Route53ResolverRule extends BaseResource {
+  domainName?: string;
+  /** FORWARD, SYSTEM, or RECURSIVE. */
+  ruleType?: string;
+  resolverEndpointId?: string;
+  targetIps: string[];
+  vpcAssociationIds: string[];
+  shareStatus?: string;
+}
+
+export interface ClientVpnEndpoint extends BaseResource {
+  description?: string;
+  vpcId?: string;
+  clientCidrBlock?: string;
+  dnsServers: string[];
+  securityGroupIds: string[];
+  associatedSubnetIds: string[];
+  status?: string;
+  splitTunnel?: boolean;
+}
+
+export interface NetworkFirewall extends BaseResource {
+  vpcId?: string;
+  subnetIds: string[];
+  firewallPolicyArn?: string;
+  deleteProtection?: boolean;
+  status?: string;
+}
+
+export interface ApiGateway extends BaseResource {
+  /** REST, HTTP, or WEBSOCKET. */
+  protocolType?: string;
+  /** EDGE, REGIONAL, or PRIVATE (REST APIs). */
+  endpointType?: string;
+  apiEndpoint?: string;
+  stages: string[];
+  /** For PRIVATE REST APIs: the VPC endpoint ids that can reach it. */
+  vpcEndpointIds: string[];
+}
+
+/** CloudFront distributions are account-global. */
+export interface CloudFrontDistribution extends BaseResource {
+  domainName?: string;
+  aliases: string[];
+  enabled?: boolean;
+  status?: string;
+  origins: string[];
+  priceClass?: string;
+  webAclId?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Global (non-regional) resources
 // ---------------------------------------------------------------------------
 
@@ -441,6 +591,12 @@ export interface GenericResource {
   resourceType: string;
   name?: string;
   tags: Tags;
+  /**
+   * How this resource was discovered:
+   * "tagging" — Resource Groups Tagging API (tagged resources only);
+   * "cloudcontrol" — Cloud Control API sweep (catches untagged resources).
+   */
+  source?: 'tagging' | 'cloudcontrol';
 }
 
 // ---------------------------------------------------------------------------
@@ -486,6 +642,18 @@ export interface RegionSnapshot {
   eksClusters: EksCluster[];
   elastiCacheClusters: ElastiCacheCluster[];
 
+  // security services (regional)
+  kmsKeys: KmsKey[];
+  acmCertificates: AcmCertificate[];
+  secrets: SecretMetadata[];
+
+  // additional network services (regional)
+  resolverEndpoints: Route53ResolverEndpoint[];
+  resolverRules: Route53ResolverRule[];
+  clientVpnEndpoints: ClientVpnEndpoint[];
+  networkFirewalls: NetworkFirewall[];
+  apiGateways: ApiGateway[];
+
   generic: GenericResource[];
 }
 
@@ -506,6 +674,14 @@ export interface AccountSnapshot {
     directConnectGateways: DirectConnectGateway[];
     /** Buckets are global-namespace; ListBuckets catches untagged ones the tagging sweep misses. */
     s3Buckets: S3Bucket[];
+    // IAM is account-global; collected once per account.
+    iamRoles: IamRole[];
+    iamUsers: IamUser[];
+    iamGroups: IamGroup[];
+    iamPolicies: IamPolicy[];
+    iamInstanceProfiles: IamInstanceProfile[];
+    /** CloudFront distributions are account-global. */
+    cloudFrontDistributions: CloudFrontDistribution[];
     errors: ScanError[];
   };
 }
@@ -552,6 +728,30 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     ecsServices: [],
     eksClusters: [],
     elastiCacheClusters: [],
+    kmsKeys: [],
+    acmCertificates: [],
+    secrets: [],
+    resolverEndpoints: [],
+    resolverRules: [],
+    clientVpnEndpoints: [],
+    networkFirewalls: [],
+    apiGateways: [],
     generic: [],
+  };
+}
+
+/** Create the empty global (account-level) resource container. */
+export function emptyGlobal(): AccountSnapshot['global'] {
+  return {
+    hostedZones: [],
+    directConnectGateways: [],
+    s3Buckets: [],
+    iamRoles: [],
+    iamUsers: [],
+    iamGroups: [],
+    iamPolicies: [],
+    iamInstanceProfiles: [],
+    cloudFrontDistributions: [],
+    errors: [],
   };
 }

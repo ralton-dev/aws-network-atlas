@@ -1,4 +1,5 @@
 import type {
+  GenericResource,
   NetworkAclEntry,
   RegionSnapshot,
   Route,
@@ -103,6 +104,14 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.transitGatewayAttachments.length === 0 &&
     out.vpnConnections.length === 0 &&
     out.vpcEndpoints.length === 0 &&
+    out.kmsKeys.length === 0 &&
+    out.acmCertificates.length === 0 &&
+    out.secrets.length === 0 &&
+    out.resolverEndpoints.length === 0 &&
+    out.resolverRules.length === 0 &&
+    out.clientVpnEndpoints.length === 0 &&
+    out.networkFirewalls.length === 0 &&
+    out.apiGateways.length === 0 &&
     out.vpcs.every((v) => v.isDefault);
 
   // ---- deterministic ordering, top-level and nested --------------------------
@@ -261,6 +270,52 @@ export function deriveRegion(out: RegionSnapshot): void {
     c.subnetIds.sort();
     c.securityGroupIds.sort();
   }
+
+  sortById(out.kmsKeys);
+  for (const k of out.kmsKeys) k.aliases.sort();
+  sortById(out.acmCertificates);
+  for (const c of out.acmCertificates) {
+    c.subjectAlternativeNames.sort();
+    c.inUseBy.sort();
+  }
+  sortById(out.secrets);
+  sortById(out.resolverEndpoints);
+  for (const e of out.resolverEndpoints) {
+    e.subnetIds.sort();
+    e.ipAddresses.sort();
+    e.securityGroupIds.sort();
+  }
+  sortById(out.resolverRules);
+  for (const r of out.resolverRules) {
+    r.targetIps.sort();
+    r.vpcAssociationIds.sort();
+  }
+  sortById(out.clientVpnEndpoints);
+  for (const c of out.clientVpnEndpoints) {
+    c.dnsServers.sort();
+    c.securityGroupIds.sort();
+    c.associatedSubnetIds.sort();
+  }
+  sortById(out.networkFirewalls);
+  for (const f of out.networkFirewalls) f.subnetIds.sort();
+  sortById(out.apiGateways);
+  for (const a of out.apiGateways) {
+    a.stages.sort();
+    a.vpcEndpointIds.sort();
+  }
+
+  // The tagging and Cloud Control sweeps run concurrently and can both report
+  // the same resource (Cloud Control dedupes against entries present at push
+  // time, but the tagging sweep never checks back). Keep one entry per ARN,
+  // preferring the tagging entry — its tags are authoritative.
+  const genericByArn = new Map<string, GenericResource>();
+  for (const g of out.generic) {
+    const existing = genericByArn.get(g.arn);
+    if (!existing || (existing.source === 'cloudcontrol' && g.source !== 'cloudcontrol')) {
+      genericByArn.set(g.arn, g);
+    }
+  }
+  out.generic = [...genericByArn.values()];
 
   out.generic.sort((a, b) => a.arn.localeCompare(b.arn));
   sortErrors(out.errors);

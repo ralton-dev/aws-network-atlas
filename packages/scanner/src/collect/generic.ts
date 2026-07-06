@@ -33,9 +33,12 @@ export async function collectGeneric(ctx: AwsContext, region: string, out: Regio
           resourceType: parsed.resourceType,
           name: tags['Name'] ?? parsed.resourceName,
           tags,
+          source: 'tagging',
         });
       }
     }
-    out.generic.sort((a, b) => a.arn.localeCompare(b.arn));
+    // No sorting here: the Cloud Control sweep appends to out.generic
+    // concurrently (and tracks its position in it); deriveRegion dedupes and
+    // sorts once every collector has finished.
   });
 }
