@@ -19,7 +19,22 @@ viewer itself are all reviewable in a diff and committable to git.
 - AWS CLI v2 installed and configured (`~/.aws/config` profiles; SSO profiles supported)
 - Read-only credentials (e.g. the `ReadOnlyAccess` managed policy, or `SecurityAudit`)
 
-## Quick start
+## Try it without an AWS account
+
+The repo ships with a **synthetic demo estate** already loaded, so you can see
+the viewer immediately — no AWS, no scan:
+
+```bash
+open site/index.html            # or just double-click it
+```
+
+It renders a fabricated 3-account org (prod / shared-services / dev) with a
+Transit Gateway hub-and-spoke, cross-account VPC peering, Site-to-Site VPN,
+Direct Connect, inter-region TGW peering, and a "ghost" unscanned account.
+Regenerate it any time with `npm run fixture`. It's all fake data
+(RFC 5737 documentation IPs, placeholder account ids).
+
+## Quick start (real accounts)
 
 ```bash
 npm install

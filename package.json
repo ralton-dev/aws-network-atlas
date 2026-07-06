@@ -16,6 +16,7 @@
   "scripts": {
     "scan": "npm run --workspace @atlas/scanner scan --",
     "bundle": "npm run --workspace @atlas/scanner bundle --",
+    "fixture": "npm run --workspace @atlas/scanner fixture",
     "dev": "npm run --workspace @atlas/viewer dev",
     "build": "npm run --workspace @atlas/viewer build",
     "serve": "npm run --workspace @atlas/viewer serve",
