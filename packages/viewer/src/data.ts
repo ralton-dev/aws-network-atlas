@@ -159,6 +159,8 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   // CloudTrail posture
   add('cloudtrail-trail', region.cloudTrailTrails as unknown as Array<Record<string, unknown>>);
   add('cloudtrail-event-data-store', region.cloudTrailEventDataStores as unknown as Array<Record<string, unknown>>);
+  // GuardDuty posture
+  add('guardduty-detector', region.guardDutyDetectors as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {

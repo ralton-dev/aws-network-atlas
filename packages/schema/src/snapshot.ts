@@ -918,6 +918,26 @@ export interface CloudTrailEventDataStore extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// GuardDuty (regional): detectors
+// ---------------------------------------------------------------------------
+
+/**
+ * GuardDuty detector (usually 0-or-1 per region) merged with its feature
+ * configuration and publishing destination — threat-detection posture:
+ * whether GuardDuty is on, which protection features are enabled, and where
+ * findings publish.
+ */
+export interface GuardDutyDetector extends BaseResource {
+  /** ENABLED | DISABLED. */
+  status?: string;
+  findingPublishingFrequency?: string;
+  /** Feature configuration (S3/EKS/RDS/runtime/malware protection etc.). */
+  features: Array<{ name?: string; status?: string }>;
+  /** From ListPublishingDestinations (S3). */
+  publishingDestinationType?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1630,6 +1650,9 @@ export interface RegionSnapshot {
   cloudTrailTrails: CloudTrailTrail[];
   cloudTrailEventDataStores: CloudTrailEventDataStore[];
 
+  // GuardDuty posture (regional)
+  guardDutyDetectors: GuardDutyDetector[];
+
   generic: GenericResource[];
 }
 
@@ -1779,6 +1802,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     configConformancePacks: [],
     cloudTrailTrails: [],
     cloudTrailEventDataStores: [],
+    guardDutyDetectors: [],
     generic: [],
   };
 }
