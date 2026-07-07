@@ -529,7 +529,7 @@ function prodEuWest1(): RegionSnapshot {
     logGroupName: '/aws/vpc/prod-flow-logs', status: 'ACTIVE', maxAggregationInterval: 600,
   });
   r.logGroups.push(
-    { id: '/aws/vpc/prod-flow-logs', arn: `arn:aws:logs:${EU}:${ACCT.prod}:log-group:/aws/vpc/prod-flow-logs`, name: '/aws/vpc/prod-flow-logs', tags: {}, retentionDays: 90, storedBytes: 52428800 },
+    { id: '/aws/vpc/prod-flow-logs', arn: `arn:aws:logs:${EU}:${ACCT.prod}:log-group:/aws/vpc/prod-flow-logs`, name: '/aws/vpc/prod-flow-logs', tags: {}, retentionDays: 90 },
     { id: '/aws/network-firewall/prod-alerts', arn: `arn:aws:logs:${EU}:${ACCT.prod}:log-group:/aws/network-firewall/prod-alerts`, name: '/aws/network-firewall/prod-alerts', tags: {}, retentionDays: 365 },
     { id: '/aws/lambda/prod-worker', arn: `arn:aws:logs:${EU}:${ACCT.prod}:log-group:/aws/lambda/prod-worker`, name: '/aws/lambda/prod-worker', tags: {}, retentionDays: 30 },
   );

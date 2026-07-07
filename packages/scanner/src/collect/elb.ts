@@ -137,48 +137,59 @@ export async function collectElb(ctx: AwsContext, region: string, out: RegionSna
                   .filter((c): c is string => !!c),
               };
 
-              // Host/path/header routing lives in listener RULES — without
-              // them most of a non-trivial ALB's target groups look orphaned.
-              if (l.ListenerArn && lb.lbType === 'application') {
-                await guard(errors, 'elbv2', `DescribeRules(${lb.name ?? lb.id})`, async () => {
-                  const rules: ListenerRule[] = [];
-                  for await (const rulePage of paginateDescribeRules(
-                    { client: elbv2 },
-                    { ListenerArn: l.ListenerArn! },
-                  )) {
-                    for (const r of rulePage.Rules ?? []) {
-                      if (r.IsDefault) continue; // default action already on the listener
-                      rules.push(mapRule(r));
-                    }
-                  }
-                  rules.sort((a, b) =>
-                    `${(a.priority ?? '').padStart(6, '0')}`.localeCompare(
-                      `${(b.priority ?? '').padStart(6, '0')}`,
-                    ),
-                  );
-                  if (rules.length > 0) listener.rules = rules;
-                });
+              if (l.ListenerArn) {
+                const enrichments: Array<Promise<void>> = [];
 
-                // SNI certificates beyond the default one.
-                if ((l.Protocol === 'HTTPS' || l.Protocol === 'TLS') && listener.certificateArns) {
-                  await guard(
-                    errors,
-                    'elbv2',
-                    `DescribeListenerCertificates(${lb.name ?? lb.id})`,
-                    async () => {
-                      const certs = new Set(listener.certificateArns);
-                      for await (const certPage of paginateDescribeListenerCertificates(
+                // Host/path/header routing lives in listener RULES — without
+                // them most of a non-trivial ALB's target groups look orphaned.
+                // Only ALBs have rules; NLB/GWLB listeners are default-only.
+                if (lb.lbType === 'application') {
+                  enrichments.push(
+                    guard(errors, 'elbv2', `DescribeRules(${lb.name ?? lb.id})`, async () => {
+                      const rules: ListenerRule[] = [];
+                      for await (const rulePage of paginateDescribeRules(
                         { client: elbv2 },
                         { ListenerArn: l.ListenerArn! },
                       )) {
-                        for (const c of certPage.Certificates ?? []) {
-                          if (c.CertificateArn) certs.add(c.CertificateArn);
+                        for (const r of rulePage.Rules ?? []) {
+                          if (r.IsDefault) continue; // default action already on the listener
+                          rules.push(mapRule(r));
                         }
                       }
-                      listener.certificateArns = [...certs].sort();
-                    },
+                      rules.sort((a, b) =>
+                        `${(a.priority ?? '').padStart(6, '0')}`.localeCompare(
+                          `${(b.priority ?? '').padStart(6, '0')}`,
+                        ),
+                      );
+                      if (rules.length > 0) listener.rules = rules;
+                    }),
                   );
                 }
+
+                // SNI certificates beyond the default one — ALB HTTPS *and*
+                // NLB TLS listeners both support multiple certificates.
+                if (l.Protocol === 'HTTPS' || l.Protocol === 'TLS') {
+                  enrichments.push(
+                    guard(
+                      errors,
+                      'elbv2',
+                      `DescribeListenerCertificates(${lb.name ?? lb.id})`,
+                      async () => {
+                        const certs = new Set(listener.certificateArns);
+                        for await (const certPage of paginateDescribeListenerCertificates(
+                          { client: elbv2 },
+                          { ListenerArn: l.ListenerArn! },
+                        )) {
+                          for (const c of certPage.Certificates ?? []) {
+                            if (c.CertificateArn) certs.add(c.CertificateArn);
+                          }
+                        }
+                        listener.certificateArns = [...certs].sort();
+                      },
+                    ),
+                  );
+                }
+                await Promise.all(enrichments);
               }
               lb.listeners.push(listener);
             }

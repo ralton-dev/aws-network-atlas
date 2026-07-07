@@ -26,7 +26,6 @@ export async function collectLogs(
           name: lg.logGroupName,
           tags: {},
           retentionDays: lg.retentionInDays,
-          storedBytes: lg.storedBytes,
           kmsKeyId: lg.kmsKeyId,
           logGroupClass: lg.logGroupClass,
         });

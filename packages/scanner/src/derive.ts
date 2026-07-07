@@ -125,18 +125,28 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.acmCertificates.length === 0 &&
     out.secrets.length === 0 &&
     out.wafWebAcls.length === 0 &&
+    out.wafIpSets.length === 0 &&
+    out.wafRuleGroups.length === 0 &&
     out.resolverEndpoints.length === 0 &&
     out.resolverRules.length === 0 &&
     out.dnsFirewallRuleGroups.length === 0 &&
+    out.resolverQueryLogConfigs.length === 0 &&
     out.clientVpnEndpoints.length === 0 &&
     out.networkFirewalls.length === 0 &&
     out.networkFirewallPolicies.length === 0 &&
     out.networkFirewallRuleGroups.length === 0 &&
+    out.networkFirewallTlsConfigs.length === 0 &&
     out.apiGateways.length === 0 &&
     out.apiGatewayVpcLinks.length === 0 &&
+    out.apiGatewayDomainNames.length === 0 &&
     out.latticeServiceNetworks.length === 0 &&
     out.latticeServices.length === 0 &&
     out.logGroups.length === 0 &&
+    out.flowLogs.length === 0 &&
+    out.instanceConnectEndpoints.length === 0 &&
+    out.dxLags.length === 0 &&
+    out.transitGatewayConnectPeers.length === 0 &&
+    // dhcpOptions deliberately absent: every region has an AWS default set.
     out.vpcs.every((v) => v.isDefault);
 
   // ---- deterministic ordering, top-level and nested --------------------------

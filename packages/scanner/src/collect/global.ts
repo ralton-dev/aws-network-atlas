@@ -21,6 +21,13 @@ const RECORD_TYPES = new Set(['A', 'AAAA', 'CNAME']);
 const MAX_RECORDS_PER_ZONE = 2000;
 
 /**
+ * Per-zone cap on records SCANNED (all types, before filtering). Without this
+ * a zone dominated by TXT/MX/NS records would be paginated in full even though
+ * few records survive the type filter — deadly against Route 53's ~5 rps limit.
+ */
+const MAX_SCANNED_RECORDS_PER_ZONE = 10000;
+
+/**
  * Global (non-regional) resources, collected once per account:
  * Route 53 hosted zones, Direct Connect gateways, S3 buckets.
  */
@@ -62,10 +69,16 @@ export async function collectGlobal(ctx: AwsContext, out: AccountSnapshot['globa
             const records: DnsRecord[] = [];
             let recordsTruncated = false;
             await guard(errors, 'route53', `ListResourceRecordSets(${z.name})`, async () => {
+              // Zones too large to scan within the rate limit are skipped whole.
+              if ((z.recordCount ?? 0) > MAX_SCANNED_RECORDS_PER_ZONE) {
+                recordsTruncated = true;
+                return;
+              }
               // No standard paginator: this API pages by (name, type, identifier).
               let startName: string | undefined;
               let startType: string | undefined;
               let startIdentifier: string | undefined;
+              let scanned = 0;
               paging: do {
                 const page = await r53.send(
                   new ListResourceRecordSetsCommand({
@@ -76,6 +89,10 @@ export async function collectGlobal(ctx: AwsContext, out: AccountSnapshot['globa
                   }),
                 );
                 for (const rr of page.ResourceRecordSets ?? []) {
+                  if (++scanned > MAX_SCANNED_RECORDS_PER_ZONE) {
+                    recordsTruncated = true;
+                    break paging;
+                  }
                   if (!rr.Name || !rr.Type || !RECORD_TYPES.has(rr.Type)) continue;
                   if (records.length >= MAX_RECORDS_PER_ZONE) {
                     recordsTruncated = true;

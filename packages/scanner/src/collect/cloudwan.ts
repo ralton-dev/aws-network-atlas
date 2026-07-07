@@ -10,7 +10,7 @@ import {
 import pLimit from 'p-limit';
 import type { AccountSnapshot } from '@atlas/schema';
 import { AwsContext, guard } from '../aws.js';
-import { toTags } from '../util.js';
+import { toTags, sortById } from '../util.js';
 
 export async function collectCloudWan(
   ctx: AwsContext,
@@ -71,7 +71,7 @@ export async function collectCloudWan(
                 });
               }
             }
-            cn.attachments.sort((a, b) => a.id.localeCompare(b.id));
+            sortById(cn.attachments);
           });
         }),
       ),

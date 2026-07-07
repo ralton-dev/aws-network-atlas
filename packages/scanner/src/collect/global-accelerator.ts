@@ -110,6 +110,22 @@ export async function collectGlobalAccelerator(
       ),
     );
 
+    // Deterministic nested ordering (committed snapshots must be diff-stable).
+    // Only safe here: the endpoint-group pass above pairs listeners by index.
+    for (const acc of accelerators) {
+      for (const listener of acc.listeners) {
+        listener.portRanges.sort((a, b) => (a.fromPort ?? 0) - (b.fromPort ?? 0));
+        for (const g of listener.endpointGroups) {
+          g.endpoints.sort((a, b) => (a.endpointId ?? '').localeCompare(b.endpointId ?? ''));
+        }
+        listener.endpointGroups.sort((a, b) => (a.region ?? '').localeCompare(b.region ?? ''));
+      }
+      acc.listeners.sort((a, b) =>
+        `${a.protocol ?? ''}|${String(a.portRanges[0]?.fromPort ?? 0).padStart(6, '0')}`.localeCompare(
+          `${b.protocol ?? ''}|${String(b.portRanges[0]?.fromPort ?? 0).padStart(6, '0')}`,
+        ),
+      );
+    }
     out.globalAccelerators.push(...accelerators);
   });
 }

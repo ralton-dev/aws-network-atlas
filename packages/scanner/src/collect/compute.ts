@@ -77,10 +77,16 @@ export async function collectCompute(ctx: AwsContext, region: string, out: Regio
   await guard(errors, 'lambda', 'ListFunctions', async () => {
     const lambda = ctx.client(LambdaClient, region);
     const limit = pLimit(8);
+    // Pushed straight into `out` during pagination so a mid-pagination error
+    // keeps the pages already seen (guard swallows the error).
     const fns: RegionSnapshot['lambdaFunctions'] = [];
+    const push = (fn: RegionSnapshot['lambdaFunctions'][number]): void => {
+      fns.push(fn);
+      out.lambdaFunctions.push(fn);
+    };
     for await (const page of paginateListFunctions({ client: lambda }, {})) {
       for (const fn of page.Functions ?? []) {
-        fns.push({
+        push({
           id: fn.FunctionArn ?? fn.FunctionName!,
           arn: fn.FunctionArn,
           name: fn.FunctionName,
@@ -101,6 +107,8 @@ export async function collectCompute(ctx: AwsContext, region: string, out: Regio
     }
     // Function URLs are public HTTPS entry points (authType NONE = open to
     // the internet) — a security signal worth one extra call per function.
+    // Cost note: this is 1 call per function (no batch API exists); adaptive
+    // retry absorbs the throttling this can cause on very large estates.
     await Promise.all(
       fns.map((fn) =>
         limit(() =>
@@ -118,6 +126,5 @@ export async function collectCompute(ctx: AwsContext, region: string, out: Regio
         ),
       ),
     );
-    out.lambdaFunctions.push(...fns);
   });
 }

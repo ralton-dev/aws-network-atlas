@@ -16,16 +16,9 @@ import { KafkaClient, paginateListClustersV2 } from '@aws-sdk/client-kafka';
 import { RedshiftClient, paginateDescribeClusters } from '@aws-sdk/client-redshift';
 import { MqClient, paginateListBrokers, DescribeBrokerCommand } from '@aws-sdk/client-mq';
 import pLimit from 'p-limit';
-import type { RegionSnapshot, Tags } from '@atlas/schema';
+import type { RegionSnapshot } from '@atlas/schema';
 import { AwsContext, guard } from '../aws.js';
-
-function kvTags(list?: Array<{ Key?: string; Value?: string }>): Tags {
-  const tags: Tags = {};
-  for (const t of list ?? []) {
-    if (t.Key) tags[t.Key] = t.Value ?? '';
-  }
-  return tags;
-}
+import { toTags, sortById } from '../util.js';
 
 export async function collectVpcWorkloads(
   ctx: AwsContext,
@@ -46,7 +39,7 @@ export async function collectVpcWorkloads(
           id: fs.FileSystemId,
           arn: fs.FileSystemArn,
           name: fs.Name,
-          tags: kvTags(fs.Tags),
+          tags: toTags(fs.Tags),
           state: fs.LifeCycleState,
           encrypted: fs.Encrypted,
           performanceMode: fs.PerformanceMode,
@@ -88,7 +81,7 @@ export async function collectVpcWorkloads(
                 });
               }
             }
-            fs.mountTargets.sort((a, b) => a.id.localeCompare(b.id));
+            sortById(fs.mountTargets);
           }),
         ),
       ),
@@ -163,7 +156,7 @@ export async function collectVpcWorkloads(
         out.redshiftClusters.push({
           id: c.ClusterIdentifier,
           name: c.ClusterIdentifier,
-          tags: kvTags(c.Tags),
+          tags: toTags(c.Tags),
           nodeType: c.NodeType,
           numberOfNodes: c.NumberOfNodes,
           state: c.ClusterStatus,

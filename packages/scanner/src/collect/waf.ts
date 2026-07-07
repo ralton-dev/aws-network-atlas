@@ -72,6 +72,35 @@ function mapWafRule(rule: Rule): WafRuleSummary {
   };
 }
 
+interface WafListedEntity {
+  name: string;
+  id: string;
+  arn?: string;
+}
+
+/**
+ * Drain one WAF List* API (no SDK paginator exists for wafv2). WAF sometimes
+ * returns a NextMarker even on the final page; the items-length guard turns
+ * that into at most one extra (empty) request instead of a loop.
+ */
+async function paginateWafList(
+  fetchPage: (marker: string | undefined) => Promise<{
+    items: Array<{ Name?: string; Id?: string; ARN?: string }> | undefined;
+    nextMarker: string | undefined;
+  }>,
+): Promise<WafListedEntity[]> {
+  const entities: WafListedEntity[] = [];
+  let marker: string | undefined;
+  do {
+    const { items, nextMarker } = await fetchPage(marker);
+    for (const item of items ?? []) {
+      if (item.Name && item.Id) entities.push({ name: item.Name, id: item.Id, arn: item.ARN });
+    }
+    marker = nextMarker && (items ?? []).length > 0 ? nextMarker : undefined;
+  } while (marker);
+  return entities;
+}
+
 /** Resource types that can carry a REGIONAL web ACL association. */
 const ASSOCIABLE_TYPES = [
   ResourceType.APPLICATION_LOAD_BALANCER,
@@ -92,17 +121,10 @@ async function collectScope(
   const limit = pLimit(4);
 
   await guard(errors, 'wafv2', `ListWebACLs(${scope})`, async () => {
-    const acls: Array<{ name: string; id: string; arn?: string }> = [];
-    let marker: string | undefined;
-    do {
-      const res = await client.send(
-        new ListWebACLsCommand({ Scope: scope, NextMarker: marker }),
-      );
-      for (const acl of res.WebACLs ?? []) {
-        if (acl.Name && acl.Id) acls.push({ name: acl.Name, id: acl.Id, arn: acl.ARN });
-      }
-      marker = res.NextMarker && (res.WebACLs ?? []).length > 0 ? res.NextMarker : undefined;
-    } while (marker);
+    const acls = await paginateWafList(async (marker) => {
+      const res = await client.send(new ListWebACLsCommand({ Scope: scope, NextMarker: marker }));
+      return { items: res.WebACLs, nextMarker: res.NextMarker };
+    });
 
     await Promise.all(
       acls.map((acl) =>
@@ -159,15 +181,10 @@ async function collectScope(
   });
 
   await guard(errors, 'wafv2', `ListIPSets(${scope})`, async () => {
-    const sets: Array<{ name: string; id: string; arn?: string }> = [];
-    let marker: string | undefined;
-    do {
+    const sets = await paginateWafList(async (marker) => {
       const res = await client.send(new ListIPSetsCommand({ Scope: scope, NextMarker: marker }));
-      for (const set of res.IPSets ?? []) {
-        if (set.Name && set.Id) sets.push({ name: set.Name, id: set.Id, arn: set.ARN });
-      }
-      marker = res.NextMarker && (res.IPSets ?? []).length > 0 ? res.NextMarker : undefined;
-    } while (marker);
+      return { items: res.IPSets, nextMarker: res.NextMarker };
+    });
 
     await Promise.all(
       sets.map((set) =>
@@ -193,17 +210,10 @@ async function collectScope(
   });
 
   await guard(errors, 'wafv2', `ListRuleGroups(${scope})`, async () => {
-    const groups: Array<{ name: string; id: string; arn?: string }> = [];
-    let marker: string | undefined;
-    do {
-      const res = await client.send(
-        new ListRuleGroupsCommand({ Scope: scope, NextMarker: marker }),
-      );
-      for (const g of res.RuleGroups ?? []) {
-        if (g.Name && g.Id) groups.push({ name: g.Name, id: g.Id, arn: g.ARN });
-      }
-      marker = res.NextMarker && (res.RuleGroups ?? []).length > 0 ? res.NextMarker : undefined;
-    } while (marker);
+    const groups = await paginateWafList(async (marker) => {
+      const res = await client.send(new ListRuleGroupsCommand({ Scope: scope, NextMarker: marker }));
+      return { items: res.RuleGroups, nextMarker: res.NextMarker };
+    });
 
     await Promise.all(
       groups.map((g) =>

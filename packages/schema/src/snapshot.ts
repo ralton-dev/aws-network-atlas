@@ -877,9 +877,10 @@ export interface LatticeService extends BaseResource {
 // Observability plumbing
 // ---------------------------------------------------------------------------
 
+// Note: storedBytes is deliberately NOT captured — it grows on every scan and
+// would churn committed snapshots; retention/KMS/class carry the posture signal.
 export interface LogGroup extends BaseResource {
   retentionDays?: number;
-  storedBytes?: number;
   kmsKeyId?: string;
   logGroupClass?: string;
 }

@@ -105,8 +105,12 @@ export async function collectDnsFirewall(
     }
     await Promise.all(
       groups.map((g) =>
-        limit(() =>
-          guard(errors, 'route53resolver', `ListFirewallRules(${g.name ?? g.id})`, async () => {
+        limit(() => {
+          // Rules of RAM-shared groups belong to the owning account and are
+          // typically not listable from here — skip instead of logging an
+          // AccessDenied on every scan. Associations above still apply.
+          if (g.shareStatus === 'SHARED_WITH_ME') return Promise.resolve();
+          return guard(errors, 'route53resolver', `ListFirewallRules(${g.name ?? g.id})`, async () => {
             for await (const page of paginateListFirewallRules(
               { client: resolver },
               { FirewallRuleGroupId: g.id },
@@ -128,8 +132,8 @@ export async function collectDnsFirewall(
             }
             g.rules.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
             g.ruleCount = g.rules.length;
-          }),
-        ),
+          });
+        }),
       ),
     );
     out.dnsFirewallRuleGroups.push(...groups);
