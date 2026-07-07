@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">158</div><div class="l">Detailed collectors</div></div>
+<div class="kpi det"><div class="n">190</div><div class="l">Detailed collectors</div></div>
 <div class="kpi inv"><div class="n">935</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">529</div><div class="l">Not collected at all</div></div>
+<div class="kpi non"><div class="n">497</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -72,8 +72,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 
 <details class="rollup"><summary>Per-service coverage rollup (281 services)</summary>
 <div class="scroll"><table><thead><tr><th>Service</th><th>Types</th><th>Detailed</th><th>Inventory</th><th>None</th><th>Detailed coverage</th></tr></thead>
-<tbody><tr><td class="mono">EC2</td><td>113</td><td class="c-detailed">36</td><td class="c-inv">39</td><td class="c-none">38</td>
-<td><div class="bar"><span style="width:32%"></span></div><span class="pct">32%</span></td></tr>
+<tbody><tr><td class="mono">EC2</td><td>113</td><td class="c-detailed">50</td><td class="c-inv">39</td><td class="c-none">24</td>
+<td><div class="bar"><span style="width:44%"></span></div><span class="pct">44%</span></td></tr>
 <tr><td class="mono">SageMaker</td><td>38</td><td class="c-detailed">0</td><td class="c-inv">35</td><td class="c-none">3</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Connect</td><td>35</td><td class="c-detailed">0</td><td class="c-inv">24</td><td class="c-none">11</td>
@@ -102,8 +102,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Greengrass</td><td>16</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">8</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">IAM</td><td>16</td><td class="c-detailed">6</td><td class="c-inv">4</td><td class="c-none">6</td>
-<td><div class="bar"><span style="width:38%"></span></div><span class="pct">38%</span></td></tr>
+<tr><td class="mono">IAM</td><td>16</td><td class="c-detailed">11</td><td class="c-inv">4</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:69%"></span></div><span class="pct">69%</span></td></tr>
 <tr><td class="mono">NetworkManager</td><td>16</td><td class="c-detailed">1</td><td class="c-inv">11</td><td class="c-none">4</td>
 <td><div class="bar"><span style="width:6%"></span></div><span class="pct">6%</span></td></tr>
 <tr><td class="mono">RDS</td><td>16</td><td class="c-detailed">3</td><td class="c-inv">11</td><td class="c-none">2</td>
@@ -128,8 +128,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">DataSync</td><td>13</td><td class="c-detailed">7</td><td class="c-inv">6</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:54%"></span></div><span class="pct">54%</span></td></tr>
-<tr><td class="mono">Lambda</td><td>13</td><td class="c-detailed">1</td><td class="c-inv">5</td><td class="c-none">7</td>
-<td><div class="bar"><span style="width:8%"></span></div><span class="pct">8%</span></td></tr>
+<tr><td class="mono">Lambda</td><td>13</td><td class="c-detailed">2</td><td class="c-inv">5</td><td class="c-none">6</td>
+<td><div class="bar"><span style="width:15%"></span></div><span class="pct">15%</span></td></tr>
 <tr><td class="mono">AppSync</td><td>12</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">8</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">MediaConnect</td><td>12</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">4</td>
@@ -202,10 +202,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">DirectConnect</td><td>7</td><td class="c-detailed">7</td><td class="c-inv">0</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
-<tr><td class="mono">ElasticLoadBalancingV2</td><td>7</td><td class="c-detailed">4</td><td class="c-inv">1</td><td class="c-none">2</td>
-<td><div class="bar"><span style="width:57%"></span></div><span class="pct">57%</span></td></tr>
-<tr><td class="mono">Events</td><td>7</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">5</td>
-<td><div class="bar"><span style="width:29%"></span></div><span class="pct">29%</span></td></tr>
+<tr><td class="mono">ElasticLoadBalancingV2</td><td>7</td><td class="c-detailed">5</td><td class="c-inv">1</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:71%"></span></div><span class="pct">71%</span></td></tr>
+<tr><td class="mono">Events</td><td>7</td><td class="c-detailed">3</td><td class="c-inv">0</td><td class="c-none">4</td>
+<td><div class="bar"><span style="width:43%"></span></div><span class="pct">43%</span></td></tr>
 <tr><td class="mono">FraudDetector</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">IoTFleetWise</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">0</td>
@@ -240,8 +240,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">MemoryDB</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">6</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">NetworkFirewall</td><td>6</td><td class="c-detailed">4</td><td class="c-inv">1</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:67%"></span></div><span class="pct">67%</span></td></tr>
+<tr><td class="mono">NetworkFirewall</td><td>6</td><td class="c-detailed">5</td><td class="c-inv">1</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:83%"></span></div><span class="pct">83%</span></td></tr>
 <tr><td class="mono">ObservabilityAdmin</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">RTBFabric</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">6</td><td class="c-none">0</td>
@@ -250,8 +250,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">SSO</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">3</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">WAFv2</td><td>6</td><td class="c-detailed">3</td><td class="c-inv">1</td><td class="c-none">2</td>
-<td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
+<tr><td class="mono">WAFv2</td><td>6</td><td class="c-detailed">4</td><td class="c-inv">1</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:67%"></span></div><span class="pct">67%</span></td></tr>
 <tr><td class="mono">APS</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">AppRunner</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">0</td>
@@ -306,8 +306,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">EventSchemas</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">GlobalAccelerator</td><td>4</td><td class="c-detailed">1</td><td class="c-inv">1</td><td class="c-none">2</td>
-<td><div class="bar"><span style="width:25%"></span></div><span class="pct">25%</span></td></tr>
+<tr><td class="mono">GlobalAccelerator</td><td>4</td><td class="c-detailed">3</td><td class="c-inv">1</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:75%"></span></div><span class="pct">75%</span></td></tr>
 <tr><td class="mono">GroundStation</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">InspectorV2</td><td>4</td><td class="c-detailed">1</td><td class="c-inv">3</td><td class="c-none">0</td>
@@ -334,12 +334,12 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">S3Outposts</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">3</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">SNS</td><td>4</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">2</td>
-<td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
+<tr><td class="mono">SNS</td><td>4</td><td class="c-detailed">4</td><td class="c-inv">0</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">SSMContacts</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">SecretsManager</td><td>4</td><td class="c-detailed">1</td><td class="c-inv">0</td><td class="c-none">3</td>
-<td><div class="bar"><span style="width:25%"></span></div><span class="pct">25%</span></td></tr>
+<tr><td class="mono">SecretsManager</td><td>4</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">2</td>
+<td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
 <tr><td class="mono">SecurityLake</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">ServiceCatalogAppRegistry</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">2</td>
@@ -388,8 +388,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">DevOpsGuru</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">3</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">EFS</td><td>3</td><td class="c-detailed">1</td><td class="c-inv">0</td><td class="c-none">2</td>
-<td><div class="bar"><span style="width:33%"></span></div><span class="pct">33%</span></td></tr>
+<tr><td class="mono">EFS</td><td>3</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:67%"></span></div><span class="pct">67%</span></td></tr>
 <tr><td class="mono">EMRContainers</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">FMS</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">1</td>
@@ -398,8 +398,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">IoTEvents</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">KMS</td><td>3</td><td class="c-detailed">1</td><td class="c-inv">1</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:33%"></span></div><span class="pct">33%</span></td></tr>
+<tr><td class="mono">KMS</td><td>3</td><td class="c-detailed">2</td><td class="c-inv">1</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:67%"></span></div><span class="pct">67%</span></td></tr>
 <tr><td class="mono">KafkaConnect</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Kendra</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
@@ -436,8 +436,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">S3Vectors</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">SQS</td><td>3</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:67%"></span></div><span class="pct">67%</span></td></tr>
+<tr><td class="mono">SQS</td><td>3</td><td class="c-detailed">3</td><td class="c-inv">0</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">SupportApp</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">3</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">WorkSpaces</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">1</td>
@@ -3099,25 +3099,25 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">2<div class="props">Tags, VpcId</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="AccessGroupId AuthorizeAllGroups ClientVpnEndpointId Description TargetNetworkCidr">
+<tr data-svc="EC2" data-c="detailed" data-d="node" data-props="AccessGroupId AuthorizeAllGroups ClientVpnEndpointId Description TargetNetworkCidr">
 <td class="mono">AWS::EC2::ClientVpnAuthorizationRule</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>clientVpnEndpoints</code></div><div class="detail">captured as clientVpnEndpoints.authorizationRules</div></td>
+<td><span class="badge d-node">node · overview + VPC-detail + focus</span><div class="detail">off-diagram: dnsServers, routes[], authorizationRules[], description</div></td>
 <td class="pc">5<div class="props">AccessGroupId, AuthorizeAllGroups, ClientVpnEndpointId, Description, TargetNetworkCidr</div></td></tr>
 <tr data-svc="EC2" data-c="detailed" data-d="node" data-props="AuthenticationOptions ClientCidrBlock ClientConnectOptions ClientLoginBannerOptions ClientRouteEnforcementOptions ConnectionLogOptions Description DisconnectOnSessionTimeout DnsServers EndpointIpAddressType SecurityGroupIds SelfServicePortal ServerCertificateArn SessionTimeoutHours SplitTunnel TagSpecifications TrafficIpAddressType TransitGatewayConfiguration TransportProtocol VpcId VpnPort">
 <td class="mono">AWS::EC2::ClientVpnEndpoint</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>clientVpnEndpoints</code></div><div class="detail">clientCidr, dnsServers, sgIds, subnets, splitTunnel, routes, authRules</div></td>
 <td><span class="badge d-node">node · overview + VPC-detail + focus</span><div class="detail">off-diagram: dnsServers, routes[], authorizationRules[], description</div></td>
 <td class="pc">21<div class="props">AuthenticationOptions, ClientCidrBlock, ClientConnectOptions, ClientLoginBannerOptions, ClientRouteEnforcementOptions, ConnectionLogOptions, Description, DisconnectOnSessionTimeout, DnsServers, EndpointIpAddressType, SecurityGroupIds, SelfServicePortal, ServerCertificateArn, SessionTimeoutHours, SplitTunnel, TagSpecifications, TrafficIpAddressType, TransitGatewayConfiguration, TransportProtocol, VpcId, VpnPort</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="ClientVpnEndpointId Description DestinationCidrBlock TargetVpcSubnetId">
+<tr data-svc="EC2" data-c="detailed" data-d="node" data-props="ClientVpnEndpointId Description DestinationCidrBlock TargetVpcSubnetId">
 <td class="mono">AWS::EC2::ClientVpnRoute</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>clientVpnEndpoints</code></div><div class="detail">captured as clientVpnEndpoints.routes</div></td>
+<td><span class="badge d-node">node · overview + VPC-detail + focus</span><div class="detail">off-diagram: dnsServers, routes[], authorizationRules[], description</div></td>
 <td class="pc">4<div class="props">ClientVpnEndpointId, Description, DestinationCidrBlock, TargetVpcSubnetId</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="AvailabilityZone AvailabilityZoneId ClientVpnEndpointId SubnetId">
+<tr data-svc="EC2" data-c="detailed" data-d="node" data-props="AvailabilityZone AvailabilityZoneId ClientVpnEndpointId SubnetId">
 <td class="mono">AWS::EC2::ClientVpnTargetNetworkAssociation</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>clientVpnEndpoints</code></div><div class="detail">captured as clientVpnEndpoints.associatedSubnetIds</div></td>
+<td><span class="badge d-node">node · overview + VPC-detail + focus</span><div class="detail">off-diagram: dnsServers, routes[], authorizationRules[], description</div></td>
 <td class="pc">4<div class="props">AvailabilityZone, AvailabilityZoneId, ClientVpnEndpointId, SubnetId</div></td></tr>
 <tr data-svc="EC2" data-c="detailed" data-d="node" data-props="BgpAsn BgpAsnExtended CertificateArn DeviceName IpAddress Tags Type">
 <td class="mono">AWS::EC2::CustomerGateway</td>
@@ -3159,10 +3159,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>flowLogs</code></div><div class="detail">resourceId, trafficType, destType, destination, status, aggInterval</div></td>
 <td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: trafficType, logDestinationType, status, maxAggregationInterval</div></td>
 <td class="pc">13<div class="props">DeliverCrossAccountRole, DeliverLogsPermissionArn, DestinationOptions, LogDestination, LogDestinationType, LogFormat, LogGroupName, MaxAggregationInterval, ResourceId, ResourceType, TagFieldSpecifications, Tags, TrafficType</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="GatewayId RouteTableId">
+<tr data-svc="EC2" data-c="detailed" data-d="edge" data-props="GatewayId RouteTableId">
 <td class="mono">AWS::EC2::GatewayRouteTableAssociation</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>routeTables</code></div><div class="detail">captured as routeTables.gatewayAssociations</div></td>
+<td><span class="badge d-edge">edge · routes drawn as arrows (VD/FO); route rows in edge hover (OV)</span><div class="detail">the route-table entity is panel-only; isMain, gatewayAssociations, per-route origin/state only in panel</div></td>
 <td class="pc">2<div class="props">GatewayId, RouteTableId</div></td></tr>
 <tr data-svc="EC2" data-c="inv-tag" data-d="panel-only" data-props="AssetId AutoPlacement AvailabilityZone HostMaintenance HostRecovery InstanceFamily InstanceType OutpostArn Tags">
 <td class="mono">AWS::EC2::Host</td>
@@ -3314,10 +3314,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>networkInterfaces</code></div><div class="detail">vpcId, subnetId, AZ, type, privateIps, publicIp, sgIds, attachedTo, requesterId</div></td>
 <td><span class="badge d-panel-only">panel-only — collection never drawn</span><div class="detail">ENI only appears as a ghost box if a route targets an eni-…; privateIps, publicIp, attachedTo, status all panel-only</div></td>
 <td class="pc">17<div class="props">ConnectionTrackingSpecification, Description, GroupSet, InterfaceType, Ipv4PrefixCount, Ipv4Prefixes, Ipv6AddressCount, Ipv6Addresses, Ipv6PrefixCount, Ipv6Prefixes, PrivateIpAddress, PrivateIpAddresses, PublicIpDnsHostnameTypeSpecification, SecondaryPrivateIpAddressCount, SourceDestCheck, SubnetId, Tags</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="DeleteOnTermination DeviceIndex EnaQueueCount EnaSrdSpecification InstanceId NetworkInterfaceId">
+<tr data-svc="EC2" data-c="detailed" data-d="panel-only" data-props="DeleteOnTermination DeviceIndex EnaQueueCount EnaSrdSpecification InstanceId NetworkInterfaceId">
 <td class="mono">AWS::EC2::NetworkInterfaceAttachment</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>networkInterfaces</code></div><div class="detail">captured as networkInterfaces.attachedTo</div></td>
+<td><span class="badge d-panel-only">panel-only — collection never drawn</span><div class="detail">ENI only appears as a ghost box if a route targets an eni-…; privateIps, publicIp, attachedTo, status all panel-only</div></td>
 <td class="pc">6<div class="props">DeleteOnTermination, DeviceIndex, EnaQueueCount, EnaSrdSpecification, InstanceId, NetworkInterfaceId</div></td></tr>
 <tr data-svc="EC2" data-c="none" data-d="none" data-props="AwsAccountId NetworkInterfaceId Permission">
 <td class="mono">AWS::EC2::NetworkInterfacePermission</td>
@@ -3414,15 +3414,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>subnets</code></div><div class="detail">vpcId, cidr, ipv6, AZ, availableIpCount, mapPublicIp, routeTableId, isPublic</div></td>
 <td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: ipv6, availableIpCount, mapPublicIpOnLaunch, routeTableId, AZ-id</div></td>
 <td class="pc">17<div class="props">AssignIpv6AddressOnCreation, AvailabilityZone, AvailabilityZoneId, CidrBlock, EnableDns64, EnableLniAtDeviceIndex, Ipv4IpamPoolId, Ipv4NetmaskLength, Ipv6CidrBlock, Ipv6IpamPoolId, Ipv6Native, Ipv6NetmaskLength, MapPublicIpOnLaunch, OutpostArn, PrivateDnsNameOptionsOnLaunch, Tags, VpcId</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="Ipv6CidrBlock Ipv6IpamPoolId Ipv6NetmaskLength SubnetId">
+<tr data-svc="EC2" data-c="detailed" data-d="node" data-props="Ipv6CidrBlock Ipv6IpamPoolId Ipv6NetmaskLength SubnetId">
 <td class="mono">AWS::EC2::SubnetCidrBlock</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>subnets</code></div><div class="detail">captured as subnets.cidrBlock/ipv6CidrBlocks</div></td>
+<td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: ipv6, availableIpCount, mapPublicIpOnLaunch, routeTableId, AZ-id</div></td>
 <td class="pc">4<div class="props">Ipv6CidrBlock, Ipv6IpamPoolId, Ipv6NetmaskLength, SubnetId</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="NetworkAclId SubnetId">
+<tr data-svc="EC2" data-c="detailed" data-d="panel-only" data-props="NetworkAclId SubnetId">
 <td class="mono">AWS::EC2::SubnetNetworkAclAssociation</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>networkAcls</code></div><div class="detail">captured as networkAcls.subnetIds</div></td>
+<td><span class="badge d-panel-only">panel-only — never on graph</span><div class="detail">entire entity incl. entries[] (the NACL rules) only in Details panel</div></td>
 <td class="pc">2<div class="props">NetworkAclId, SubnetId</div></td></tr>
 <tr data-svc="EC2" data-c="detailed" data-d="edge" data-props="RouteTableId SubnetId">
 <td class="mono">AWS::EC2::SubnetRouteTableAssociation</td>
@@ -3504,25 +3504,25 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>transitGatewayAttachments</code></div><div class="detail">captured as transitGatewayAttachments (peering)</div></td>
 <td><span class="badge d-edge">edge · overview + focus (VPC↔TGW / TGW peering)</span><div class="detail">the attachment entity is panel-only; subnetIds, associationRouteTableId, resourceOwnerId only in panel</div></td>
 <td class="pc">5<div class="props">PeerAccountId, PeerRegion, PeerTransitGatewayId, Tags, TransitGatewayId</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="Blackhole DestinationCidrBlock TransitGatewayAttachmentId TransitGatewayRouteTableId">
+<tr data-svc="EC2" data-c="detailed" data-d="panel-only" data-props="Blackhole DestinationCidrBlock TransitGatewayAttachmentId TransitGatewayRouteTableId">
 <td class="mono">AWS::EC2::TransitGatewayRoute</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>transitGatewayRouteTables</code></div><div class="detail">captured inside transitGatewayRouteTables.routes[]</div></td>
+<td><span class="badge d-panel-only">panel-only — feeds TGW edge hover only</span><div class="detail">associations, propagations, isDefault* only in panel; routes shown only in the TGW-attachment edge hover</div></td>
 <td class="pc">4<div class="props">Blackhole, DestinationCidrBlock, TransitGatewayAttachmentId, TransitGatewayRouteTableId</div></td></tr>
 <tr data-svc="EC2" data-c="detailed" data-d="panel-only" data-props="Tags TransitGatewayId">
 <td class="mono">AWS::EC2::TransitGatewayRouteTable</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>transitGatewayRouteTables</code></div><div class="detail">tgwId, routes[], associations, propagations</div></td>
 <td><span class="badge d-panel-only">panel-only — feeds TGW edge hover only</span><div class="detail">associations, propagations, isDefault* only in panel; routes shown only in the TGW-attachment edge hover</div></td>
 <td class="pc">2<div class="props">Tags, TransitGatewayId</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="TransitGatewayAttachmentId TransitGatewayRouteTableId">
+<tr data-svc="EC2" data-c="detailed" data-d="panel-only" data-props="TransitGatewayAttachmentId TransitGatewayRouteTableId">
 <td class="mono">AWS::EC2::TransitGatewayRouteTableAssociation</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>transitGatewayRouteTables</code></div><div class="detail">captured as transitGatewayRouteTables.associations</div></td>
+<td><span class="badge d-panel-only">panel-only — feeds TGW edge hover only</span><div class="detail">associations, propagations, isDefault* only in panel; routes shown only in the TGW-attachment edge hover</div></td>
 <td class="pc">2<div class="props">TransitGatewayAttachmentId, TransitGatewayRouteTableId</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="TransitGatewayAttachmentId TransitGatewayRouteTableId">
+<tr data-svc="EC2" data-c="detailed" data-d="panel-only" data-props="TransitGatewayAttachmentId TransitGatewayRouteTableId">
 <td class="mono">AWS::EC2::TransitGatewayRouteTablePropagation</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>transitGatewayRouteTables</code></div><div class="detail">captured as transitGatewayRouteTables.propagations</div></td>
+<td><span class="badge d-panel-only">panel-only — feeds TGW edge hover only</span><div class="detail">associations, propagations, isDefault* only in panel; routes shown only in the TGW-attachment edge hover</div></td>
 <td class="pc">2<div class="props">TransitGatewayAttachmentId, TransitGatewayRouteTableId</div></td></tr>
 <tr data-svc="EC2" data-c="detailed" data-d="edge" data-props="AddSubnetIds Options RemoveSubnetIds SubnetIds Tags TransitGatewayId VpcId">
 <td class="mono">AWS::EC2::TransitGatewayVpcAttachment</td>
@@ -3544,15 +3544,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">1<div class="props">InternetGatewayBlockMode</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="AmazonProvidedIpv6CidrBlock CidrBlock Ipv4IpamPoolId Ipv4NetmaskLength Ipv6CidrBlock Ipv6CidrBlockNetworkBorderGroup Ipv6IpamPoolId Ipv6NetmaskLength Ipv6Pool VpcId">
+<tr data-svc="EC2" data-c="detailed" data-d="node" data-props="AmazonProvidedIpv6CidrBlock CidrBlock Ipv4IpamPoolId Ipv4NetmaskLength Ipv6CidrBlock Ipv6CidrBlockNetworkBorderGroup Ipv6IpamPoolId Ipv6NetmaskLength Ipv6Pool VpcId">
 <td class="mono">AWS::EC2::VPCCidrBlock</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>vpcs</code></div><div class="detail">captured as vpcs.cidrBlocks/ipv6CidrBlocks</div></td>
+<td><span class="badge d-node">node · overview + VPC-detail + focus</span><div class="detail">off-diagram: ipv6 CIDRs, DNS support/hostnames, dhcpOptionsId, state</div></td>
 <td class="pc">10<div class="props">AmazonProvidedIpv6CidrBlock, CidrBlock, Ipv4IpamPoolId, Ipv4NetmaskLength, Ipv6CidrBlock, Ipv6CidrBlockNetworkBorderGroup, Ipv6IpamPoolId, Ipv6NetmaskLength, Ipv6Pool, VpcId</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="DhcpOptionsId VpcId">
+<tr data-svc="EC2" data-c="detailed" data-d="panel-only" data-props="DhcpOptionsId VpcId">
 <td class="mono">AWS::EC2::VPCDHCPOptionsAssociation</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dhcpOptions</code></div><div class="detail">captured as dhcpOptions.vpcIds</div></td>
+<td><span class="badge d-panel-only">panel-only — never on graph</span><div class="detail">options map + vpcIds only in panel</div></td>
 <td class="pc">2<div class="props">DhcpOptionsId, VpcId</div></td></tr>
 <tr data-svc="EC2" data-c="inv-tag" data-d="panel-only" data-props="EgressOnlyInternetGatewayExclusionInput ElasticFileSystemExclusionInput InternetGatewayExclusionInput LambdaExclusionInput Mode NatGatewayExclusionInput Tags VirtualPrivateGatewayExclusionInput VpcId VpcLatticeExclusionInput VpcPeeringExclusionInput">
 <td class="mono">AWS::EC2::VPCEncryptionControl</td>
@@ -3574,10 +3574,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>vpcEndpointServices</code></div><div class="detail">serviceName, NLB/GWLB arns, allowedPrincipals, connections</div></td>
 <td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: allowedPrincipals, acceptanceRequired, privateDnsName, supportedIpAddressTypes, AZs</div></td>
 <td class="pc">8<div class="props">AcceptanceRequired, ContributorInsightsEnabled, GatewayLoadBalancerArns, NetworkLoadBalancerArns, PayerResponsibility, SupportedIpAddressTypes, SupportedRegions, Tags</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="AllowedPrincipals ServiceId">
+<tr data-svc="EC2" data-c="detailed" data-d="node" data-props="AllowedPrincipals ServiceId">
 <td class="mono">AWS::EC2::VPCEndpointServicePermissions</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>vpcEndpointServices</code></div><div class="detail">captured as vpcEndpointServices.allowedPrincipals</div></td>
+<td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: allowedPrincipals, acceptanceRequired, privateDnsName, supportedIpAddressTypes, AZs</div></td>
 <td class="pc">2<div class="props">AllowedPrincipals, ServiceId</div></td></tr>
 <tr data-svc="EC2" data-c="detailed" data-d="node" data-props="InternetGatewayId VpcId VpnGatewayId">
 <td class="mono">AWS::EC2::VPCGatewayAttachment</td>
@@ -3599,10 +3599,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>vpnConnections</code></div><div class="detail">vgw/tgw/cgw ids, tunnels, staticRoutes, cidrs</div></td>
 <td><span class="badge d-edge">edge · overview + VPC-detail + focus</span><div class="detail">staticRoutes, staticRoutesOnly, category, local/remote CIDRs, tunnel statusMessage only in panel</div></td>
 <td class="pc">18<div class="props">CustomerGatewayId, EnableAcceleration, LocalIpv4NetworkCidr, LocalIpv6NetworkCidr, OutsideIpAddressType, PreSharedKeyStorage, RemoteIpv4NetworkCidr, RemoteIpv6NetworkCidr, StaticRoutesOnly, Tags, TransitGatewayId, TransportTransitGatewayAttachmentId, TunnelBandwidth, TunnelInsideIpVersion, Type, VpnConcentratorId, VpnGatewayId, VpnTunnelOptionsSpecifications</div></td></tr>
-<tr data-svc="EC2" data-c="none" data-d="none" data-props="DestinationCidrBlock VpnConnectionId">
+<tr data-svc="EC2" data-c="detailed" data-d="edge" data-props="DestinationCidrBlock VpnConnectionId">
 <td class="mono">AWS::EC2::VPNConnectionRoute</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>vpnConnections</code></div><div class="detail">captured as vpnConnections.staticRoutes</div></td>
+<td><span class="badge d-edge">edge · overview + VPC-detail + focus</span><div class="detail">staticRoutes, staticRoutesOnly, category, local/remote CIDRs, tunnel statusMessage only in panel</div></td>
 <td class="pc">2<div class="props">DestinationCidrBlock, VpnConnectionId</div></td></tr>
 <tr data-svc="EC2" data-c="detailed" data-d="node" data-props="AmazonSideAsn Tags Type">
 <td class="mono">AWS::EC2::VPNGateway</td>
@@ -3749,10 +3749,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>efsFileSystems</code></div><div class="detail">state, encrypted, perfMode, vpcId, mountTargets(subnet/ip/AZ/sg)</div></td>
 <td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: encrypted, performanceMode, state, mount-target IPs/AZs</div></td>
 <td class="pc">13<div class="props">AvailabilityZoneName, BackupPolicy, BypassPolicyLockoutSafetyCheck, Encrypted, FileSystemPolicy, FileSystemProtection, FileSystemTags, KmsKeyId, LifecyclePolicies, PerformanceMode, ProvisionedThroughputInMibps, ReplicationConfiguration, ThroughputMode</div></td></tr>
-<tr data-svc="EFS" data-c="none" data-d="none" data-props="FileSystemId IpAddress IpAddressType Ipv6Address SecurityGroups SubnetId">
+<tr data-svc="EFS" data-c="detailed" data-d="node" data-props="FileSystemId IpAddress IpAddressType Ipv6Address SecurityGroups SubnetId">
 <td class="mono">AWS::EFS::MountTarget</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>efsFileSystems</code></div><div class="detail">captured inside efsFileSystems.mountTargets[]</div></td>
+<td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: encrypted, performanceMode, state, mount-target IPs/AZs</div></td>
 <td class="pc">6<div class="props">FileSystemId, IpAddress, IpAddressType, Ipv6Address, SecurityGroups, SubnetId</div></td></tr>
 <tr data-svc="EKS" data-c="inv-tag" data-d="panel-only" data-props="AccessPolicies ClusterName KubernetesGroups PrincipalArn Tags Type Username">
 <td class="mono">AWS::EKS::AccessEntry</td>
@@ -3939,10 +3939,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>loadBalancers</code></div><div class="detail">captured inside loadBalancers.listeners[]</div></td>
 <td><span class="badge d-node">node · VPC-detail + focus (NOT on overview)</span><div class="detail">HIGH-VALUE GAP: listeners (ports/protocols/SNI certs/routing rules), dnsName, subnetIds, AZs, securityGroupIds, state all panel-only</div></td>
 <td class="pc">9<div class="props">AlpnPolicy, Certificates, DefaultActions, ListenerAttributes, LoadBalancerArn, MutualAuthentication, Port, Protocol, SslPolicy</div></td></tr>
-<tr data-svc="ElasticLoadBalancingV2" data-c="none" data-d="none" data-props="Certificates ListenerArn">
+<tr data-svc="ElasticLoadBalancingV2" data-c="detailed" data-d="node" data-props="Certificates ListenerArn">
 <td class="mono">AWS::ElasticLoadBalancingV2::ListenerCertificate</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>loadBalancers</code></div><div class="detail">captured as loadBalancers.listeners[].certificateArns</div></td>
+<td><span class="badge d-node">node · VPC-detail + focus (NOT on overview)</span><div class="detail">HIGH-VALUE GAP: listeners (ports/protocols/SNI certs/routing rules), dnsName, subnetIds, AZs, securityGroupIds, state all panel-only</div></td>
 <td class="pc">2<div class="props">Certificates, ListenerArn</div></td></tr>
 <tr data-svc="ElasticLoadBalancingV2" data-c="detailed" data-d="node" data-props="Actions Conditions ListenerArn Priority Transforms">
 <td class="mono">AWS::ElasticLoadBalancingV2::ListenerRule</td>
@@ -4054,10 +4054,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eventBuses</code></div><div class="detail">policy (cross-account), rules with event pattern/schedule + target ARNs</div></td>
 <td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">bus policy + rules with target ARNs (cross-account event flow); rule→target could later be edges</div></td>
 <td class="pc">8<div class="props">DeadLetterConfig, Description, EventSourceName, KmsKeyIdentifier, LogConfig, Name, Policy, Tags</div></td></tr>
-<tr data-svc="Events" data-c="none" data-d="none" data-props="EventBusName Statement StatementId">
+<tr data-svc="Events" data-c="detailed" data-d="panel-only" data-props="EventBusName Statement StatementId">
 <td class="mono">AWS::Events::EventBusPolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eventBuses</code></div><div class="detail">captured as eventBuses.policy</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">bus policy + rules with target ARNs (cross-account event flow); rule→target could later be edges</div></td>
 <td class="pc">3<div class="props">EventBusName, Statement, StatementId</div></td></tr>
 <tr data-svc="Events" data-c="detailed" data-d="panel-only" data-props="Description EventBusName EventPattern Name RoleArn ScheduleExpression State Tags Targets">
 <td class="mono">AWS::Events::Rule</td>
@@ -4259,15 +4259,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">Name, Principals, Resources, Tags</div></td></tr>
-<tr data-svc="GlobalAccelerator" data-c="none" data-d="none" data-props="EndpointConfigurations EndpointGroupRegion HealthCheckIntervalSeconds HealthCheckPath HealthCheckPort HealthCheckProtocol ListenerArn PortOverrides ThresholdCount TrafficDialPercentage">
+<tr data-svc="GlobalAccelerator" data-c="detailed" data-d="node" data-props="EndpointConfigurations EndpointGroupRegion HealthCheckIntervalSeconds HealthCheckPath HealthCheckPort HealthCheckProtocol ListenerArn PortOverrides ThresholdCount TrafficDialPercentage">
 <td class="mono">AWS::GlobalAccelerator::EndpointGroup</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>globalAccelerators</code></div><div class="detail">captured inside globalAccelerators.listeners[].endpointGroups</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: ipAddresses, ipAddressType, status, listeners[] (ports, endpoint groups, weights, health)</div></td>
 <td class="pc">10<div class="props">EndpointConfigurations, EndpointGroupRegion, HealthCheckIntervalSeconds, HealthCheckPath, HealthCheckPort, HealthCheckProtocol, ListenerArn, PortOverrides, ThresholdCount, TrafficDialPercentage</div></td></tr>
-<tr data-svc="GlobalAccelerator" data-c="none" data-d="none" data-props="AcceleratorArn ClientAffinity PortRanges Protocol">
+<tr data-svc="GlobalAccelerator" data-c="detailed" data-d="node" data-props="AcceleratorArn ClientAffinity PortRanges Protocol">
 <td class="mono">AWS::GlobalAccelerator::Listener</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>globalAccelerators</code></div><div class="detail">captured inside globalAccelerators.listeners[]</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: ipAddresses, ipAddressType, status, listeners[] (ports, endpoint groups, weights, health)</div></td>
 <td class="pc">4<div class="props">AcceleratorArn, ClientAffinity, PortRanges, Protocol</div></td></tr>
 <tr data-svc="Glue" data-c="inv-tag" data-d="panel-only" data-props="AllowFullTableExternalDataAccess CatalogProperties CreateDatabaseDefaultPermissions CreateTableDefaultPermissions Description FederatedCatalog Name OverwriteChildResourcePermissionsWithDefault Parameters Tags TargetRedshiftCatalog">
 <td class="mono">AWS::Glue::Catalog</td>
@@ -4569,20 +4569,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">6<div class="props">DatastoreName, DatastoreTypeVersion, IdentityProviderConfiguration, PreloadDataConfig, SseConfiguration, Tags</div></td></tr>
-<tr data-svc="IAM" data-c="none" data-d="none" data-props="Serial Status UserName">
+<tr data-svc="IAM" data-c="detailed" data-d="node" data-props="Serial Status UserName">
 <td class="mono">AWS::IAM::AccessKey</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamUsers</code></div><div class="detail">captured as iamUsers.accessKeyIds</div></td>
+<td><span class="badge d-node">node · overview (capped 8) + focus</span><div class="detail">off-diagram: path, passwordLastUsed, hasConsoleAccess; mfaDeviceCount/accessKeyIds only drive badges</div></td>
 <td class="pc">3<div class="props">Serial, Status, UserName</div></td></tr>
 <tr data-svc="IAM" data-c="detailed" data-d="node" data-props="GroupName ManagedPolicyArns Path Policies">
 <td class="mono">AWS::IAM::Group</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamGroups</code></div><div class="detail">policies, userNames</div></td>
 <td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: attachedManagedPolicyArns, inlinePolicyNames</div></td>
 <td class="pc">4<div class="props">GroupName, ManagedPolicyArns, Path, Policies</div></td></tr>
-<tr data-svc="IAM" data-c="none" data-d="none" data-props="GroupName PolicyDocument PolicyName">
+<tr data-svc="IAM" data-c="detailed" data-d="node" data-props="GroupName PolicyDocument PolicyName">
 <td class="mono">AWS::IAM::GroupPolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamGroups</code></div><div class="detail">captured as iamGroups.inlinePolicyNames</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: attachedManagedPolicyArns, inlinePolicyNames</div></td>
 <td class="pc">3<div class="props">GroupName, PolicyDocument, PolicyName</div></td></tr>
 <tr data-svc="IAM" data-c="detailed" data-d="node" data-props="InstanceProfileName Path Roles">
 <td class="mono">AWS::IAM::InstanceProfile</td>
@@ -4609,10 +4609,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamRoles</code></div><div class="detail">assumeRolePolicy, attachedManagedPolicyArns, inlinePolicyNames, maxSession, lastUsed</div></td>
 <td><span class="badge d-node">node · overview (capped 8) + VPC-detail + focus</span><div class="detail">off-diagram: path, assumeRolePolicyDocument (parsed for trust only), attachedManagedPolicyArns, inlinePolicyNames, maxSessionDuration, lastUsed</div></td>
 <td class="pc">9<div class="props">AssumeRolePolicyDocument, Description, ManagedPolicyArns, MaxSessionDuration, Path, PermissionsBoundary, Policies, RoleName, Tags</div></td></tr>
-<tr data-svc="IAM" data-c="none" data-d="none" data-props="PolicyDocument PolicyName RoleName">
+<tr data-svc="IAM" data-c="detailed" data-d="node" data-props="PolicyDocument PolicyName RoleName">
 <td class="mono">AWS::IAM::RolePolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamRoles</code></div><div class="detail">captured as iamRoles.inlinePolicyNames</div></td>
+<td><span class="badge d-node">node · overview (capped 8) + VPC-detail + focus</span><div class="detail">off-diagram: path, assumeRolePolicyDocument (parsed for trust only), attachedManagedPolicyArns, inlinePolicyNames, maxSessionDuration, lastUsed</div></td>
 <td class="pc">3<div class="props">PolicyDocument, PolicyName, RoleName</div></td></tr>
 <tr data-svc="IAM" data-c="inv-tag" data-d="panel-only" data-props="AddPrivateKey AssertionEncryptionMode Name PrivateKeyList RemovePrivateKey SamlMetadataDocument Tags">
 <td class="mono">AWS::IAM::SAMLProvider</td>
@@ -4634,15 +4634,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamUsers</code></div><div class="detail">groups, policies, consoleAccess, mfaCount, accessKeyIds, passwordLastUsed</div></td>
 <td><span class="badge d-node">node · overview (capped 8) + focus</span><div class="detail">off-diagram: path, passwordLastUsed, hasConsoleAccess; mfaDeviceCount/accessKeyIds only drive badges</div></td>
 <td class="pc">8<div class="props">Groups, LoginProfile, ManagedPolicyArns, Path, PermissionsBoundary, Policies, Tags, UserName</div></td></tr>
-<tr data-svc="IAM" data-c="none" data-d="none" data-props="PolicyDocument PolicyName UserName">
+<tr data-svc="IAM" data-c="detailed" data-d="node" data-props="PolicyDocument PolicyName UserName">
 <td class="mono">AWS::IAM::UserPolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamUsers</code></div><div class="detail">captured as iamUsers.inlinePolicyNames</div></td>
+<td><span class="badge d-node">node · overview (capped 8) + focus</span><div class="detail">off-diagram: path, passwordLastUsed, hasConsoleAccess; mfaDeviceCount/accessKeyIds only drive badges</div></td>
 <td class="pc">3<div class="props">PolicyDocument, PolicyName, UserName</div></td></tr>
-<tr data-svc="IAM" data-c="none" data-d="none" data-props="GroupName Users">
+<tr data-svc="IAM" data-c="detailed" data-d="node" data-props="GroupName Users">
 <td class="mono">AWS::IAM::UserToGroupAddition</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamGroups</code></div><div class="detail">captured as iamGroups.userNames / iamUsers.groups</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: attachedManagedPolicyArns, inlinePolicyNames</div></td>
 <td class="pc">2<div class="props">GroupName, Users</div></td></tr>
 <tr data-svc="IAM" data-c="inv-tag" data-d="panel-only" data-props="Path Tags Users VirtualMfaDeviceName">
 <td class="mono">AWS::IAM::VirtualMFADevice</td>
@@ -5169,10 +5169,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">Description, LastUplinkReceivedAt, LoRaWAN, Name, Tags, ThingArn, ThingName</div></td></tr>
-<tr data-svc="KMS" data-c="none" data-d="none" data-props="AliasName TargetKeyId">
+<tr data-svc="KMS" data-c="detailed" data-d="node" data-props="AliasName TargetKeyId">
 <td class="mono">AWS::KMS::Alias</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>kmsKeys</code></div><div class="detail">captured as kmsKeys.aliases</div></td>
+<td><span class="badge d-node">node · overview (customer-managed only) + focus</span><div class="detail">AWS-managed keys collapsed to a note; keyState, keyUsage, keySpec, multiRegion, extra aliases only in panel</div></td>
 <td class="pc">2<div class="props">AliasName, TargetKeyId</div></td></tr>
 <tr data-svc="KMS" data-c="detailed" data-d="node" data-props="BypassPolicyLockoutSafetyCheck Description EnableKeyRotation Enabled KeyPolicy KeySpec KeyUsage MultiRegion Origin PendingWindowInDays RotationPeriodInDays Tags">
 <td class="mono">AWS::KMS::Key</td>
@@ -5374,10 +5374,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">9<div class="props">Action, EventSourceToken, FunctionName, FunctionUrlAuthType, InvokedViaFunctionUrl, Principal, PrincipalOrgID, SourceAccount, SourceArn</div></td></tr>
-<tr data-svc="Lambda" data-c="none" data-d="none" data-props="AuthType Cors InvokeMode Qualifier TargetFunctionArn">
+<tr data-svc="Lambda" data-c="detailed" data-d="node" data-props="AuthType Cors InvokeMode Qualifier TargetFunctionArn">
 <td class="mono">AWS::Lambda::Url</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>lambdaFunctions</code></div><div class="detail">captured as lambdaFunctions.functionUrl</div></td>
+<td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: description, roleArn (edge), vpcConfig detail; functionUrl only surfaced if authType=NONE</div></td>
 <td class="pc">5<div class="props">AuthType, Cors, InvokeMode, Qualifier, TargetFunctionArn</div></td></tr>
 <tr data-svc="Lambda" data-c="none" data-d="none" data-props="CodeSha256 Description FunctionName FunctionScalingConfig ProvisionedConcurrencyConfig RuntimePolicy">
 <td class="mono">AWS::Lambda::Version</td>
@@ -6049,10 +6049,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>networkFirewallPolicies</code></div><div class="detail">stateless/stateful default actions, ruleGroupRefs, ruleOrder, tlsConfigArn</div></td>
 <td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: stateless/stateful default actions, statefulRuleOrder, tlsInspectionConfigurationArn</div></td>
 <td class="pc">4<div class="props">Description, FirewallPolicy, FirewallPolicyName, Tags</div></td></tr>
-<tr data-svc="NetworkFirewall" data-c="none" data-d="none" data-props="EnableMonitoringDashboard FirewallArn FirewallName LoggingConfiguration">
+<tr data-svc="NetworkFirewall" data-c="detailed" data-d="node" data-props="EnableMonitoringDashboard FirewallArn FirewallName LoggingConfiguration">
 <td class="mono">AWS::NetworkFirewall::LoggingConfiguration</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>networkFirewalls</code></div><div class="detail">captured as networkFirewalls.logDestinations</div></td>
+<td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: deleteProtection, logDestinations[], per-AZ endpoints[] detail</div></td>
 <td class="pc">4<div class="props">EnableMonitoringDashboard, FirewallArn, FirewallName, LoggingConfiguration</div></td></tr>
 <tr data-svc="NetworkFirewall" data-c="detailed" data-d="node" data-props="Capacity Description RuleGroup RuleGroupName SummaryConfiguration Tags Type">
 <td class="mono">AWS::NetworkFirewall::RuleGroup</td>
@@ -7599,25 +7599,25 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>snsTopics</code></div><div class="detail">policy (cross-account), kmsMasterKeyId, subscriptions (protocol+endpoint), fifo</div></td>
 <td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">topic policy + subscriptions (cross-account destinations); subscriber ARNs could later be edges</div></td>
 <td class="pc">13<div class="props">ArchivePolicy, ContentBasedDeduplication, DataProtectionPolicy, DeliveryStatusLogging, DisplayName, FifoThroughputScope, FifoTopic, KmsMasterKeyId, SignatureVersion, Subscription, Tags, TopicName, TracingConfig</div></td></tr>
-<tr data-svc="SNS" data-c="none" data-d="none" data-props="PolicyDocument TopicArn">
+<tr data-svc="SNS" data-c="detailed" data-d="panel-only" data-props="PolicyDocument TopicArn">
 <td class="mono">AWS::SNS::TopicInlinePolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>snsTopics</code></div><div class="detail">captured as snsTopics.policy</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">topic policy + subscriptions (cross-account destinations); subscriber ARNs could later be edges</div></td>
 <td class="pc">2<div class="props">PolicyDocument, TopicArn</div></td></tr>
-<tr data-svc="SNS" data-c="none" data-d="none" data-props="PolicyDocument Topics">
+<tr data-svc="SNS" data-c="detailed" data-d="panel-only" data-props="PolicyDocument Topics">
 <td class="mono">AWS::SNS::TopicPolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>snsTopics</code></div><div class="detail">captured as snsTopics.policy</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">topic policy + subscriptions (cross-account destinations); subscriber ARNs could later be edges</div></td>
 <td class="pc">2<div class="props">PolicyDocument, Topics</div></td></tr>
 <tr data-svc="SQS" data-c="detailed" data-d="panel-only" data-props="ContentBasedDeduplication DeduplicationScope DelaySeconds FifoQueue FifoThroughputLimit KmsDataKeyReusePeriodSeconds KmsMasterKeyId MaximumMessageSize MessageRetentionPeriod QueueName ReceiveMessageWaitTimeSeconds RedriveAllowPolicy RedrivePolicy SqsManagedSseEnabled Tags VisibilityTimeout">
 <td class="mono">AWS::SQS::Queue</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>sqsQueues</code></div><div class="detail">policy, encryption (KMS/SQS-managed), redrivePolicy/DLQ, visibilityTimeout, fifo</div></td>
 <td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">queue policy, encryption, DLQ redrive; DLQ target could later be an edge</div></td>
 <td class="pc">16<div class="props">ContentBasedDeduplication, DeduplicationScope, DelaySeconds, FifoQueue, FifoThroughputLimit, KmsDataKeyReusePeriodSeconds, KmsMasterKeyId, MaximumMessageSize, MessageRetentionPeriod, QueueName, ReceiveMessageWaitTimeSeconds, RedriveAllowPolicy, RedrivePolicy, SqsManagedSseEnabled, Tags, VisibilityTimeout</div></td></tr>
-<tr data-svc="SQS" data-c="none" data-d="none" data-props="PolicyDocument Queue">
+<tr data-svc="SQS" data-c="detailed" data-d="panel-only" data-props="PolicyDocument Queue">
 <td class="mono">AWS::SQS::QueueInlinePolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>sqsQueues</code></div><div class="detail">captured as sqsQueues.policy</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">queue policy, encryption, DLQ redrive; DLQ target could later be an edge</div></td>
 <td class="pc">2<div class="props">PolicyDocument, Queue</div></td></tr>
 <tr data-svc="SQS" data-c="detailed" data-d="panel-only" data-props="PolicyDocument Queues">
 <td class="mono">AWS::SQS::QueuePolicy</td>
@@ -7949,10 +7949,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">3<div class="props">BlockPublicPolicy, ResourcePolicy, SecretId</div></td></tr>
-<tr data-svc="SecretsManager" data-c="none" data-d="none" data-props="ExternalSecretRotationMetadata ExternalSecretRotationRoleArn HostedRotationLambda RotateImmediatelyOnUpdate RotationLambdaARN RotationRules SecretId">
+<tr data-svc="SecretsManager" data-c="detailed" data-d="node" data-props="ExternalSecretRotationMetadata ExternalSecretRotationRoleArn HostedRotationLambda RotateImmediatelyOnUpdate RotationLambdaARN RotationRules SecretId">
 <td class="mono">AWS::SecretsManager::RotationSchedule</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>secrets</code></div><div class="detail">captured as secrets.rotationEnabled/lastRotatedDate</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: lastRotatedDate, lastChangedDate, kmsKeyId (edge)</div></td>
 <td class="pc">7<div class="props">ExternalSecretRotationMetadata, ExternalSecretRotationRoleArn, HostedRotationLambda, RotateImmediatelyOnUpdate, RotationLambdaARN, RotationRules, SecretId</div></td></tr>
 <tr data-svc="SecretsManager" data-c="detailed" data-d="node" data-props="Description GenerateSecretString KmsKeyId Name ReplicaRegions SecretString Tags Type">
 <td class="mono">AWS::SecretsManager::Secret</td>
@@ -8579,10 +8579,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>wafWebAcls</code></div><div class="detail">scope, defaultAction, capacity, rules[], associatedResourceArns</div></td>
 <td><span class="badge d-node">node · overview + VPC-detail + focus</span><div class="detail">off-diagram: defaultAction, capacity, rules[] statements, description</div></td>
 <td class="pc">16<div class="props">ApplicationConfig, AssociationConfig, CaptchaConfig, ChallengeConfig, CustomResponseBodies, DataProtectionConfig, DefaultAction, Description, MonetizationConfig, Name, OnSourceDDoSProtectionConfig, Rules, Scope, Tags, TokenDomains, VisibilityConfig</div></td></tr>
-<tr data-svc="WAFv2" data-c="none" data-d="none" data-props="ResourceArn WebACLArn">
+<tr data-svc="WAFv2" data-c="detailed" data-d="node" data-props="ResourceArn WebACLArn">
 <td class="mono">AWS::WAFv2::WebACLAssociation</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>wafWebAcls</code></div><div class="detail">captured as wafWebAcls.associatedResourceArns</div></td>
+<td><span class="badge d-node">node · overview + VPC-detail + focus</span><div class="detail">off-diagram: defaultAction, capacity, rules[] statements, description</div></td>
 <td class="pc">2<div class="props">ResourceArn, WebACLArn</div></td></tr>
 <tr data-svc="Wisdom" data-c="inv-tag" data-d="panel-only" data-props="AssistantId Configuration Description Name Tags Type">
 <td class="mono">AWS::Wisdom::AIAgent</td>
