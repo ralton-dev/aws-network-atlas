@@ -19,9 +19,11 @@
 > (regional-endpoint redirects), Route 53 health checks, per-CIDR SG rule descriptions
 > (`DescribeSecurityGroupRules`), and legacy WAF Classic.
 >
-> Note: new resource kinds surface in the viewer's search/inventory/details/focus panels;
-> first-class graph rendering (e.g. drawing the firewall policy chain on the canvas)
-> remains viewer follow-up work.
+> New resource kinds are rendered on the graph as well as in search/inventory/details:
+> the overview draws Global Accelerator, WAF (both scopes), Cloud WAN, DX circuits with
+> VIF edges, and API custom domains; the VPC drill-down draws the firewall → policy →
+> rule-group chain, WAF protects-edges, DNS Firewall, flow logs, PrivateLink services,
+> and the new VPC-attached workloads; the focus view has relations for every new kind.
 
 Audit date: 2026-07-07. Method: every collector in `packages/scanner/src/collect/` was read
 line-by-line and the exact set of AWS API calls made was compared against the AWS networking
