@@ -152,6 +152,10 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('datasync-task', region.dataSyncTasks as unknown as Array<Record<string, unknown>>);
   // Kinesis Data Firehose
   add('firehose-delivery-stream', region.firehoseDeliveryStreams as unknown as Array<Record<string, unknown>>);
+  // AWS Config posture
+  add('config-recorder', region.configRecorders as unknown as Array<Record<string, unknown>>);
+  add('config-rule', region.configRules as unknown as Array<Record<string, unknown>>);
+  add('config-conformance-pack', region.configConformancePacks as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {

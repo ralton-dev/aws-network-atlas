@@ -172,6 +172,9 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.dataSyncLocations.length === 0 &&
     out.dataSyncTasks.length === 0 &&
     out.firehoseDeliveryStreams.length === 0 &&
+    out.configRecorders.length === 0 &&
+    out.configRules.length === 0 &&
+    out.configConformancePacks.length === 0 &&
     // dhcpOptions deliberately absent: every region has an AWS default set.
     out.vpcs.every((v) => v.isDefault);
 
@@ -524,6 +527,10 @@ export function deriveRegion(out: RegionSnapshot): void {
     ds.subnetIds.sort();
     ds.securityGroupIds.sort();
   }
+  sortById(out.configRecorders);
+  for (const rec of out.configRecorders) rec.recordedResourceTypes.sort();
+  sortById(out.configRules);
+  sortById(out.configConformancePacks);
   sortById(out.ecrRepositories);
   sortById(out.ecrRegistries);
   for (const reg of out.ecrRegistries) {

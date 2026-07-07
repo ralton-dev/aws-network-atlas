@@ -849,6 +849,41 @@ export interface FirehoseDeliveryStream extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// AWS Config (regional): recorders, rules, conformance packs
+// ---------------------------------------------------------------------------
+
+/**
+ * Configuration recorder merged with its status and the region's delivery
+ * channel (0-or-1 per region) — whether Config is on, what it records, and
+ * where it delivers.
+ */
+export interface ConfigRecorder extends BaseResource {
+  /** From DescribeConfigurationRecorderStatus.recording. */
+  recording?: boolean;
+  lastStatus?: string;
+  roleArn?: string;
+  /** recordingGroup.allSupported. */
+  allSupported?: boolean;
+  includeGlobalResourceTypes?: boolean;
+  /** recordingGroup.resourceTypes (when not allSupported). */
+  recordedResourceTypes: string[];
+  /** From DescribeDeliveryChannels. */
+  deliveryS3BucketName?: string;
+  deliverySnsTopicArn?: string;
+}
+
+export interface ConfigRule extends BaseResource {
+  /** Source.Owner (AWS | CUSTOM_LAMBDA | CUSTOM_POLICY) + '/' + SourceIdentifier. */
+  source?: string;
+  /** ConfigRuleState. */
+  state?: string;
+}
+
+export interface ConfigConformancePack extends BaseResource {
+  status?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1552,6 +1587,11 @@ export interface RegionSnapshot {
   // Kinesis Data Firehose (regional)
   firehoseDeliveryStreams: FirehoseDeliveryStream[];
 
+  // AWS Config posture (regional)
+  configRecorders: ConfigRecorder[];
+  configRules: ConfigRule[];
+  configConformancePacks: ConfigConformancePack[];
+
   generic: GenericResource[];
 }
 
@@ -1696,6 +1736,9 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     dataSyncLocations: [],
     dataSyncTasks: [],
     firehoseDeliveryStreams: [],
+    configRecorders: [],
+    configRules: [],
+    configConformancePacks: [],
     generic: [],
   };
 }

@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">143</div><div class="l">Detailed collectors</div></div>
+<div class="kpi det"><div class="n">148</div><div class="l">Detailed collectors</div></div>
 <div class="kpi inv"><div class="n">941</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">538</div><div class="l">Not collected at all</div></div>
+<div class="kpi non"><div class="n">533</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -148,8 +148,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:64%"></span></div><span class="pct">64%</span></td></tr>
 <tr><td class="mono">WAFRegional</td><td>11</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">11</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Config</td><td>10</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">7</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Config</td><td>10</td><td class="c-detailed">5</td><td class="c-inv">3</td><td class="c-none">2</td>
+<td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
 <tr><td class="mono">ECS</td><td>10</td><td class="c-detailed">1</td><td class="c-inv">7</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:10%"></span></div><span class="pct">10%</span></td></tr>
 <tr><td class="mono">ElastiCache</td><td>10</td><td class="c-detailed">3</td><td class="c-inv">5</td><td class="c-none">2</td>
@@ -2334,40 +2334,40 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">3<div class="props">AuthorizedAccountId, AuthorizedAwsRegion, Tags</div></td></tr>
-<tr data-svc="Config" data-c="none" data-d="none" data-props="Compliance ConfigRuleName Description EvaluationModes InputParameters MaximumExecutionFrequency Scope Source">
+<tr data-svc="Config" data-c="detailed" data-d="panel-only" data-props="Compliance ConfigRuleName Description EvaluationModes InputParameters MaximumExecutionFrequency Scope Source">
 <td class="mono">AWS::Config::ConfigRule</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>configRules</code></div><div class="detail">source (AWS/custom), state</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">Config rules (managed/custom) + state</div></td>
 <td class="pc">8<div class="props">Compliance, ConfigRuleName, Description, EvaluationModes, InputParameters, MaximumExecutionFrequency, Scope, Source</div></td></tr>
 <tr data-svc="Config" data-c="inv-tag" data-d="panel-only" data-props="AccountAggregationSources ConfigurationAggregatorName OrganizationAggregationSource Tags">
 <td class="mono">AWS::Config::ConfigurationAggregator</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">AccountAggregationSources, ConfigurationAggregatorName, OrganizationAggregationSource, Tags</div></td></tr>
-<tr data-svc="Config" data-c="none" data-d="none" data-props="Name RecordingGroup RecordingMode RoleARN">
+<tr data-svc="Config" data-c="detailed" data-d="panel-only" data-props="Name RecordingGroup RecordingMode RoleARN">
 <td class="mono">AWS::Config::ConfigurationRecorder</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>configRecorders</code></div><div class="detail">recording on/off, recordedResourceTypes, delivery S3/SNS, role</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">whether Config recording is on, what it records, and where it delivers — governance posture</div></td>
 <td class="pc">4<div class="props">Name, RecordingGroup, RecordingMode, RoleARN</div></td></tr>
-<tr data-svc="Config" data-c="none" data-d="none" data-props="ConformancePackInputParameters ConformancePackName DeliveryS3Bucket DeliveryS3KeyPrefix TemplateBody TemplateS3Uri TemplateSSMDocumentDetails">
+<tr data-svc="Config" data-c="detailed" data-d="panel-only" data-props="ConformancePackInputParameters ConformancePackName DeliveryS3Bucket DeliveryS3KeyPrefix TemplateBody TemplateS3Uri TemplateSSMDocumentDetails">
 <td class="mono">AWS::Config::ConformancePack</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>configConformancePacks</code></div><div class="detail">status</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">conformance packs</div></td>
 <td class="pc">7<div class="props">ConformancePackInputParameters, ConformancePackName, DeliveryS3Bucket, DeliveryS3KeyPrefix, TemplateBody, TemplateS3Uri, TemplateSSMDocumentDetails</div></td></tr>
-<tr data-svc="Config" data-c="none" data-d="none" data-props="ConfigSnapshotDeliveryProperties Name S3BucketName S3KeyPrefix S3KmsKeyArn SnsTopicARN">
+<tr data-svc="Config" data-c="detailed" data-d="panel-only" data-props="ConfigSnapshotDeliveryProperties Name S3BucketName S3KeyPrefix S3KmsKeyArn SnsTopicARN">
 <td class="mono">AWS::Config::DeliveryChannel</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>configRecorders</code></div><div class="detail">captured as configRecorders delivery S3/SNS</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">whether Config recording is on, what it records, and where it delivers — governance posture</div></td>
 <td class="pc">6<div class="props">ConfigSnapshotDeliveryProperties, Name, S3BucketName, S3KeyPrefix, S3KmsKeyArn, SnsTopicARN</div></td></tr>
 <tr data-svc="Config" data-c="none" data-d="none" data-props="ExcludedAccounts OrganizationConfigRuleName OrganizationCustomPolicyRuleMetadata OrganizationCustomRuleMetadata OrganizationManagedRuleMetadata">
 <td class="mono">AWS::Config::OrganizationConfigRule</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">5<div class="props">ExcludedAccounts, OrganizationConfigRuleName, OrganizationCustomPolicyRuleMetadata, OrganizationCustomRuleMetadata, OrganizationManagedRuleMetadata</div></td></tr>
-<tr data-svc="Config" data-c="none" data-d="none" data-props="ConformancePackInputParameters DeliveryS3Bucket DeliveryS3KeyPrefix ExcludedAccounts OrganizationConformancePackName TemplateBody TemplateS3Uri">
+<tr data-svc="Config" data-c="detailed" data-d="panel-only" data-props="ConformancePackInputParameters DeliveryS3Bucket DeliveryS3KeyPrefix ExcludedAccounts OrganizationConformancePackName TemplateBody TemplateS3Uri">
 <td class="mono">AWS::Config::OrganizationConformancePack</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>configConformancePacks</code></div><div class="detail">captured as configConformancePacks</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">conformance packs</div></td>
 <td class="pc">7<div class="props">ConformancePackInputParameters, DeliveryS3Bucket, DeliveryS3KeyPrefix, ExcludedAccounts, OrganizationConformancePackName, TemplateBody, TemplateS3Uri</div></td></tr>
 <tr data-svc="Config" data-c="none" data-d="none" data-props="Automatic ConfigRuleName ExecutionControls MaximumAutomaticAttempts Parameters ResourceType RetryAttemptSeconds TargetId TargetType TargetVersion">
 <td class="mono">AWS::Config::RemediationConfiguration</td>
