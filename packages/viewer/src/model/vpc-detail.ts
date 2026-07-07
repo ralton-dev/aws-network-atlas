@@ -1,5 +1,5 @@
 import { MarkerType } from '@xyflow/react';
-import type { RegionSnapshot, SecurityGroupRule } from '@atlas/schema';
+import type { LoadBalancerListener, RegionSnapshot, SecurityGroupRule } from '@atlas/schema';
 import type { AtlasIndex } from '../data.js';
 import {
   destsLabel,
@@ -36,6 +36,19 @@ function leaf(
     height: 92,
     data: { label, subtitle, kind, refId: refId ?? id.replace(/^res:/, ''), badges },
   };
+}
+
+const MAX_LISTENER_BADGES = 4;
+
+/** Compact listener badges for a load-balancer node: "HTTPS:443", "HTTP:80", … capped with "+N". */
+function listenerBadges(listeners: LoadBalancerListener[]): string[] | undefined {
+  if (listeners.length === 0) return undefined;
+  const labels = [...new Set(
+    listeners.map((l) => [l.protocol, l.port].filter((p) => p != null).join(':') || 'listener'),
+  )];
+  const shown = labels.slice(0, MAX_LISTENER_BADGES);
+  const extra = labels.length - shown.length;
+  return extra > 0 ? [...shown, `+${extra}`] : shown;
 }
 
 /** Build the drill-down graph for a single VPC. */
@@ -167,6 +180,7 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     leaves.set(`res:${lb.id}`, leaf(
       `res:${lb.id}`, vpcNodeId, `lb-${lb.lbType}`,
       lb.name ?? lb.id, `${lb.lbType} · ${lb.scheme ?? ''}`, lb.id,
+      listenerBadges(lb.listeners),
     ));
   }
   for (const fn of region.lambdaFunctions) {
@@ -699,11 +713,19 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
   for (const lb of region.loadBalancers.filter((l) => l.vpcId === vpcId)) {
     const tgArns = new Set(lb.listeners.flatMap((l) => l.targetGroupArns));
     for (const tg of region.targetGroups.filter((t) => t.loadBalancerArns.includes(lb.id) || tgArns.has(t.id))) {
+      // Listener-rule routing conditions (host/path) that forward to this target group.
+      const conditions = lb.listeners
+        .flatMap((l) => l.rules ?? [])
+        .filter((r) => r.targetGroupArns.includes(tg.id))
+        .flatMap((r) => r.conditions);
+      const condLabel = destsLabel(conditions, 2);
       for (const target of tg.targets) {
         const tgtNode = `res:${target.targetId}`;
         if (!leaves.has(tgtNode)) continue;
         const key = `assoc:${lb.id}|${target.targetId}`;
         if (edges.has(key)) continue;
+        const portLbl = tg.port ? `${tg.protocol ?? ''} ${tg.port}` : '';
+        const label = [portLbl, condLabel].filter(Boolean).join(' · ') || undefined;
         edges.set(key, {
           id: `edge:${key}`,
           source: `res:${lb.id}`,
@@ -712,7 +734,7 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
           markerEnd: { type: MarkerType.ArrowClosed },
           data: {
             edgeKind: 'assoc',
-            label: tg.port ? `${tg.protocol ?? ''} ${tg.port}` : undefined,
+            label,
             title: `${lb.name ?? lb.id} → ${target.targetId} (${tg.name ?? 'target group'})`,
             refId: tg.id,
           },
