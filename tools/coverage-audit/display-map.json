@@ -70,6 +70,8 @@
 "cognitoIdentityPools":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"federated identity → IAM role mapping; not yet drawn on the graph"},
 "ecrRepositories":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"repository + resource policies (cross-account grants); not yet drawn on the graph"},
 "ecrRegistries":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"registry replication + pull-through-cache + scanning config; not yet drawn"},
+"snsTopics":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"topic policy + subscriptions (cross-account destinations); subscriber ARNs could later be edges"},
+"sqsQueues":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"queue policy, encryption, DLQ redrive; DLQ target could later be an edge"},
 "generic":{"render":"panel-only","label":"panel-only — Inventory list, grouped by service","note":"ARN / resourceType / tags / source only in panel; never on any graph view"},
 "directConnectGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: amazonSideAsn, state, ownerAccount, associations[] detail"},
 "hostedZones":{"render":"node","label":"node · overview + focus","note":"HIGH-VALUE GAP: records[] (the actual DNS records — name/type/ttl/values/aliasTarget) and recordsTruncated only in panel"},

@@ -30,8 +30,6 @@ import { AwsContext, guard } from '../aws.js';
  * catches untagged buckets.
  */
 const TYPE_NAMES = [
-  'AWS::SQS::Queue',
-  'AWS::SNS::Topic',
   'AWS::CloudFormation::Stack',
   'AWS::StepFunctions::StateMachine',
   'AWS::Athena::WorkGroup',

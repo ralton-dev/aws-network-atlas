@@ -31,6 +31,7 @@ import { collectLogs } from './collect/logs.js';
 import { collectCognito } from './collect/cognito.js';
 import { collectEcr } from './collect/ecr.js';
 import { collectDynamoDb } from './collect/dynamodb.js';
+import { collectSns, collectSqs } from './collect/messaging.js';
 import { collectGlobalAccelerator } from './collect/global-accelerator.js';
 import { collectCloudWan } from './collect/cloudwan.js';
 import { deriveRegion, sortErrors } from './derive.js';
@@ -91,6 +92,8 @@ export async function scanAccount(
           collectCognito(ctx, region, out),
           collectEcr(ctx, region, out),
           collectDynamoDb(ctx, region, out),
+          collectSns(ctx, region, out),
+          collectSqs(ctx, region, out),
           collectGeneric(ctx, region, out),
           collectCloudControl(ctx, region, out),
         ]);

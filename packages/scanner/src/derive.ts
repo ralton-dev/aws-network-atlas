@@ -446,6 +446,11 @@ export function deriveRegion(out: RegionSnapshot): void {
   }
   sortById(out.dynamoDbTables);
   for (const t of out.dynamoDbTables) t.globalTableReplicas.sort();
+  sortById(out.snsTopics);
+  for (const t of out.snsTopics) {
+    t.subscriptions.sort((a, b) => str(a.arn).localeCompare(str(b.arn)));
+  }
+  sortById(out.sqsQueues);
   sortById(out.ecrRepositories);
   sortById(out.ecrRegistries);
   for (const reg of out.ecrRegistries) {

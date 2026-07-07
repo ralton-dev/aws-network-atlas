@@ -614,6 +614,39 @@ export interface EcrRegistry extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Messaging (regional): SNS topics + SQS queues
+// ---------------------------------------------------------------------------
+
+export interface SnsTopic extends BaseResource {
+  displayName?: string;
+  fifoTopic?: boolean;
+  /** SSE key — undefined means no server-side encryption. */
+  kmsMasterKeyId?: string;
+  /** Resource policy JSON (cross-account publish/subscribe) — undefined if none. */
+  policy?: string;
+  subscriptionsConfirmed?: number;
+  subscriptions: Array<{
+    arn?: string;
+    protocol?: string;
+    endpoint?: string;
+    rawMessageDelivery?: boolean;
+  }>;
+}
+
+export interface SqsQueue extends BaseResource {
+  fifoQueue?: boolean;
+  kmsMasterKeyId?: string;
+  sqsManagedSseEnabled?: boolean;
+  /** Resource policy JSON (cross-account send/receive) — undefined if none. */
+  policy?: string;
+  /** From RedrivePolicy: the dead-letter queue this queue drains into. */
+  deadLetterTargetArn?: string;
+  /** From RedrivePolicy. */
+  maxReceiveCount?: number;
+  visibilityTimeout?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1285,6 +1318,10 @@ export interface RegionSnapshot {
   ecrRepositories: EcrRepository[];
   ecrRegistries: EcrRegistry[];
 
+  // messaging (regional)
+  snsTopics: SnsTopic[];
+  sqsQueues: SqsQueue[];
+
   generic: GenericResource[];
 }
 
@@ -1411,6 +1448,8 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     cognitoIdentityPools: [],
     ecrRepositories: [],
     ecrRegistries: [],
+    snsTopics: [],
+    sqsQueues: [],
     generic: [],
   };
 }

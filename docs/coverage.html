@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">117</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">962</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">543</div><div class="l">Not collected at all</div></div>
+<div class="kpi det"><div class="n">121</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">960</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">541</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -334,8 +334,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">S3Outposts</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">3</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">SNS</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">3</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">SNS</td><td>4</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">2</td>
+<td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
 <tr><td class="mono">SSMContacts</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">SecretsManager</td><td>4</td><td class="c-detailed">1</td><td class="c-inv">0</td><td class="c-none">3</td>
@@ -436,8 +436,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">S3Vectors</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">SQS</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">2</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">SQS</td><td>3</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:67%"></span></div><span class="pct">67%</span></td></tr>
 <tr><td class="mono">SupportApp</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">3</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">WorkSpaces</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">1</td>
@@ -7589,15 +7589,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">DeletionProtectionEnabled, IsoCountryCode, SenderId, Tags</div></td></tr>
-<tr data-svc="SNS" data-c="none" data-d="none" data-props="DeliveryPolicy Endpoint FilterPolicy FilterPolicyScope Protocol RawMessageDelivery RedrivePolicy Region ReplayPolicy SubscriptionRoleArn TopicArn">
+<tr data-svc="SNS" data-c="detailed" data-d="panel-only" data-props="DeliveryPolicy Endpoint FilterPolicy FilterPolicyScope Protocol RawMessageDelivery RedrivePolicy Region ReplayPolicy SubscriptionRoleArn TopicArn">
 <td class="mono">AWS::SNS::Subscription</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>snsTopics</code></div><div class="detail">captured inside snsTopics.subscriptions[]</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">topic policy + subscriptions (cross-account destinations); subscriber ARNs could later be edges</div></td>
 <td class="pc">11<div class="props">DeliveryPolicy, Endpoint, FilterPolicy, FilterPolicyScope, Protocol, RawMessageDelivery, RedrivePolicy, Region, ReplayPolicy, SubscriptionRoleArn, TopicArn</div></td></tr>
-<tr data-svc="SNS" data-c="inv" data-d="panel-only" data-props="ArchivePolicy ContentBasedDeduplication DataProtectionPolicy DeliveryStatusLogging DisplayName FifoThroughputScope FifoTopic KmsMasterKeyId SignatureVersion Subscription Tags TopicName TracingConfig">
+<tr data-svc="SNS" data-c="detailed" data-d="panel-only" data-props="ArchivePolicy ContentBasedDeduplication DataProtectionPolicy DeliveryStatusLogging DisplayName FifoThroughputScope FifoTopic KmsMasterKeyId SignatureVersion Subscription Tags TopicName TracingConfig">
 <td class="mono">AWS::SNS::Topic</td>
-<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>snsTopics</code></div><div class="detail">policy (cross-account), kmsMasterKeyId, subscriptions (protocol+endpoint), fifo</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">topic policy + subscriptions (cross-account destinations); subscriber ARNs could later be edges</div></td>
 <td class="pc">13<div class="props">ArchivePolicy, ContentBasedDeduplication, DataProtectionPolicy, DeliveryStatusLogging, DisplayName, FifoThroughputScope, FifoTopic, KmsMasterKeyId, SignatureVersion, Subscription, Tags, TopicName, TracingConfig</div></td></tr>
 <tr data-svc="SNS" data-c="none" data-d="none" data-props="PolicyDocument TopicArn">
 <td class="mono">AWS::SNS::TopicInlinePolicy</td>
@@ -7609,20 +7609,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">2<div class="props">PolicyDocument, Topics</div></td></tr>
-<tr data-svc="SQS" data-c="inv" data-d="panel-only" data-props="ContentBasedDeduplication DeduplicationScope DelaySeconds FifoQueue FifoThroughputLimit KmsDataKeyReusePeriodSeconds KmsMasterKeyId MaximumMessageSize MessageRetentionPeriod QueueName ReceiveMessageWaitTimeSeconds RedriveAllowPolicy RedrivePolicy SqsManagedSseEnabled Tags VisibilityTimeout">
+<tr data-svc="SQS" data-c="detailed" data-d="panel-only" data-props="ContentBasedDeduplication DeduplicationScope DelaySeconds FifoQueue FifoThroughputLimit KmsDataKeyReusePeriodSeconds KmsMasterKeyId MaximumMessageSize MessageRetentionPeriod QueueName ReceiveMessageWaitTimeSeconds RedriveAllowPolicy RedrivePolicy SqsManagedSseEnabled Tags VisibilityTimeout">
 <td class="mono">AWS::SQS::Queue</td>
-<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>sqsQueues</code></div><div class="detail">policy, encryption (KMS/SQS-managed), redrivePolicy/DLQ, visibilityTimeout, fifo</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">queue policy, encryption, DLQ redrive; DLQ target could later be an edge</div></td>
 <td class="pc">16<div class="props">ContentBasedDeduplication, DeduplicationScope, DelaySeconds, FifoQueue, FifoThroughputLimit, KmsDataKeyReusePeriodSeconds, KmsMasterKeyId, MaximumMessageSize, MessageRetentionPeriod, QueueName, ReceiveMessageWaitTimeSeconds, RedriveAllowPolicy, RedrivePolicy, SqsManagedSseEnabled, Tags, VisibilityTimeout</div></td></tr>
 <tr data-svc="SQS" data-c="none" data-d="none" data-props="PolicyDocument Queue">
 <td class="mono">AWS::SQS::QueueInlinePolicy</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">2<div class="props">PolicyDocument, Queue</div></td></tr>
-<tr data-svc="SQS" data-c="none" data-d="none" data-props="PolicyDocument Queues">
+<tr data-svc="SQS" data-c="detailed" data-d="panel-only" data-props="PolicyDocument Queues">
 <td class="mono">AWS::SQS::QueuePolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>sqsQueues</code></div><div class="detail">captured as sqsQueues.policy</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">queue policy, encryption, DLQ redrive; DLQ target could later be an edge</div></td>
 <td class="pc">2<div class="props">PolicyDocument, Queues</div></td></tr>
 <tr data-svc="SSM" data-c="inv-tag" data-d="panel-only" data-props="ApplyOnlyAtCronInterval AssociationDispatchAssumeRole AssociationName AutomationTargetParameterName CalendarNames ComplianceSeverity DocumentVersion InstanceId MaxConcurrency MaxErrors Name OutputLocation Parameters ScheduleExpression ScheduleOffset SyncCompliance Tags Targets WaitForSuccessTimeoutSeconds">
 <td class="mono">AWS::SSM::Association</td>

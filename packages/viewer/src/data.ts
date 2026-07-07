@@ -127,6 +127,9 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   // container registry
   add('ecr-repository', region.ecrRepositories as unknown as Array<Record<string, unknown>>);
   add('ecr-registry', region.ecrRegistries as unknown as Array<Record<string, unknown>>);
+  // messaging
+  add('sns-topic', region.snsTopics as unknown as Array<Record<string, unknown>>);
+  add('sqs-queue', region.sqsQueues as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {
