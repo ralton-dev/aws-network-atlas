@@ -747,6 +747,48 @@ export interface GlueDatabase extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// DMS (regional): replication instances, endpoints, replication tasks
+// ---------------------------------------------------------------------------
+
+/** DMS replication instance — VPC-ATTACHED (subnet group + security groups). */
+export interface DmsReplicationInstance extends BaseResource {
+  replicationInstanceClass?: string;
+  engineVersion?: string;
+  status?: string;
+  /** ReplicationSubnetGroup.VpcId. */
+  vpcId?: string;
+  /** ReplicationSubnetGroup.ReplicationSubnetGroupIdentifier. */
+  subnetGroupId?: string;
+  /** ReplicationSubnetGroup.Subnets[].SubnetIdentifier. */
+  subnetIds: string[];
+  /** VpcSecurityGroups[].VpcSecurityGroupId. */
+  securityGroupIds: string[];
+  publiclyAccessible?: boolean;
+  multiAz?: boolean;
+  kmsKeyId?: string;
+  privateIps: string[];
+  publicIps: string[];
+}
+
+export interface DmsEndpoint extends BaseResource {
+  /** SOURCE | TARGET. */
+  endpointType?: string;
+  engineName?: string;
+  serverName?: string;
+  port?: number;
+  sslMode?: string;
+  kmsKeyId?: string;
+}
+
+export interface DmsReplicationTask extends BaseResource {
+  status?: string;
+  migrationType?: string;
+  sourceEndpointArn?: string;
+  targetEndpointArn?: string;
+  replicationInstanceArn?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1437,6 +1479,11 @@ export interface RegionSnapshot {
   glueCrawlers: GlueCrawler[];
   glueDatabases: GlueDatabase[];
 
+  // DMS (regional)
+  dmsReplicationInstances: DmsReplicationInstance[];
+  dmsEndpoints: DmsEndpoint[];
+  dmsReplicationTasks: DmsReplicationTask[];
+
   generic: GenericResource[];
 }
 
@@ -1574,6 +1621,9 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     glueJobs: [],
     glueCrawlers: [],
     glueDatabases: [],
+    dmsReplicationInstances: [],
+    dmsEndpoints: [],
+    dmsReplicationTasks: [],
     generic: [],
   };
 }

@@ -142,6 +142,10 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('glue-job', region.glueJobs as unknown as Array<Record<string, unknown>>);
   add('glue-crawler', region.glueCrawlers as unknown as Array<Record<string, unknown>>);
   add('glue-database', region.glueDatabases as unknown as Array<Record<string, unknown>>);
+  // DMS
+  add('dms-replication-instance', region.dmsReplicationInstances as unknown as Array<Record<string, unknown>>);
+  add('dms-endpoint', region.dmsEndpoints as unknown as Array<Record<string, unknown>>);
+  add('dms-replication-task', region.dmsReplicationTasks as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {

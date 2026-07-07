@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">132</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">952</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">135</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">949</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">538</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -136,8 +136,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Wisdom</td><td>12</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">4</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">DMS</td><td>11</td><td class="c-detailed">0</td><td class="c-inv">10</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">DMS</td><td>11</td><td class="c-detailed">3</td><td class="c-inv">7</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:27%"></span></div><span class="pct">27%</span></td></tr>
 <tr><td class="mono">Deadline</td><td>11</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">6</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">GameLift</td><td>11</td><td class="c-detailed">0</td><td class="c-inv">11</td><td class="c-none">0</td>
@@ -2654,10 +2654,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">DataProviderIdentifier, DataProviderName, Description, Engine, ExactSettings, Settings, Tags</div></td></tr>
-<tr data-svc="DMS" data-c="inv-tag" data-d="panel-only" data-props="CertificateArn DatabaseName DocDbSettings DynamoDbSettings ElasticsearchSettings EndpointIdentifier EndpointType EngineName ExtraConnectionAttributes GcpMySQLSettings IbmDb2Settings KafkaSettings KinesisSettings KmsKeyId MicrosoftSqlServerSettings MongoDbSettings MySqlSettings NeptuneSettings OracleSettings Password Port PostgreSqlSettings RedisSettings RedshiftSettings ResourceIdentifier S3Settings ServerName SslMode SybaseSettings Tags Username">
+<tr data-svc="DMS" data-c="detailed" data-d="panel-only" data-props="CertificateArn DatabaseName DocDbSettings DynamoDbSettings ElasticsearchSettings EndpointIdentifier EndpointType EngineName ExtraConnectionAttributes GcpMySQLSettings IbmDb2Settings KafkaSettings KinesisSettings KmsKeyId MicrosoftSqlServerSettings MongoDbSettings MySqlSettings NeptuneSettings OracleSettings Password Port PostgreSqlSettings RedisSettings RedshiftSettings ResourceIdentifier S3Settings ServerName SslMode SybaseSettings Tags Username">
 <td class="mono">AWS::DMS::Endpoint</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dmsEndpoints</code></div><div class="detail">type (source/target), engine, server, port, sslMode, KMS</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">source/target DB endpoints; task source→target could later be edges</div></td>
 <td class="pc">31<div class="props">CertificateArn, DatabaseName, DocDbSettings, DynamoDbSettings, ElasticsearchSettings, EndpointIdentifier, EndpointType, EngineName, ExtraConnectionAttributes, GcpMySQLSettings, IbmDb2Settings, KafkaSettings, KinesisSettings, KmsKeyId, MicrosoftSqlServerSettings, MongoDbSettings, MySqlSettings, NeptuneSettings, OracleSettings, Password, Port, PostgreSqlSettings, RedisSettings, RedshiftSettings, ResourceIdentifier, S3Settings, ServerName, SslMode, SybaseSettings, Tags, Username</div></td></tr>
 <tr data-svc="DMS" data-c="inv-tag" data-d="panel-only" data-props="Enabled EventCategories SnsTopicArn SourceIds SourceType SubscriptionName Tags">
 <td class="mono">AWS::DMS::EventSubscription</td>
@@ -2679,20 +2679,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">ComputeConfig, ReplicationConfigIdentifier, ReplicationSettings, ReplicationType, ResourceIdentifier, SourceEndpointArn, SupplementalSettings, TableMappings, Tags, TargetEndpointArn</div></td></tr>
-<tr data-svc="DMS" data-c="inv-tag" data-d="panel-only" data-props="AllocatedStorage AllowMajorVersionUpgrade AutoMinorVersionUpgrade AvailabilityZone DnsNameServers EngineVersion KmsKeyId MultiAZ NetworkType PreferredMaintenanceWindow PubliclyAccessible ReplicationInstanceClass ReplicationInstanceIdentifier ReplicationSubnetGroupIdentifier ResourceIdentifier Tags VpcSecurityGroupIds">
+<tr data-svc="DMS" data-c="detailed" data-d="panel-only" data-props="AllocatedStorage AllowMajorVersionUpgrade AutoMinorVersionUpgrade AvailabilityZone DnsNameServers EngineVersion KmsKeyId MultiAZ NetworkType PreferredMaintenanceWindow PubliclyAccessible ReplicationInstanceClass ReplicationInstanceIdentifier ReplicationSubnetGroupIdentifier ResourceIdentifier Tags VpcSecurityGroupIds">
 <td class="mono">AWS::DMS::ReplicationInstance</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dmsReplicationInstances</code></div><div class="detail">VPC-attached: vpc/subnetGroup/subnets/SGs, class, publiclyAccessible, multiAz, KMS, IPs</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down graph</div></td>
 <td class="pc">17<div class="props">AllocatedStorage, AllowMajorVersionUpgrade, AutoMinorVersionUpgrade, AvailabilityZone, DnsNameServers, EngineVersion, KmsKeyId, MultiAZ, NetworkType, PreferredMaintenanceWindow, PubliclyAccessible, ReplicationInstanceClass, ReplicationInstanceIdentifier, ReplicationSubnetGroupIdentifier, ResourceIdentifier, Tags, VpcSecurityGroupIds</div></td></tr>
 <tr data-svc="DMS" data-c="inv-tag" data-d="panel-only" data-props="ReplicationSubnetGroupDescription ReplicationSubnetGroupIdentifier SubnetIds Tags">
 <td class="mono">AWS::DMS::ReplicationSubnetGroup</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">ReplicationSubnetGroupDescription, ReplicationSubnetGroupIdentifier, SubnetIds, Tags</div></td></tr>
-<tr data-svc="DMS" data-c="inv-tag" data-d="panel-only" data-props="CdcStartPosition CdcStartTime CdcStopPosition MigrationType ReplicationInstanceArn ReplicationTaskIdentifier ReplicationTaskSettings ResourceIdentifier SourceEndpointArn TableMappings Tags TargetEndpointArn TaskData">
+<tr data-svc="DMS" data-c="detailed" data-d="panel-only" data-props="CdcStartPosition CdcStartTime CdcStopPosition MigrationType ReplicationInstanceArn ReplicationTaskIdentifier ReplicationTaskSettings ResourceIdentifier SourceEndpointArn TableMappings Tags TargetEndpointArn TaskData">
 <td class="mono">AWS::DMS::ReplicationTask</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dmsReplicationTasks</code></div><div class="detail">migrationType, source/target endpoint ARNs, instance ARN</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">source→instance→target migration wiring</div></td>
 <td class="pc">13<div class="props">CdcStartPosition, CdcStartTime, CdcStopPosition, MigrationType, ReplicationInstanceArn, ReplicationTaskIdentifier, ReplicationTaskSettings, ResourceIdentifier, SourceEndpointArn, TableMappings, Tags, TargetEndpointArn, TaskData</div></td></tr>
 <tr data-svc="DSQL" data-c="inv-tag" data-d="panel-only" data-props="DeletionProtectionEnabled KmsEncryptionKey MultiRegionProperties PolicyDocument Tags">
 <td class="mono">AWS::DSQL::Cluster</td>

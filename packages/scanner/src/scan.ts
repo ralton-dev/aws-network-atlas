@@ -35,6 +35,7 @@ import { collectSns, collectSqs } from './collect/messaging.js';
 import { collectEventBridge, collectPipes, collectScheduler } from './collect/eventbridge.js';
 import { collectStepFunctions } from './collect/stepfunctions.js';
 import { collectGlue } from './collect/glue.js';
+import { collectDms } from './collect/dms.js';
 import { collectGlobalAccelerator } from './collect/global-accelerator.js';
 import { collectCloudWan } from './collect/cloudwan.js';
 import { deriveRegion, sortErrors } from './derive.js';
@@ -102,6 +103,7 @@ export async function scanAccount(
           collectScheduler(ctx, region, out),
           collectStepFunctions(ctx, region, out),
           collectGlue(ctx, region, out),
+          collectDms(ctx, region, out),
           collectGeneric(ctx, region, out),
           collectCloudControl(ctx, region, out),
         ]);
