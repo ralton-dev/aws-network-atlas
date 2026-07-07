@@ -109,8 +109,15 @@ function runAll(label: string): void {
 }
 
 /** Fixture-only neighborhood expectations: the ego graph must contain the
- *  relationships the feature promises (SGs, roles, routing, DNS, LB path). */
-function expectFocus(centerKey: string, expectNodes: string[], expectEdgeLabels: string[]): void {
+ *  relationships the feature promises (SGs, roles, routing, DNS, LB path) —
+ *  and must NOT contain `absentNodes` (scoping: unrelated resources that a
+ *  too-eager expansion would drag in). */
+function expectFocus(
+  centerKey: string,
+  expectNodes: string[],
+  expectEdgeLabels: string[],
+  absentNodes: string[] = [],
+): void {
   const index = buildIndex();
   const graph = buildFocus(index, centerKey);
   const ids = new Set(graph.nodes.map((n) => n.id));
@@ -121,6 +128,9 @@ function expectFocus(centerKey: string, expectNodes: string[], expectEdgeLabels:
   }
   for (const label of expectEdgeLabels) {
     if (!labels.has(label)) problems.push(`missing edge label "${label}"`);
+  }
+  for (const id of absentNodes) {
+    if (ids.has(id)) problems.push(`unexpected node ${id} (scope leak)`);
   }
   if (problems.length === 0) {
     console.log(`PASS  fixture / focus ${centerKey}: ${graph.nodes.length} nodes, ${graph.edges.length} edges, expectations hold`);
@@ -148,6 +158,14 @@ expectFocus(
     'Z0PRODPRIV0001', // private zone on the VPC
   ],
   ['in subnet', 'assumes role', 'applies to', 'private DNS'],
+  [
+    // Scoping: sibling/far-side subnets and THEIR routing must not leak in
+    // through the peering or TGW hops.
+    'subnet-0prodapp0000101', // sibling subnet (only reachable via pcx fan-out)
+    'subnet-0devpriv0000001', // far side of the peering
+    'nat-0prod00000000101', // sibling subnet's NAT
+    'nat-0dev00000000001', // dev VPC's NAT
+  ],
 );
 // A security group: blast radius (workloads) + rule graph + its VPC.
 expectFocus(
@@ -164,8 +182,10 @@ expectFocus(
 // A VPC: subnets, gateways, peering/TGW spokes, DNS — without workload noise.
 expectFocus(
   'vpc-0prod00000000000a1',
-  ['subnet-0prodapp0000001', 'tgw-0a1b2c3d4e5f00001', 'pcx-0proddev000000001', 'Z0PRODPRIV0001'],
+  ['subnet-0prodapp0000001', 'tgw-0a1b2c3d4e5f00001', 'pcx-0proddev000000001', 'Z0PRODPRIV0001',
+    'vpc-0dev000000000000a1'], // the peer VPC, via the pcx leg
   ['private DNS'],
+  ['subnet-0devpriv0000001', 'nat-0dev00000000001'], // the peer VPC's internals stay out
 );
 // An IAM role: who assumes it, via which instance profile.
 expectFocus(
@@ -173,6 +193,24 @@ expectFocus(
   ['i-0prodapp0000000001', 'prod-app-profile'],
   ['assumes role', 'instance profile'],
 );
+// A hub TGW: every attached VPC + routing subnets + VPN/DX/TGW-peering spokes,
+// but NOT the spoke VPCs' internal routing (NATs, peering fan-out).
+expectFocus(
+  'tgw-0a1b2c3d4e5f00001',
+  [
+    'vpc-0prod00000000000a1',
+    'vpc-0shared00000000a1',
+    'vpc-0dev000000000000a1',
+    'subnet-0prodapp0000001',
+    'cgw-0aa11bb22cc330001', // site-to-site VPN spoke
+    'dxgw-0f1e2d3c4b5a00001', // Direct Connect association
+    'tgw-0a1b2c3d4e5f00002', // TGW peering (us-east-1)
+  ],
+  ['hq-vpn', 'DX association', 'TGW peering · eu-west-1'],
+  ['nat-0prod00000000001', 'nat-0dev00000000001', 'pcx-0proddev000000001'],
+);
+// An Elastic IP held by a NAT gateway (association only visible on the NAT).
+expectFocus('eipalloc-0prod00000001', ['nat-0prod00000000001'], ['198.51.100.10']);
 
 // --- 2. adversarial snapshot — exercises every ghost/cap/malformed path ------
 function adversarialAccount(): AccountSnapshot {

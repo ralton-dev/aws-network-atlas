@@ -273,6 +273,27 @@ function collectRelations(index: AtlasIndex): Relation[] {
           refId: r.clusterId,
         });
       }
+      // Elastic IPs → whatever holds them (instance, ENI, or a NAT gateway,
+      // whose EIP association only surfaces on the NAT's address list).
+      for (const eip of region.elasticIps) {
+        const holder =
+          eip.instanceId ??
+          eip.networkInterfaceId ??
+          region.natGateways.find((n) =>
+            n.addresses.some(
+              (a) =>
+                (a.allocationId !== undefined && a.allocationId === eip.id) ||
+                (a.publicIp !== undefined && a.publicIp === eip.publicIp),
+            ),
+          )?.id;
+        if (!holder) continue;
+        add(`eip:${eip.id}`, eip.id, holder, {
+          edgeKind: 'assoc',
+          label: eip.publicIp ?? 'Elastic IP',
+          title: `${eip.publicIp ?? eip.id} is held by ${nameOf(holder)}`,
+          refId: eip.id,
+        });
+      }
 
       // --- identity: workloads → the roles they assume ------------------------
       for (const inst of region.instances) {
@@ -611,6 +632,17 @@ function collectRelations(index: AtlasIndex): Relation[] {
   return [...rels.values()];
 }
 
+/** collectRelations is pure in the (immutable) index — build it once per index. */
+const relationsCache = new WeakMap<AtlasIndex, Relation[]>();
+function relationsFor(index: AtlasIndex): Relation[] {
+  let rels = relationsCache.get(index);
+  if (!rels) {
+    rels = collectRelations(index);
+    relationsCache.set(index, rels);
+  }
+  return rels;
+}
+
 // --- ego-graph builder ---------------------------------------------------------
 
 /** Kind guesses for referenced-but-unscanned resources (ghost nodes). */
@@ -722,7 +754,7 @@ function subtitleFor(index: AtlasIndex, ref: ResourceRef, center: ResourceRef | 
 export function buildFocus(index: AtlasIndex, centerKey: string): AtlasGraph {
   const center = index.byKey.get(centerKey);
   const centerId = center?.id ?? centerKey;
-  const relations = collectRelations(index);
+  const relations = relationsFor(index);
 
   const bySource = new Map<string, Relation[]>();
   const byTarget = new Map<string, Relation[]>();
@@ -752,7 +784,13 @@ export function buildFocus(index: AtlasIndex, centerKey: string): AtlasGraph {
     if (depth === 0) return incident(key);
     switch (kindOf(index, key)) {
       case 'subnet':
-        return outgoing(key);
+        // A subnet the center (or a chain node) LIVES in continues its
+        // egress chains: VPC + route targets. A subnet reached as a remote
+        // route SOURCE (subnet → the center TGW/PCX/NAT) only contributes
+        // its VPC for context — its own routing belongs to its own diagram.
+        return via === 'placement'
+          ? outgoing(key)
+          : outgoing(key).filter((r) => r.data.edgeKind === 'placement');
       case 'vpc':
         return incident(key).filter((r) => r.data.edgeKind === 'dns');
       case 'sg':
@@ -760,7 +798,10 @@ export function buildFocus(index: AtlasIndex, centerKey: string): AtlasGraph {
           ? incident(key).filter((r) => r.data.edgeKind === 'sg-rule' || r.data.edgeKind === 'sg-open')
           : [];
       case 'pcx':
-        return incident(key).filter((r) => r.data.edgeKind === 'peering');
+        // Only the peering legs (PCX ↔ its two VPCs). Subnet route edges
+        // into the PCX share edgeKind 'peering' but following them would
+        // drag in every subnet that routes across the peering.
+        return incident(key).filter((r) => r.key.startsWith('pcxleg:'));
       case 'igw':
         return outgoing(key).filter((r) => r.data.edgeKind === 'route');
       case 'lb':
