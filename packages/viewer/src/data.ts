@@ -164,6 +164,11 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   // AWS Backup posture
   add('backup-vault', region.backupVaults as unknown as Array<Record<string, unknown>>);
   add('backup-plan', region.backupPlans as unknown as Array<Record<string, unknown>>);
+  // Security posture (Security Hub / Access Analyzer / Inspector / Macie)
+  add('securityhub', region.securityHubStatus as unknown as Array<Record<string, unknown>>);
+  add('access-analyzer', region.accessAnalyzers as unknown as Array<Record<string, unknown>>);
+  add('inspector2', region.inspectorStatus as unknown as Array<Record<string, unknown>>);
+  add('macie2', region.macieStatus as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {

@@ -180,6 +180,10 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.guardDutyDetectors.length === 0 &&
     out.backupVaults.length === 0 &&
     out.backupPlans.length === 0 &&
+    out.securityHubStatus.length === 0 &&
+    out.accessAnalyzers.length === 0 &&
+    out.inspectorStatus.length === 0 &&
+    out.macieStatus.length === 0 &&
     // dhcpOptions deliberately absent: every region has an AWS default set.
     out.vpcs.every((v) => v.isDefault);
 
@@ -549,6 +553,11 @@ export function deriveRegion(out: RegionSnapshot): void {
     plan.rules.sort((a, b) => str(a.name).localeCompare(str(b.name)));
     plan.selectionResourceTypes.sort();
   }
+  sortById(out.securityHubStatus);
+  for (const hub of out.securityHubStatus) hub.enabledStandards.sort();
+  sortById(out.accessAnalyzers);
+  sortById(out.inspectorStatus);
+  sortById(out.macieStatus);
   sortById(out.ecrRepositories);
   sortById(out.ecrRegistries);
   for (const reg of out.ecrRegistries) {

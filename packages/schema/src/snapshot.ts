@@ -976,6 +976,54 @@ export interface BackupPlan extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Security posture (regional): Security Hub, Access Analyzer, Inspector, Macie
+// ---------------------------------------------------------------------------
+
+/**
+ * Security Hub enablement (0-or-1 per region) plus the standards subscribed
+ * in the region — aggregated-findings posture: is Security Hub on, and which
+ * compliance standards it evaluates.
+ */
+export interface SecurityHubStatus extends BaseResource {
+  /** True when DescribeHub succeeds (the account is subscribed here). */
+  enabled?: boolean;
+  autoEnableControls?: boolean;
+  controlFindingGenerator?: string;
+  /** Standards subscription ARNs / names (GetEnabledStandards). */
+  enabledStandards: string[];
+}
+
+/**
+ * IAM Access Analyzer analyzer — external-access / unused-access posture:
+ * whether anything watches for resources shared outside the zone of trust.
+ */
+export interface AccessAnalyzer extends BaseResource {
+  /** ACCOUNT | ORGANIZATION | ACCOUNT_UNUSED_ACCESS | ORGANIZATION_UNUSED_ACCESS. */
+  analyzerType?: string;
+  status?: string;
+}
+
+/**
+ * Inspector v2 account status (0-or-1 per region) — vulnerability-scanning
+ * posture: which resource types (EC2/ECR/Lambda) are being scanned.
+ */
+export interface InspectorStatus extends BaseResource {
+  ec2?: string;
+  ecr?: string;
+  lambda?: string;
+  lambdaCode?: string;
+}
+
+/**
+ * Macie session (0-or-1 per region) — sensitive-data-discovery posture:
+ * whether Macie is enabled and how often findings publish.
+ */
+export interface MacieStatus extends BaseResource {
+  status?: string;
+  findingPublishingFrequency?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1695,6 +1743,12 @@ export interface RegionSnapshot {
   backupVaults: BackupVault[];
   backupPlans: BackupPlan[];
 
+  // Security posture (regional): Security Hub / Access Analyzer / Inspector / Macie
+  securityHubStatus: SecurityHubStatus[];
+  accessAnalyzers: AccessAnalyzer[];
+  inspectorStatus: InspectorStatus[];
+  macieStatus: MacieStatus[];
+
   generic: GenericResource[];
 }
 
@@ -1847,6 +1901,10 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     guardDutyDetectors: [],
     backupVaults: [],
     backupPlans: [],
+    securityHubStatus: [],
+    accessAnalyzers: [],
+    inspectorStatus: [],
+    macieStatus: [],
     generic: [],
   };
 }
