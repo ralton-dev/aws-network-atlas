@@ -61,6 +61,10 @@ import Msk from 'aws-icons/icons/architecture-service/AmazonManagedStreamingforA
 import Redshift from 'aws-icons/icons/architecture-service/AmazonRedshift.svg?react';
 import AmazonMq from 'aws-icons/icons/architecture-service/AmazonMQ.svg?react';
 import RdsProxy from 'aws-icons/icons/resource/AmazonRDSProxyInstance.svg?react';
+import Glue from 'aws-icons/icons/architecture-service/AWSGlue.svg?react';
+import Dms from 'aws-icons/icons/architecture-service/AWSDatabaseMigrationService.svg?react';
+import DataSyncAgent from 'aws-icons/icons/resource/AWSDatasyncAgent.svg?react';
+import Firehose from 'aws-icons/icons/architecture-service/AmazonDataFirehose.svg?react';
 // security groups, internet, on-prem DNS targets
 import Shield from 'aws-icons/icons/resource/Shield.svg?react';
 import Internet from 'aws-icons/icons/resource/Internetalt1.svg?react';
@@ -159,6 +163,11 @@ export const ICONS: Record<string, IconComponent> = {
   'rds-proxy': RdsProxy,
   'elasticache-serverless': ElastiCacheNode,
   'elasticache-replication-group': ElastiCacheNode,
+  'glue-connection': Glue,
+  'glue-dev-endpoint': Glue,
+  'dms-instance': Dms,
+  'datasync-agent': DataSyncAgent,
+  firehose: Firehose,
   // security groups, internet, DNS targets
   sg: Shield,
   internet: Internet,

@@ -249,6 +249,51 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
       ice.name ?? ice.id, 'EC2 Instance Connect', ice.id,
     ));
   }
+  // DataSync subnet/SG references are ARNs — the id is the last '/' segment.
+  const arnResourceId = (arn: string): string => arn.split('/').pop() ?? arn;
+  for (const conn of region.glueConnections) {
+    const parent = subnetNode(conn.subnetId);
+    if (!parent) continue; // only drawn when its subnet is in this VPC
+    leaves.set(`res:${conn.id}`, leaf(
+      `res:${conn.id}`, parent, 'glue-connection',
+      conn.name ?? conn.id, conn.connectionType ?? 'Glue connection', conn.id,
+    ));
+  }
+  for (const ep of region.glueDevEndpoints) {
+    const parent = subnetNode(ep.subnetId);
+    if (!parent) continue;
+    leaves.set(`res:${ep.id}`, leaf(
+      `res:${ep.id}`, parent, 'glue-dev-endpoint',
+      ep.name ?? ep.id, 'Glue dev endpoint', ep.id,
+    ));
+  }
+  for (const dms of region.dmsReplicationInstances) {
+    // Place in the first subnet of its subnet group that belongs to this VPC.
+    const parent = subnetNode(dms.subnetIds.find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${dms.id}`, leaf(
+      `res:${dms.id}`, parent, 'dms-instance',
+      dms.name ?? dms.id, dms.replicationInstanceClass ?? 'DMS replication instance', dms.id,
+      dms.multiAz ? ['multi-AZ'] : undefined,
+    ));
+  }
+  for (const agent of region.dataSyncAgents) {
+    const parent = subnetNode(agent.subnetArns.map(arnResourceId).find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${agent.id}`, leaf(
+      `res:${agent.id}`, parent, 'datasync-agent',
+      agent.name ?? agent.id, 'DataSync agent', agent.id,
+    ));
+  }
+  for (const fh of region.firehoseDeliveryStreams) {
+    if (fh.subnetIds.length === 0) continue; // only in-VPC (OpenSearch-destination) streams are drawn
+    const parent = subnetNode(fh.subnetIds.find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${fh.id}`, leaf(
+      `res:${fh.id}`, parent, 'firehose',
+      fh.name ?? fh.id, 'Firehose → OpenSearch', fh.id,
+    ));
+  }
 
   // --- external connectivity nodes + route-derived edges ---------------------
   const ensureExt = (id: string, kind: string, label: string, subtitle?: string, refId?: string): string => {
@@ -516,6 +561,11 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     ...region.mqBrokers.map((broker) => ({ nodeId: `res:${broker.id}`, sgIds: broker.securityGroupIds })),
     ...region.elastiCacheServerlessCaches.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
     ...region.instanceConnectEndpoints.filter((e) => e.vpcId === vpcId).map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
+    ...region.glueConnections.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.glueDevEndpoints.map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
+    ...region.dmsReplicationInstances.map((d) => ({ nodeId: `res:${d.id}`, sgIds: d.securityGroupIds })),
+    ...region.dataSyncAgents.map((a) => ({ nodeId: `res:${a.id}`, sgIds: a.securityGroupArns.map(arnResourceId) })),
+    ...region.firehoseDeliveryStreams.map((f) => ({ nodeId: `res:${f.id}`, sgIds: f.securityGroupIds })),
   ];
   for (const { nodeId, sgIds } of sgAttachSources) {
     if (!leaves.has(nodeId)) continue;

@@ -542,6 +542,74 @@ function prodEuWest1(): RegionSnapshot {
     mountTargets: ['a', 'b'].map((az, i) => ({ id: `fsmt-0prod000000${i}01`, subnetId: `subnet-0proddb00000${i}01`, ipAddress: `10.0.2${i}.100`, availabilityZone: `${EU}${az}`, securityGroupIds: [dbSg] })),
   });
 
+  // Glue: a JDBC connection into the db subnets + a dev endpoint in the app tier.
+  r.glueConnections.push({
+    id: 'acme-prod-glue-conn',
+    arn: `arn:aws:glue:${EU}:${ACCT.prod}:connection/acme-prod-glue-conn`,
+    name: 'acme-prod-glue-conn',
+    tags: {},
+    connectionType: 'JDBC',
+    subnetId: 'subnet-0proddb00000001',
+    securityGroupIds: [dbSg],
+    availabilityZone: `${EU}a`,
+  });
+  r.glueDevEndpoints.push({
+    id: 'acme-prod-glue-de',
+    arn: `arn:aws:glue:${EU}:${ACCT.prod}:devEndpoint/acme-prod-glue-de`,
+    name: 'acme-prod-glue-de',
+    tags: {},
+    status: 'READY',
+    vpcId: vpc,
+    subnetId: 'subnet-0prodapp0000001',
+    securityGroupIds: [sg],
+  });
+
+  // DMS replication instance, multi-AZ across two private app subnets.
+  r.dmsReplicationInstances.push({
+    id: 'acme-prod-dms',
+    arn: `arn:aws:dms:${EU}:${ACCT.prod}:rep:acme-prod-dms`,
+    name: 'acme-prod-dms',
+    tags: { env: 'prod' },
+    replicationInstanceClass: 'dms.t3.medium',
+    engineVersion: '3.5.2',
+    status: 'available',
+    vpcId: vpc,
+    subnetGroupId: 'prod-dms-subnets',
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    securityGroupIds: [sg],
+    publiclyAccessible: false,
+    multiAz: true,
+    privateIps: ['10.0.10.200', '10.0.11.200'],
+    publicIps: [],
+  });
+
+  // DataSync agent reaching the service over a PrivateLink VPC endpoint.
+  r.dataSyncAgents.push({
+    id: `arn:aws:datasync:${EU}:${ACCT.prod}:agent/agent-0prod000000000001`,
+    arn: `arn:aws:datasync:${EU}:${ACCT.prod}:agent/agent-0prod000000000001`,
+    name: 'acme-prod-datasync-agent',
+    tags: {},
+    status: 'ONLINE',
+    endpointType: 'PRIVATE_LINK',
+    vpcEndpointId: 'vpce-0proddsync000001',
+    subnetArns: [`arn:aws:ec2:${EU}:${ACCT.prod}:subnet/subnet-0prodapp0000001`],
+    securityGroupArns: [`arn:aws:ec2:${EU}:${ACCT.prod}:security-group/${sg}`],
+  });
+
+  // Firehose delivering into an in-VPC OpenSearch destination (VPC-attached).
+  r.firehoseDeliveryStreams.push({
+    id: 'acme-prod-firehose',
+    arn: `arn:aws:firehose:${EU}:${ACCT.prod}:deliverystream/acme-prod-firehose`,
+    name: 'acme-prod-firehose',
+    tags: { env: 'prod' },
+    status: 'ACTIVE',
+    deliveryStreamType: 'DirectPut',
+    destinationType: 'opensearch',
+    vpcId: vpc,
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    securityGroupIds: [sg],
+  });
+
   r.generic.push(
     { arn: `arn:aws:dynamodb:${EU}:${ACCT.prod}:table/prod-sessions`, service: 'dynamodb', resourceType: 'table', name: 'prod-sessions', tags: { env: 'prod' }, source: 'tagging' },
     { arn: `arn:aws:sqs:${EU}:${ACCT.prod}:prod-jobs`, service: 'sqs', resourceType: '', name: 'prod-jobs', tags: { env: 'prod' }, source: 'tagging' },

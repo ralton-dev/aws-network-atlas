@@ -2679,10 +2679,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">ComputeConfig, ReplicationConfigIdentifier, ReplicationSettings, ReplicationType, ResourceIdentifier, SourceEndpointArn, SupplementalSettings, TableMappings, Tags, TargetEndpointArn</div></td></tr>
-<tr data-svc="DMS" data-c="detailed" data-d="panel-only" data-props="AllocatedStorage AllowMajorVersionUpgrade AutoMinorVersionUpgrade AvailabilityZone DnsNameServers EngineVersion KmsKeyId MultiAZ NetworkType PreferredMaintenanceWindow PubliclyAccessible ReplicationInstanceClass ReplicationInstanceIdentifier ReplicationSubnetGroupIdentifier ResourceIdentifier Tags VpcSecurityGroupIds">
+<tr data-svc="DMS" data-c="detailed" data-d="node" data-props="AllocatedStorage AllowMajorVersionUpgrade AutoMinorVersionUpgrade AvailabilityZone DnsNameServers EngineVersion KmsKeyId MultiAZ NetworkType PreferredMaintenanceWindow PubliclyAccessible ReplicationInstanceClass ReplicationInstanceIdentifier ReplicationSubnetGroupIdentifier ResourceIdentifier Tags VpcSecurityGroupIds">
 <td class="mono">AWS::DMS::ReplicationInstance</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dmsReplicationInstances</code></div><div class="detail">VPC-attached: vpc/subnetGroup/subnets/SGs, class, publiclyAccessible, multiAz, KMS, IPs</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down graph</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn in the drill-down (first in-VPC subnet of its subnet group) with sg-attach edges</div></td>
 <td class="pc">17<div class="props">AllocatedStorage, AllowMajorVersionUpgrade, AutoMinorVersionUpgrade, AvailabilityZone, DnsNameServers, EngineVersion, KmsKeyId, MultiAZ, NetworkType, PreferredMaintenanceWindow, PubliclyAccessible, ReplicationInstanceClass, ReplicationInstanceIdentifier, ReplicationSubnetGroupIdentifier, ResourceIdentifier, Tags, VpcSecurityGroupIds</div></td></tr>
 <tr data-svc="DMS" data-c="inv-tag" data-d="panel-only" data-props="ReplicationSubnetGroupDescription ReplicationSubnetGroupIdentifier SubnetIds Tags">
 <td class="mono">AWS::DMS::ReplicationSubnetGroup</td>
@@ -2734,10 +2734,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">7<div class="props">Activate, Description, Name, ParameterObjects, ParameterValues, PipelineObjects, PipelineTags</div></td></tr>
-<tr data-svc="DataSync" data-c="detailed" data-d="panel-only" data-props="ActivationKey AgentName SecurityGroupArns SubnetArns Tags VpcEndpointId">
+<tr data-svc="DataSync" data-c="detailed" data-d="node" data-props="ActivationKey AgentName SecurityGroupArns SubnetArns Tags VpcEndpointId">
 <td class="mono">AWS::DataSync::Agent</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dataSyncAgents</code></div><div class="detail">endpointType, VPC-attached PrivateLink: vpcEndpointId + subnetArns + securityGroupArns</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED when PrivateLink (subnet+SG ARNs) — candidate to draw on drill-down</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn in the drill-down when PrivateLink (subnet/SG ids extracted from ARNs) with sg-attach edges</div></td>
 <td class="pc">6<div class="props">ActivationKey, AgentName, SecurityGroupArns, SubnetArns, Tags, VpcEndpointId</div></td></tr>
 <tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="AgentArns AzureAccessTier AzureBlobAuthenticationType AzureBlobContainerUrl AzureBlobSasConfiguration AzureBlobType CmkSecretConfig CustomSecretConfig Subdirectory Tags">
 <td class="mono">AWS::DataSync::LocationAzureBlob</td>
@@ -4279,10 +4279,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">CsvClassifier, GrokClassifier, JsonClassifier, XMLClassifier</div></td></tr>
-<tr data-svc="Glue" data-c="detailed" data-d="panel-only" data-props="CatalogId ConnectionInput">
+<tr data-svc="Glue" data-c="detailed" data-d="node" data-props="CatalogId ConnectionInput">
 <td class="mono">AWS::Glue::Connection</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>glueConnections</code></div><div class="detail">connectionType, VPC-attached: subnetId + securityGroupIds + AZ</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet+SGs) — candidate to draw on the drill-down graph</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn in the drill-down (placed in its subnet) with sg-attach edges</div></td>
 <td class="pc">2<div class="props">CatalogId, ConnectionInput</div></td></tr>
 <tr data-svc="Glue" data-c="detailed" data-d="panel-only" data-props="Classifiers Configuration CrawlerSecurityConfiguration DatabaseName Description LakeFormationConfiguration Name RecrawlPolicy Role Schedule SchemaChangePolicy TablePrefix Tags Targets">
 <td class="mono">AWS::Glue::Crawler</td>
@@ -4309,10 +4309,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>glueDatabases</code></div><div class="detail">description, locationUri</div></td>
 <td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">data-catalog databases (tables deliberately not enumerated — fan-out)</div></td>
 <td class="pc">3<div class="props">CatalogId, DatabaseInput, DatabaseName</div></td></tr>
-<tr data-svc="Glue" data-c="detailed" data-d="panel-only" data-props="Arguments EndpointName ExtraJarsS3Path ExtraPythonLibsS3Path GlueVersion NumberOfNodes NumberOfWorkers PublicKey PublicKeys RoleArn SecurityConfiguration SecurityGroupIds SubnetId Tags WorkerType">
+<tr data-svc="Glue" data-c="detailed" data-d="node" data-props="Arguments EndpointName ExtraJarsS3Path ExtraPythonLibsS3Path GlueVersion NumberOfNodes NumberOfWorkers PublicKey PublicKeys RoleArn SecurityConfiguration SecurityGroupIds SubnetId Tags WorkerType">
 <td class="mono">AWS::Glue::DevEndpoint</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>glueDevEndpoints</code></div><div class="detail">VPC-attached: vpcId/subnetId/securityGroupIds, status</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (vpc/subnet/SGs) — candidate to draw on the drill-down graph</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn in the drill-down (placed in its subnet) with sg-attach edges</div></td>
 <td class="pc">15<div class="props">Arguments, EndpointName, ExtraJarsS3Path, ExtraPythonLibsS3Path, GlueVersion, NumberOfNodes, NumberOfWorkers, PublicKey, PublicKeys, RoleArn, SecurityConfiguration, SecurityGroupIds, SubnetId, Tags, WorkerType</div></td></tr>
 <tr data-svc="Glue" data-c="none" data-d="none" data-props="InstanceArn Scopes UserBackgroundSessionsEnabled">
 <td class="mono">AWS::Glue::IdentityCenterConfiguration</td>
@@ -5269,10 +5269,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">2<div class="props">ApplicationName, ReferenceDataSource</div></td></tr>
-<tr data-svc="KinesisFirehose" data-c="detailed" data-d="panel-only" data-props="AmazonOpenSearchServerlessDestinationConfiguration AmazonopensearchserviceDestinationConfiguration DatabaseSourceConfiguration DeliveryStreamEncryptionConfigurationInput DeliveryStreamName DeliveryStreamType DirectPutSourceConfiguration ElasticsearchDestinationConfiguration ExtendedS3DestinationConfiguration HttpEndpointDestinationConfiguration IcebergDestinationConfiguration KinesisStreamSourceConfiguration MSKSourceConfiguration RedshiftDestinationConfiguration S3DestinationConfiguration SnowflakeDestinationConfiguration SplunkDestinationConfiguration Tags">
+<tr data-svc="KinesisFirehose" data-c="detailed" data-d="node" data-props="AmazonOpenSearchServerlessDestinationConfiguration AmazonopensearchserviceDestinationConfiguration DatabaseSourceConfiguration DeliveryStreamEncryptionConfigurationInput DeliveryStreamName DeliveryStreamType DirectPutSourceConfiguration ElasticsearchDestinationConfiguration ExtendedS3DestinationConfiguration HttpEndpointDestinationConfiguration IcebergDestinationConfiguration KinesisStreamSourceConfiguration MSKSourceConfiguration RedshiftDestinationConfiguration S3DestinationConfiguration SnowflakeDestinationConfiguration SplunkDestinationConfiguration Tags">
 <td class="mono">AWS::KinesisFirehose::DeliveryStream</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>firehoseDeliveryStreams</code></div><div class="detail">destinationType, deliveryStreamType, KMS, source ARN; VPC-attached (subnet+SG) for in-VPC OpenSearch destinations</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED when destination is in-VPC OpenSearch/Elasticsearch (subnet+SG) — candidate to draw</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn in the drill-down when destination is in-VPC OpenSearch/Elasticsearch, with sg-attach edges</div></td>
 <td class="pc">18<div class="props">AmazonOpenSearchServerlessDestinationConfiguration, AmazonopensearchserviceDestinationConfiguration, DatabaseSourceConfiguration, DeliveryStreamEncryptionConfigurationInput, DeliveryStreamName, DeliveryStreamType, DirectPutSourceConfiguration, ElasticsearchDestinationConfiguration, ExtendedS3DestinationConfiguration, HttpEndpointDestinationConfiguration, IcebergDestinationConfiguration, KinesisStreamSourceConfiguration, MSKSourceConfiguration, RedshiftDestinationConfiguration, S3DestinationConfiguration, SnowflakeDestinationConfiguration, SplunkDestinationConfiguration, Tags</div></td></tr>
 <tr data-svc="KinesisVideo" data-c="inv-tag" data-d="panel-only" data-props="MessageTtlSeconds Name Tags Type">
 <td class="mono">AWS::KinesisVideo::SignalingChannel</td>
