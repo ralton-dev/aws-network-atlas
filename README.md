@@ -58,6 +58,14 @@ that are referenced but not scanned appear as dashed "ghost" nodes.
 
 ## What gets scanned
 
+> **Coverage is audited against the entire AWS resource universe.** See
+> **[`docs/coverage.html`](docs/coverage.html)** — the source of truth for what this tool sees.
+> Open it in a browser (regenerate with `npm run coverage`). It lists every AWS resource type
+> that can be created and, for each, whether the scanner **collects** it and whether the viewer
+> **draws** it. The dedicated collectors below cover the traffic path and security posture in
+> depth; the rest of the estate is caught as searchable **inventory** (tagged resources) or,
+> for untagged / non-taggable types, **not at all**.
+
 All read-only. Dedicated collectors capture these regardless of tags:
 
 - **Networking** — VPCs (incl. DNS attributes + DHCP option sets), subnets, route tables
@@ -194,6 +202,7 @@ listed in the snapshot (and shown as a note in the overview) so nothing disappea
 | `npm run build` | Rebuild the committed single-file viewer `site/index.html` |
 | `npm run serve` | Serve the built viewer over http (fallback if you'd rather not use `file://`) |
 | `npm run typecheck` | Typecheck all packages |
+| `npm run coverage` | Regenerate the full-estate coverage audit (`docs/coverage.html`) |
 
 ## What gets committed
 

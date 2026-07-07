@@ -20,7 +20,8 @@
     "dev": "npm run --workspace @atlas/viewer dev",
     "build": "npm run --workspace @atlas/viewer build",
     "serve": "npm run --workspace @atlas/viewer serve",
-    "typecheck": "npm run --workspaces --if-present typecheck"
+    "typecheck": "npm run --workspaces --if-present typecheck",
+    "coverage": "node tools/coverage-audit/generate.cjs"
   },
   "engines": {
     "node": ">=20"
