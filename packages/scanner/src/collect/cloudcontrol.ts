@@ -33,7 +33,6 @@ const TYPE_NAMES = [
   'AWS::CloudFormation::Stack',
   'AWS::StepFunctions::StateMachine',
   'AWS::Athena::WorkGroup',
-  'AWS::Events::EventBus',
   'AWS::ECS::Cluster',
   // Kinesis streams / Firehose delivery streams are log + flow-log
   // destinations; without these two an untagged stream is invisible.

@@ -156,6 +156,9 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.dynamoDbTables.length === 0 &&
     out.snsTopics.length === 0 &&
     out.sqsQueues.length === 0 &&
+    out.eventBuses.length === 0 &&
+    out.eventBridgePipes.length === 0 &&
+    out.eventBridgeSchedules.length === 0 &&
     // dhcpOptions deliberately absent: every region has an AWS default set.
     out.vpcs.every((v) => v.isDefault);
 
@@ -461,6 +464,21 @@ export function deriveRegion(out: RegionSnapshot): void {
     t.subscriptions.sort((a, b) => str(a.arn).localeCompare(str(b.arn)));
   }
   sortById(out.sqsQueues);
+  sortById(out.eventBuses);
+  for (const bus of out.eventBuses) {
+    bus.rules.sort((a, b) => a.name.localeCompare(b.name));
+    for (const rule of bus.rules) {
+      rule.targets.sort((a, b) =>
+        `${str(a.id)}|${str(a.arn)}`.localeCompare(`${str(b.id)}|${str(b.arn)}`),
+      );
+    }
+  }
+  sortById(out.eventBridgePipes);
+  for (const pipe of out.eventBridgePipes) {
+    pipe.vpcSubnetIds.sort();
+    pipe.vpcSecurityGroups.sort();
+  }
+  sortById(out.eventBridgeSchedules);
   sortById(out.ecrRepositories);
   sortById(out.ecrRegistries);
   for (const reg of out.ecrRegistries) {

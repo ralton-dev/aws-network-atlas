@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">121</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">960</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">541</div><div class="l">Not collected at all</div></div>
+<div class="kpi det"><div class="n">126</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">956</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">540</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -204,8 +204,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">ElasticLoadBalancingV2</td><td>7</td><td class="c-detailed">4</td><td class="c-inv">1</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:57%"></span></div><span class="pct">57%</span></td></tr>
-<tr><td class="mono">Events</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">5</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Events</td><td>7</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">5</td>
+<td><div class="bar"><span style="width:29%"></span></div><span class="pct">29%</span></td></tr>
 <tr><td class="mono">FraudDetector</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">IoTFleetWise</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">0</td>
@@ -496,8 +496,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">SSMQuickSetup</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Scheduler</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Scheduler</td><td>2</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">Signer</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Synthetics</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">0</td>
@@ -612,8 +612,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Outposts</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Pipes</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Pipes</td><td>1</td><td class="c-detailed">1</td><td class="c-inv">0</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">RUM</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Rbin</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
@@ -4049,20 +4049,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">6<div class="props">Description, EventBuses, Name, ReplicationConfig, RoleArn, RoutingConfig</div></td></tr>
-<tr data-svc="Events" data-c="inv" data-d="panel-only" data-props="DeadLetterConfig Description EventSourceName KmsKeyIdentifier LogConfig Name Policy Tags">
+<tr data-svc="Events" data-c="detailed" data-d="panel-only" data-props="DeadLetterConfig Description EventSourceName KmsKeyIdentifier LogConfig Name Policy Tags">
 <td class="mono">AWS::Events::EventBus</td>
-<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eventBuses</code></div><div class="detail">policy (cross-account), rules with event pattern/schedule + target ARNs</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">bus policy + rules with target ARNs (cross-account event flow); rule→target could later be edges</div></td>
 <td class="pc">8<div class="props">DeadLetterConfig, Description, EventSourceName, KmsKeyIdentifier, LogConfig, Name, Policy, Tags</div></td></tr>
 <tr data-svc="Events" data-c="none" data-d="none" data-props="EventBusName Statement StatementId">
 <td class="mono">AWS::Events::EventBusPolicy</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">3<div class="props">EventBusName, Statement, StatementId</div></td></tr>
-<tr data-svc="Events" data-c="inv-tag" data-d="panel-only" data-props="Description EventBusName EventPattern Name RoleArn ScheduleExpression State Tags Targets">
+<tr data-svc="Events" data-c="detailed" data-d="panel-only" data-props="Description EventBusName EventPattern Name RoleArn ScheduleExpression State Tags Targets">
 <td class="mono">AWS::Events::Rule</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eventBuses</code></div><div class="detail">captured inside eventBuses.rules[]</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">bus policy + rules with target ARNs (cross-account event flow); rule→target could later be edges</div></td>
 <td class="pc">9<div class="props">Description, EventBusName, EventPattern, Name, RoleArn, ScheduleExpression, State, Tags, Targets</div></td></tr>
 <tr data-svc="Evidently" data-c="inv-tag" data-d="panel-only" data-props="Description MetricGoals Name OnlineAbConfig Project RandomizationSalt RemoveSegment RunningStatus SamplingRate Segment Tags Treatments">
 <td class="mono">AWS::Evidently::Experiment</td>
@@ -6634,10 +6634,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">DkimSigningEnabled, FeedbackForwardingEnabled, MailFromAttributes, Name, Tags</div></td></tr>
-<tr data-svc="Pipes" data-c="inv-tag" data-d="panel-only" data-props="Description DesiredState Enrichment EnrichmentParameters KmsKeyIdentifier LogConfiguration Name RoleArn Source SourceParameters Tags Target TargetParameters">
+<tr data-svc="Pipes" data-c="detailed" data-d="panel-only" data-props="Description DesiredState Enrichment EnrichmentParameters KmsKeyIdentifier LogConfiguration Name RoleArn Source SourceParameters Tags Target TargetParameters">
 <td class="mono">AWS::Pipes::Pipe</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eventBridgePipes</code></div><div class="detail">source/enrichment/target ARNs, self-managed-Kafka VPC subnets/SGs</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">source→enrichment→target ARNs; self-managed-Kafka VPC config could later be drawn</div></td>
 <td class="pc">13<div class="props">Description, DesiredState, Enrichment, EnrichmentParameters, KmsKeyIdentifier, LogConfiguration, Name, RoleArn, Source, SourceParameters, Tags, Target, TargetParameters</div></td></tr>
 <tr data-svc="Proton" data-c="inv-tag" data-d="panel-only" data-props="CodebuildRoleArn ComponentRoleArn EnvironmentAccountId EnvironmentName ManagementAccountId RoleArn Tags">
 <td class="mono">AWS::Proton::EnvironmentAccountConnection</td>
@@ -7934,15 +7934,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">6<div class="props">Description, MemberDefinitions, NotificationConfiguration, Tags, WorkforceName, WorkteamName</div></td></tr>
-<tr data-svc="Scheduler" data-c="none" data-d="none" data-props="Description EndDate FlexibleTimeWindow GroupName KmsKeyArn Name ScheduleExpression ScheduleExpressionTimezone StartDate State Target">
+<tr data-svc="Scheduler" data-c="detailed" data-d="panel-only" data-props="Description EndDate FlexibleTimeWindow GroupName KmsKeyArn Name ScheduleExpression ScheduleExpressionTimezone StartDate State Target">
 <td class="mono">AWS::Scheduler::Schedule</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eventBridgeSchedules</code></div><div class="detail">schedule expression, target ARN (cross-account), KMS</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">schedule → target ARN (cross-account); not yet drawn</div></td>
 <td class="pc">11<div class="props">Description, EndDate, FlexibleTimeWindow, GroupName, KmsKeyArn, Name, ScheduleExpression, ScheduleExpressionTimezone, StartDate, State, Target</div></td></tr>
-<tr data-svc="Scheduler" data-c="inv-tag" data-d="panel-only" data-props="Name Tags">
+<tr data-svc="Scheduler" data-c="detailed" data-d="panel-only" data-props="Name Tags">
 <td class="mono">AWS::Scheduler::ScheduleGroup</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eventBridgeSchedules</code></div><div class="detail">captured as eventBridgeSchedules.groupName</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">schedule → target ARN (cross-account); not yet drawn</div></td>
 <td class="pc">2<div class="props">Name, Tags</div></td></tr>
 <tr data-svc="SecretsManager" data-c="none" data-d="none" data-props="BlockPublicPolicy ResourcePolicy SecretId">
 <td class="mono">AWS::SecretsManager::ResourcePolicy</td>

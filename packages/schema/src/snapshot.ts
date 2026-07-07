@@ -647,6 +647,47 @@ export interface SqsQueue extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// EventBridge (regional): buses/rules/targets, Pipes, Scheduler schedules
+// ---------------------------------------------------------------------------
+
+export interface EventBus extends BaseResource {
+  /** Resource policy JSON (cross-account event delivery) — undefined if none. */
+  policy?: string;
+  rules: Array<{
+    name: string;
+    state?: string;
+    scheduleExpression?: string;
+    /** True when the rule matches on an event pattern (pattern body not stored). */
+    eventPatternPresent?: boolean;
+    roleArn?: string;
+    /** Target ARNs = cross-account/cross-region reach. */
+    targets: Array<{ id?: string; arn?: string; roleArn?: string }>;
+  }>;
+}
+
+export interface EventBridgePipe extends BaseResource {
+  state?: string;
+  roleArn?: string;
+  /** Source/enrichment/target ARNs — the event flow this pipe stitches together. */
+  source?: string;
+  enrichment?: string;
+  target?: string;
+  /** From SourceParameters.SelfManagedKafkaParameters.Vpc (the one VPC-attached case). */
+  vpcSubnetIds: string[];
+  vpcSecurityGroups: string[];
+}
+
+export interface EventBridgeSchedule extends BaseResource {
+  groupName?: string;
+  state?: string;
+  scheduleExpression?: string;
+  kmsKeyArn?: string;
+  /** Target ARN + role — cross-account reach. */
+  targetArn?: string;
+  targetRoleArn?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1322,6 +1363,11 @@ export interface RegionSnapshot {
   snsTopics: SnsTopic[];
   sqsQueues: SqsQueue[];
 
+  // eventing (regional)
+  eventBuses: EventBus[];
+  eventBridgePipes: EventBridgePipe[];
+  eventBridgeSchedules: EventBridgeSchedule[];
+
   generic: GenericResource[];
 }
 
@@ -1450,6 +1496,9 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     ecrRegistries: [],
     snsTopics: [],
     sqsQueues: [],
+    eventBuses: [],
+    eventBridgePipes: [],
+    eventBridgeSchedules: [],
     generic: [],
   };
 }
