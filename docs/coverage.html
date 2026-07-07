@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">126</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">956</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">127</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">955</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">540</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -346,8 +346,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Shield</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">StepFunctions</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">2</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">StepFunctions</td><td>4</td><td class="c-detailed">1</td><td class="c-inv">1</td><td class="c-none">2</td>
+<td><div class="bar"><span style="width:25%"></span></div><span class="pct">25%</span></td></tr>
 <tr><td class="mono">XRay</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">AmazonMQ</td><td>3</td><td class="c-detailed">1</td><td class="c-inv">1</td><td class="c-none">1</td>
@@ -8249,10 +8249,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">3<div class="props">EncryptionConfiguration, Name, Tags</div></td></tr>
-<tr data-svc="StepFunctions" data-c="inv" data-d="panel-only" data-props="Definition DefinitionS3Location DefinitionString DefinitionSubstitutions EncryptionConfiguration LoggingConfiguration RoleArn StateMachineName StateMachineType Tags TracingConfiguration">
+<tr data-svc="StepFunctions" data-c="detailed" data-d="panel-only" data-props="Definition DefinitionS3Location DefinitionString DefinitionSubstitutions EncryptionConfiguration LoggingConfiguration RoleArn StateMachineName StateMachineType Tags TracingConfiguration">
 <td class="mono">AWS::StepFunctions::StateMachine</td>
-<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>sfnStateMachines</code></div><div class="detail">type (STANDARD/EXPRESS), roleArn, logging, tracing, KMS, integration ARNs parsed from ASL definition</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">role, logging/tracing/KMS, and downstream integration ARNs parsed from the state-machine definition; integrations could later be edges</div></td>
 <td class="pc">11<div class="props">Definition, DefinitionS3Location, DefinitionString, DefinitionSubstitutions, EncryptionConfiguration, LoggingConfiguration, RoleArn, StateMachineName, StateMachineType, Tags, TracingConfiguration</div></td></tr>
 <tr data-svc="StepFunctions" data-c="none" data-d="none" data-props="DeploymentPreference Description Name RoutingConfiguration StateMachineArn">
 <td class="mono">AWS::StepFunctions::StateMachineAlias</td>

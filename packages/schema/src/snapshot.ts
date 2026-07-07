@@ -688,6 +688,25 @@ export interface EventBridgeSchedule extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Step Functions (regional): state machines
+// ---------------------------------------------------------------------------
+
+export interface SfnStateMachine extends BaseResource {
+  /** STANDARD | EXPRESS. */
+  type?: string;
+  status?: string;
+  roleArn?: string;
+  /** From loggingConfiguration.level. */
+  loggingLevel?: string;
+  /** From tracingConfiguration.enabled. */
+  tracingEnabled?: boolean;
+  /** From encryptionConfiguration.kmsKeyId. */
+  kmsKeyId?: string;
+  /** Task-state Resource ARNs parsed from the ASL definition (downstream services this SM calls). */
+  integrationResourceArns: string[];
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1368,6 +1387,9 @@ export interface RegionSnapshot {
   eventBridgePipes: EventBridgePipe[];
   eventBridgeSchedules: EventBridgeSchedule[];
 
+  // orchestration (regional)
+  sfnStateMachines: SfnStateMachine[];
+
   generic: GenericResource[];
 }
 
@@ -1499,6 +1521,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     eventBuses: [],
     eventBridgePipes: [],
     eventBridgeSchedules: [],
+    sfnStateMachines: [],
     generic: [],
   };
 }

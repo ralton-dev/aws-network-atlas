@@ -134,6 +134,8 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('event-bus', region.eventBuses as unknown as Array<Record<string, unknown>>);
   add('eventbridge-pipe', region.eventBridgePipes as unknown as Array<Record<string, unknown>>);
   add('eventbridge-schedule', region.eventBridgeSchedules as unknown as Array<Record<string, unknown>>);
+  // orchestration
+  add('sfn-state-machine', region.sfnStateMachines as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {

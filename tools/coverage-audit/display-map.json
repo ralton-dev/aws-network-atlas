@@ -75,6 +75,7 @@
 "eventBuses":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"bus policy + rules with target ARNs (cross-account event flow); rule→target could later be edges"},
 "eventBridgePipes":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"source→enrichment→target ARNs; self-managed-Kafka VPC config could later be drawn"},
 "eventBridgeSchedules":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"schedule → target ARN (cross-account); not yet drawn"},
+"sfnStateMachines":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"role, logging/tracing/KMS, and downstream integration ARNs parsed from the state-machine definition; integrations could later be edges"},
 "generic":{"render":"panel-only","label":"panel-only — Inventory list, grouped by service","note":"ARN / resourceType / tags / source only in panel; never on any graph view"},
 "directConnectGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: amazonSideAsn, state, ownerAccount, associations[] detail"},
 "hostedZones":{"render":"node","label":"node · overview + focus","note":"HIGH-VALUE GAP: records[] (the actual DNS records — name/type/ttl/values/aliasTarget) and recordsTruncated only in panel"},

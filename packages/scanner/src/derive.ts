@@ -159,6 +159,7 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.eventBuses.length === 0 &&
     out.eventBridgePipes.length === 0 &&
     out.eventBridgeSchedules.length === 0 &&
+    out.sfnStateMachines.length === 0 &&
     // dhcpOptions deliberately absent: every region has an AWS default set.
     out.vpcs.every((v) => v.isDefault);
 
@@ -479,6 +480,8 @@ export function deriveRegion(out: RegionSnapshot): void {
     pipe.vpcSecurityGroups.sort();
   }
   sortById(out.eventBridgeSchedules);
+  sortById(out.sfnStateMachines);
+  for (const sm of out.sfnStateMachines) sm.integrationResourceArns.sort();
   sortById(out.ecrRepositories);
   sortById(out.ecrRegistries);
   for (const reg of out.ecrRegistries) {

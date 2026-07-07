@@ -31,7 +31,6 @@ import { AwsContext, guard } from '../aws.js';
  */
 const TYPE_NAMES = [
   'AWS::CloudFormation::Stack',
-  'AWS::StepFunctions::StateMachine',
   'AWS::Athena::WorkGroup',
   'AWS::ECS::Cluster',
   // Kinesis streams / Firehose delivery streams are log + flow-log

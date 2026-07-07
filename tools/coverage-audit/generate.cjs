@@ -177,6 +177,7 @@ const DETAILED = {
   'AWS::Pipes::Pipe': { field: 'eventBridgePipes', attrs: 'source/enrichment/target ARNs, self-managed-Kafka VPC subnets/SGs' },
   'AWS::Scheduler::Schedule': { field: 'eventBridgeSchedules', attrs: 'schedule expression, target ARN (cross-account), KMS' },
   'AWS::Scheduler::ScheduleGroup': { field: 'eventBridgeSchedules', attrs: 'captured as eventBridgeSchedules.groupName' },
+  'AWS::StepFunctions::StateMachine': { field: 'sfnStateMachines', attrs: 'type (STANDARD/EXPRESS), roleArn, logging, tracing, KMS, integration ARNs parsed from ASL definition' },
   'AWS::Route53::HostedZone': { field: 'hostedZones', attrs: 'zoneName, privateZone, recordCount, vpcAssociations, A/AAAA/CNAME records' },
   'AWS::Route53::RecordSet': { field: 'hostedZones', attrs: 'captured inside hostedZones.records[]' },
   'AWS::Route53::RecordSetGroup': { field: 'hostedZones', attrs: 'captured inside hostedZones.records[]' },
