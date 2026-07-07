@@ -34,6 +34,7 @@ import { collectDynamoDb } from './collect/dynamodb.js';
 import { collectSns, collectSqs } from './collect/messaging.js';
 import { collectEventBridge, collectPipes, collectScheduler } from './collect/eventbridge.js';
 import { collectStepFunctions } from './collect/stepfunctions.js';
+import { collectGlue } from './collect/glue.js';
 import { collectGlobalAccelerator } from './collect/global-accelerator.js';
 import { collectCloudWan } from './collect/cloudwan.js';
 import { deriveRegion, sortErrors } from './derive.js';
@@ -100,6 +101,7 @@ export async function scanAccount(
           collectPipes(ctx, region, out),
           collectScheduler(ctx, region, out),
           collectStepFunctions(ctx, region, out),
+          collectGlue(ctx, region, out),
           collectGeneric(ctx, region, out),
           collectCloudControl(ctx, region, out),
         ]);

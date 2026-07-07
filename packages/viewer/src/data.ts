@@ -136,6 +136,12 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('eventbridge-schedule', region.eventBridgeSchedules as unknown as Array<Record<string, unknown>>);
   // orchestration
   add('sfn-state-machine', region.sfnStateMachines as unknown as Array<Record<string, unknown>>);
+  // Glue
+  add('glue-connection', region.glueConnections as unknown as Array<Record<string, unknown>>);
+  add('glue-dev-endpoint', region.glueDevEndpoints as unknown as Array<Record<string, unknown>>);
+  add('glue-job', region.glueJobs as unknown as Array<Record<string, unknown>>);
+  add('glue-crawler', region.glueCrawlers as unknown as Array<Record<string, unknown>>);
+  add('glue-database', region.glueDatabases as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {

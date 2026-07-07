@@ -707,6 +707,46 @@ export interface SfnStateMachine extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Glue (regional): connections, dev endpoints, jobs, crawlers, catalog databases
+// ---------------------------------------------------------------------------
+
+/** Glue connection — VPC-ATTACHED via PhysicalConnectionRequirements. */
+export interface GlueConnection extends BaseResource {
+  /** JDBC | NETWORK | KAFKA | MONGODB | … */
+  connectionType?: string;
+  /** PhysicalConnectionRequirements.SubnetId. */
+  subnetId?: string;
+  /** PhysicalConnectionRequirements.SecurityGroupIdList. */
+  securityGroupIds: string[];
+  availabilityZone?: string;
+}
+
+/** Glue dev endpoint — VPC-ATTACHED (vpc/subnet/security groups). */
+export interface GlueDevEndpoint extends BaseResource {
+  status?: string;
+  vpcId?: string;
+  subnetId?: string;
+  securityGroupIds: string[];
+}
+
+export interface GlueJob extends BaseResource {
+  glueVersion?: string;
+  workerType?: string;
+  /** Connections.Connections — names of Glue connections the job uses. */
+  connections: string[];
+}
+
+export interface GlueCrawler extends BaseResource {
+  state?: string;
+  databaseName?: string;
+}
+
+export interface GlueDatabase extends BaseResource {
+  description?: string;
+  locationUri?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1390,6 +1430,13 @@ export interface RegionSnapshot {
   // orchestration (regional)
   sfnStateMachines: SfnStateMachine[];
 
+  // Glue (regional)
+  glueConnections: GlueConnection[];
+  glueDevEndpoints: GlueDevEndpoint[];
+  glueJobs: GlueJob[];
+  glueCrawlers: GlueCrawler[];
+  glueDatabases: GlueDatabase[];
+
   generic: GenericResource[];
 }
 
@@ -1522,6 +1569,11 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     eventBridgePipes: [],
     eventBridgeSchedules: [],
     sfnStateMachines: [],
+    glueConnections: [],
+    glueDevEndpoints: [],
+    glueJobs: [],
+    glueCrawlers: [],
+    glueDatabases: [],
     generic: [],
   };
 }

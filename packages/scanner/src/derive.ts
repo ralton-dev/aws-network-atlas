@@ -160,6 +160,11 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.eventBridgePipes.length === 0 &&
     out.eventBridgeSchedules.length === 0 &&
     out.sfnStateMachines.length === 0 &&
+    out.glueConnections.length === 0 &&
+    out.glueDevEndpoints.length === 0 &&
+    out.glueJobs.length === 0 &&
+    out.glueCrawlers.length === 0 &&
+    out.glueDatabases.length === 0 &&
     // dhcpOptions deliberately absent: every region has an AWS default set.
     out.vpcs.every((v) => v.isDefault);
 
@@ -482,6 +487,14 @@ export function deriveRegion(out: RegionSnapshot): void {
   sortById(out.eventBridgeSchedules);
   sortById(out.sfnStateMachines);
   for (const sm of out.sfnStateMachines) sm.integrationResourceArns.sort();
+  sortById(out.glueConnections);
+  for (const c of out.glueConnections) c.securityGroupIds.sort();
+  sortById(out.glueDevEndpoints);
+  for (const e of out.glueDevEndpoints) e.securityGroupIds.sort();
+  sortById(out.glueJobs);
+  for (const j of out.glueJobs) j.connections.sort();
+  sortById(out.glueCrawlers);
+  sortById(out.glueDatabases);
   sortById(out.ecrRepositories);
   sortById(out.ecrRegistries);
   for (const reg of out.ecrRegistries) {

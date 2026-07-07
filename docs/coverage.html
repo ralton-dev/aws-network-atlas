@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">127</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">955</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">540</div><div class="l">Not collected at all</div></div>
+<div class="kpi det"><div class="n">132</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">952</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">538</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -80,8 +80,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">IoT</td><td>30</td><td class="c-detailed">0</td><td class="c-inv">20</td><td class="c-none">10</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Glue</td><td>25</td><td class="c-detailed">0</td><td class="c-inv">14</td><td class="c-none">11</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Glue</td><td>25</td><td class="c-detailed">5</td><td class="c-inv">11</td><td class="c-none">9</td>
+<td><div class="bar"><span style="width:20%"></span></div><span class="pct">20%</span></td></tr>
 <tr><td class="mono">BedrockAgentCore</td><td>23</td><td class="c-detailed">0</td><td class="c-inv">18</td><td class="c-none">5</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">ApiGateway</td><td>22</td><td class="c-detailed">3</td><td class="c-inv">6</td><td class="c-none">13</td>
@@ -4279,15 +4279,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">CsvClassifier, GrokClassifier, JsonClassifier, XMLClassifier</div></td></tr>
-<tr data-svc="Glue" data-c="none" data-d="none" data-props="CatalogId ConnectionInput">
+<tr data-svc="Glue" data-c="detailed" data-d="panel-only" data-props="CatalogId ConnectionInput">
 <td class="mono">AWS::Glue::Connection</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>glueConnections</code></div><div class="detail">connectionType, VPC-attached: subnetId + securityGroupIds + AZ</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet+SGs) — candidate to draw on the drill-down graph</div></td>
 <td class="pc">2<div class="props">CatalogId, ConnectionInput</div></td></tr>
-<tr data-svc="Glue" data-c="inv-tag" data-d="panel-only" data-props="Classifiers Configuration CrawlerSecurityConfiguration DatabaseName Description LakeFormationConfiguration Name RecrawlPolicy Role Schedule SchemaChangePolicy TablePrefix Tags Targets">
+<tr data-svc="Glue" data-c="detailed" data-d="panel-only" data-props="Classifiers Configuration CrawlerSecurityConfiguration DatabaseName Description LakeFormationConfiguration Name RecrawlPolicy Role Schedule SchemaChangePolicy TablePrefix Tags Targets">
 <td class="mono">AWS::Glue::Crawler</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>glueCrawlers</code></div><div class="detail">state, databaseName</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">catalog crawlers</div></td>
 <td class="pc">14<div class="props">Classifiers, Configuration, CrawlerSecurityConfiguration, DatabaseName, Description, LakeFormationConfiguration, Name, RecrawlPolicy, Role, Schedule, SchemaChangePolicy, TablePrefix, Tags, Targets</div></td></tr>
 <tr data-svc="Glue" data-c="inv-tag" data-d="panel-only" data-props="ContextWords Name RegexString Tags">
 <td class="mono">AWS::Glue::CustomEntityType</td>
@@ -4304,15 +4304,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">6<div class="props">ClientToken, Description, Name, Ruleset, Tags, TargetTable</div></td></tr>
-<tr data-svc="Glue" data-c="none" data-d="none" data-props="CatalogId DatabaseInput DatabaseName">
+<tr data-svc="Glue" data-c="detailed" data-d="panel-only" data-props="CatalogId DatabaseInput DatabaseName">
 <td class="mono">AWS::Glue::Database</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>glueDatabases</code></div><div class="detail">description, locationUri</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">data-catalog databases (tables deliberately not enumerated — fan-out)</div></td>
 <td class="pc">3<div class="props">CatalogId, DatabaseInput, DatabaseName</div></td></tr>
-<tr data-svc="Glue" data-c="inv-tag" data-d="panel-only" data-props="Arguments EndpointName ExtraJarsS3Path ExtraPythonLibsS3Path GlueVersion NumberOfNodes NumberOfWorkers PublicKey PublicKeys RoleArn SecurityConfiguration SecurityGroupIds SubnetId Tags WorkerType">
+<tr data-svc="Glue" data-c="detailed" data-d="panel-only" data-props="Arguments EndpointName ExtraJarsS3Path ExtraPythonLibsS3Path GlueVersion NumberOfNodes NumberOfWorkers PublicKey PublicKeys RoleArn SecurityConfiguration SecurityGroupIds SubnetId Tags WorkerType">
 <td class="mono">AWS::Glue::DevEndpoint</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>glueDevEndpoints</code></div><div class="detail">VPC-attached: vpcId/subnetId/securityGroupIds, status</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (vpc/subnet/SGs) — candidate to draw on the drill-down graph</div></td>
 <td class="pc">15<div class="props">Arguments, EndpointName, ExtraJarsS3Path, ExtraPythonLibsS3Path, GlueVersion, NumberOfNodes, NumberOfWorkers, PublicKey, PublicKeys, RoleArn, SecurityConfiguration, SecurityGroupIds, SubnetId, Tags, WorkerType</div></td></tr>
 <tr data-svc="Glue" data-c="none" data-d="none" data-props="InstanceArn Scopes UserBackgroundSessionsEnabled">
 <td class="mono">AWS::Glue::IdentityCenterConfiguration</td>
@@ -4329,10 +4329,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">ResourceArn, SourceProcessingProperties, Tags, TargetProcessingProperties</div></td></tr>
-<tr data-svc="Glue" data-c="inv-tag" data-d="panel-only" data-props="AllocatedCapacity Command Connections DefaultArguments Description ExecutionClass ExecutionProperty GlueVersion JobMode JobRunQueuingEnabled LogUri MaintenanceWindow MaxCapacity MaxRetries Name NonOverridableArguments NotificationProperty NumberOfWorkers Role SecurityConfiguration Tags Timeout WorkerType">
+<tr data-svc="Glue" data-c="detailed" data-d="panel-only" data-props="AllocatedCapacity Command Connections DefaultArguments Description ExecutionClass ExecutionProperty GlueVersion JobMode JobRunQueuingEnabled LogUri MaintenanceWindow MaxCapacity MaxRetries Name NonOverridableArguments NotificationProperty NumberOfWorkers Role SecurityConfiguration Tags Timeout WorkerType">
 <td class="mono">AWS::Glue::Job</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>glueJobs</code></div><div class="detail">glueVersion, workerType, connection refs</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">ETL jobs; connection refs to VPC-attached Glue connections</div></td>
 <td class="pc">23<div class="props">AllocatedCapacity, Command, Connections, DefaultArguments, Description, ExecutionClass, ExecutionProperty, GlueVersion, JobMode, JobRunQueuingEnabled, LogUri, MaintenanceWindow, MaxCapacity, MaxRetries, Name, NonOverridableArguments, NotificationProperty, NumberOfWorkers, Role, SecurityConfiguration, Tags, Timeout, WorkerType</div></td></tr>
 <tr data-svc="Glue" data-c="inv-tag" data-d="panel-only" data-props="Description GlueVersion InputRecordTables MaxCapacity MaxRetries Name NumberOfWorkers Role Tags Timeout TransformEncryption TransformParameters WorkerType">
 <td class="mono">AWS::Glue::MLTransform</td>
