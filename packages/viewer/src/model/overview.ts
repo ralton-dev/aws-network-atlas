@@ -631,6 +631,70 @@ function addRegionServices(
   }
 }
 
+/**
+ * Route 53 ALIAS records → the edge resources they point at. Only targets the
+ * overview actually draws as nodes (CloudFront, Global Accelerator, API GW,
+ * API GW custom domains) — load balancers live on the VPC drill-down, not here.
+ * Runs after every account's nodes are built so cross-account aliases resolve.
+ */
+function addDnsAliasEdges(b: Builder, index: AtlasIndex): void {
+  const normalize = (name: string): string => name.toLowerCase().replace(/\.$/, '');
+
+  // dnsName → overview node id, restricted to nodes that exist on the graph
+  // (API gateways/domains are capped, so presence in b.leaves is the gate).
+  const byDns = new Map<string, string>();
+  const register = (dnsName: string | undefined, nodeId: string): void => {
+    if (!dnsName || !b.leaves.has(nodeId)) return;
+    const key = normalize(dnsName);
+    if (key && !byDns.has(key)) byDns.set(key, nodeId);
+  };
+  for (const account of index.snapshot.accounts) {
+    for (const dist of account.global.cloudFrontDistributions) {
+      register(dist.domainName, `cf:${dist.id}`);
+    }
+    for (const ga of account.global.globalAccelerators ?? []) {
+      register(ga.dnsName, `ga:${ga.id}`);
+    }
+    for (const region of account.regions) {
+      for (const api of region.apiGateways) {
+        register(api.apiEndpoint?.replace(/^https?:\/\//, ''), `apigw:${api.id}`);
+      }
+      for (const d of region.apiGatewayDomainNames ?? []) {
+        register(d.domainName, `apigwdom:${d.id}`);
+      }
+    }
+  }
+  if (byDns.size === 0) return;
+
+  for (const account of index.snapshot.accounts) {
+    for (const zone of account.global.hostedZones) {
+      const zoneNode = `zone:${account.accountId}:${zone.id}`;
+      if (!b.leaves.has(zoneNode)) continue;
+      for (const record of zone.records ?? []) {
+        if (!record.aliasTarget) continue;
+        const target = normalize(record.aliasTarget).replace(/^dualstack\./, '');
+        const targetNode = byDns.get(target);
+        if (!targetNode) continue;
+        const key = `zonealias:${zoneNode}|${targetNode}`;
+        if (b.edges.has(key)) continue;
+        b.edges.set(key, {
+          id: `edge:${key}`,
+          source: zoneNode,
+          target: targetNode,
+          type: 'annotated',
+          markerEnd: { type: MarkerType.ArrowClosed },
+          data: {
+            edgeKind: 'dns',
+            label: normalize(record.name) || 'alias',
+            title: `${record.name} ALIAS → ${record.aliasTarget}`,
+            refId: zone.id,
+          },
+        });
+      }
+    }
+  }
+}
+
 /** Cross-account assume-role trust: who can reach into which account. */
 function addTrustEdges(b: Builder, index: AtlasIndex): void {
   for (const account of index.snapshot.accounts) {
@@ -772,6 +836,9 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
 
   // --- cross-account IAM trust edges ----------------------------------------
   addTrustEdges(b, index);
+
+  // --- Route 53 ALIAS records → CloudFront/GA/API GW nodes -------------------
+  addDnsAliasEdges(b, index);
 
   // TGWs: prefer placing under the owner account's region.
   for (const pass of ['owner', 'other'] as const) {
