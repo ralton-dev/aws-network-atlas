@@ -60,7 +60,7 @@
 "networkFirewallPolicies":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: stateless/stateful default actions, statefulRuleOrder, tlsInspectionConfigurationArn"},
 "networkFirewallRuleGroups":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: capacity, consumedCapacity, numberOfAssociations, actual stateless/stateful/Suricata/domain-list rule bodies"},
 "networkFirewallTlsConfigs":{"render":"panel-only","label":"panel-only — never on graph","note":"description, certificateArns only in panel"},
-"apiGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: apiEndpoint, stages, vpcEndpointIds (edge)"},
+"apiGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: apiEndpoint, stages, vpcEndpointIds (edge), routes (method/path + authorizer + target), authorizers"},
 "apiGatewayVpcLinks":{"render":"node","label":"node · focus only","note":"not on overview/VPC-detail; version, status, targetArns, securityGroupIds only in panel/edges"},
 "apiGatewayDomainNames":{"render":"node","label":"node · overview + focus","note":"off-diagram: endpointTypes, certificateArns, mapping paths"},
 "latticeServiceNetworks":{"render":"node","label":"node · focus only","note":"not on overview/VPC-detail; authType, counts, association statuses only in panel"},

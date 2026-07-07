@@ -1315,6 +1315,18 @@ export interface ApiGateway extends BaseResource {
   stages: string[];
   /** For PRIVATE REST APIs: the VPC endpoint ids that can reach it. */
   vpcEndpointIds: string[];
+  /**
+   * The API surface. REST: routeKey is "METHOD /resource/path"; v2: the
+   * route's RouteKey (e.g. "GET /items"). target is the integration URI/ARN
+   * when available.
+   */
+  routes: Array<{
+    routeKey?: string;
+    authorizationType?: string;
+    authorizerId?: string;
+    target?: string;
+  }>;
+  authorizers: Array<{ id?: string; name?: string; type?: string; authorizerUri?: string }>;
 }
 
 /** API Gateway VPC link: connects an API to NLBs (v1) or subnets (v2). */

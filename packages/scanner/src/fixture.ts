@@ -453,6 +453,13 @@ function prodEuWest1(): RegionSnapshot {
     id: 'a1b2c3d4e5', arn: `arn:aws:apigateway:${EU}::/restapis/a1b2c3d4e5`,
     name: 'prod-public-api', tags: { env: 'prod' }, protocolType: 'REST', endpointType: 'REGIONAL',
     apiEndpoint: 'https://a1b2c3d4e5.execute-api.eu-west-1.amazonaws.com', stages: ['prod', 'canary'], vpcEndpointIds: [],
+    routes: [
+      { routeKey: 'GET /orders', authorizationType: 'CUSTOM', authorizerId: 'auth01', target: `arn:aws:apigateway:${EU}:lambda:path/2015-03-31/functions/arn:aws:lambda:${EU}:${ACCT.prod}:function:prod-orders-api/invocations` },
+      { routeKey: 'POST /orders', authorizationType: 'CUSTOM', authorizerId: 'auth01', target: `arn:aws:apigateway:${EU}:lambda:path/2015-03-31/functions/arn:aws:lambda:${EU}:${ACCT.prod}:function:prod-orders-api/invocations` },
+    ],
+    authorizers: [
+      { id: 'auth01', name: 'prod-jwt-authorizer', type: 'TOKEN', authorizerUri: `arn:aws:apigateway:${EU}:lambda:path/2015-03-31/functions/arn:aws:lambda:${EU}:${ACCT.prod}:function:prod-authorizer/invocations` },
+    ],
   });
   const fwPolicyArn = `arn:aws:network-firewall:${EU}:${ACCT.prod}:firewall-policy/prod-policy`;
   const fwStatelessRgArn = `arn:aws:network-firewall:${EU}:${ACCT.prod}:stateless-rulegroup/prod-stateless`;

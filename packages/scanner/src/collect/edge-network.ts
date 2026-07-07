@@ -31,15 +31,20 @@ import {
 import {
   APIGatewayClient,
   paginateGetRestApis,
+  paginateGetResources,
   paginateGetVpcLinks,
   paginateGetDomainNames,
   GetStagesCommand,
+  GetAuthorizersCommand,
   GetBasePathMappingsCommand,
 } from '@aws-sdk/client-api-gateway';
 import {
   ApiGatewayV2Client,
   GetApisCommand,
   GetStagesCommand as GetV2StagesCommand,
+  GetRoutesCommand,
+  GetAuthorizersCommand as GetV2AuthorizersCommand,
+  GetIntegrationsCommand,
   GetVpcLinksCommand as GetV2VpcLinksCommand,
   GetDomainNamesCommand as GetV2DomainNamesCommand,
   GetApiMappingsCommand,
@@ -52,6 +57,9 @@ import { toTags, nameTag } from '../util.js';
 type ResolverEndpointOut = RegionSnapshot['resolverEndpoints'][number];
 type ClientVpnEndpointOut = RegionSnapshot['clientVpnEndpoints'][number];
 type ApiGatewayOut = RegionSnapshot['apiGateways'][number];
+
+/** Per-API route cap so an enormous API surface can't stall the scan. */
+const MAX_ROUTES_PER_API = 200;
 type NfwStatelessRuleOut = RegionSnapshot['networkFirewallRuleGroups'][number]['statelessRules'][number];
 type NfwStatefulRuleOut = RegionSnapshot['networkFirewallRuleGroups'][number]['statefulRules'][number];
 
@@ -477,21 +485,71 @@ export async function collectEdgeNetwork(
           protocolType: 'REST',
           endpointType: api.endpointConfiguration?.types?.[0],
           apiEndpoint: `https://${api.id}.execute-api.${region}.amazonaws.com`,
-          // Filled from GetStages below.
+          // Filled from GetStages / GetResources / GetAuthorizers below.
           stages: [],
           vpcEndpointIds: api.endpointConfiguration?.vpcEndpointIds ?? [],
+          routes: [],
+          authorizers: [],
         });
       }
     }
     await Promise.all(
-      apis.map((api) =>
+      apis.flatMap((api) => [
         limit(() =>
           guard(errors, 'apigateway', `GetStages(${api.id})`, async () => {
             const res = await apigw.send(new GetStagesCommand({ restApiId: api.id }));
             api.stages = (res.item ?? []).map((s) => s.stageName).filter((n): n is string => !!n);
           }),
         ),
-      ),
+        // Routes: each REST resource carries its methods (embed=methods pulls
+        // authorization + integration detail in the same call).
+        limit(() =>
+          guard(errors, 'apigateway', `GetResources(${api.id})`, async () => {
+            paging: for await (const page of paginateGetResources(
+              { client: apigw },
+              { restApiId: api.id, embed: ['methods'] },
+            )) {
+              for (const resource of page.items ?? []) {
+                for (const [method, detail] of Object.entries(resource.resourceMethods ?? {})) {
+                  if (api.routes.length >= MAX_ROUTES_PER_API) {
+                    errors.push({
+                      service: 'apigateway',
+                      operation: `GetResources(${api.id}) truncated`,
+                      message: `stopped after ${MAX_ROUTES_PER_API} routes; routes for this API are incomplete`,
+                    });
+                    break paging;
+                  }
+                  api.routes.push({
+                    routeKey: `${method} ${resource.path ?? '/'}`,
+                    authorizationType: detail.authorizationType,
+                    authorizerId: detail.authorizerId,
+                    target: detail.methodIntegration?.uri,
+                  });
+                }
+              }
+            }
+          }),
+        ),
+        limit(() =>
+          guard(errors, 'apigateway', `GetAuthorizers(${api.id})`, async () => {
+            let position: string | undefined;
+            do {
+              const res = await apigw.send(
+                new GetAuthorizersCommand({ restApiId: api.id, position }),
+              );
+              for (const a of res.items ?? []) {
+                api.authorizers.push({
+                  id: a.id,
+                  name: a.name,
+                  type: a.type,
+                  authorizerUri: a.authorizerUri,
+                });
+              }
+              position = res.position;
+            } while (position);
+          }),
+        ),
+      ]),
     );
     out.apiGateways.push(...apis);
   });
@@ -512,15 +570,17 @@ export async function collectEdgeNetwork(
           protocolType: api.ProtocolType,
           endpointType: undefined,
           apiEndpoint: api.ApiEndpoint,
-          // Filled from GetStages below.
+          // Filled from GetStages / GetRoutes / GetAuthorizers below.
           stages: [],
           vpcEndpointIds: [],
+          routes: [],
+          authorizers: [],
         });
       }
       nextToken = res.NextToken;
     } while (nextToken);
     await Promise.all(
-      apis.map((api) =>
+      apis.flatMap((api) => [
         limit(() =>
           guard(errors, 'apigateway', `GetStages(${api.id})`, async () => {
             let stagesToken: string | undefined;
@@ -535,7 +595,74 @@ export async function collectEdgeNetwork(
             } while (stagesToken);
           }),
         ),
-      ),
+        limit(() =>
+          guard(errors, 'apigateway', `GetRoutes(${api.id})`, async () => {
+            // Resolve `integrations/<id>` route targets to the integration's
+            // URI (Lambda ARN / VPC-link target) where we can; a failure here
+            // just leaves the raw Target values in place.
+            const integrationUris = new Map<string, string>();
+            await guard(errors, 'apigateway', `GetIntegrations(${api.id})`, async () => {
+              let intToken: string | undefined;
+              do {
+                const res = await apigwV2.send(
+                  new GetIntegrationsCommand({ ApiId: api.id, NextToken: intToken }),
+                );
+                for (const i of res.Items ?? []) {
+                  if (i.IntegrationId && i.IntegrationUri) {
+                    integrationUris.set(i.IntegrationId, i.IntegrationUri);
+                  }
+                }
+                intToken = res.NextToken;
+              } while (intToken);
+            });
+            let routesToken: string | undefined;
+            paging: do {
+              const res = await apigwV2.send(
+                new GetRoutesCommand({ ApiId: api.id, NextToken: routesToken }),
+              );
+              for (const r of res.Items ?? []) {
+                if (api.routes.length >= MAX_ROUTES_PER_API) {
+                  errors.push({
+                    service: 'apigateway',
+                    operation: `GetRoutes(${api.id}) truncated`,
+                    message: `stopped after ${MAX_ROUTES_PER_API} routes; routes for this API are incomplete`,
+                  });
+                  break paging;
+                }
+                const integrationId = r.Target?.startsWith('integrations/')
+                  ? r.Target.slice('integrations/'.length)
+                  : undefined;
+                api.routes.push({
+                  routeKey: r.RouteKey,
+                  authorizationType: r.AuthorizationType,
+                  authorizerId: r.AuthorizerId,
+                  target: (integrationId && integrationUris.get(integrationId)) || r.Target,
+                });
+              }
+              routesToken = res.NextToken;
+            } while (routesToken);
+          }),
+        ),
+        limit(() =>
+          guard(errors, 'apigateway', `GetAuthorizers(${api.id})`, async () => {
+            let authToken: string | undefined;
+            do {
+              const res = await apigwV2.send(
+                new GetV2AuthorizersCommand({ ApiId: api.id, NextToken: authToken }),
+              );
+              for (const a of res.Items ?? []) {
+                api.authorizers.push({
+                  id: a.AuthorizerId,
+                  name: a.Name,
+                  type: a.AuthorizerType,
+                  authorizerUri: a.AuthorizerUri,
+                });
+              }
+              authToken = res.NextToken;
+            } while (authToken);
+          }),
+        ),
+      ]),
     );
     out.apiGateways.push(...apis);
   });

@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">191</div><div class="l">Detailed collectors</div></div>
+<div class="kpi det"><div class="n">197</div><div class="l">Detailed collectors</div></div>
 <div class="kpi inv"><div class="n">935</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">496</div><div class="l">Not collected at all</div></div>
+<div class="kpi non"><div class="n">490</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -84,8 +84,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:20%"></span></div><span class="pct">20%</span></td></tr>
 <tr><td class="mono">BedrockAgentCore</td><td>23</td><td class="c-detailed">0</td><td class="c-inv">18</td><td class="c-none">5</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">ApiGateway</td><td>22</td><td class="c-detailed">3</td><td class="c-inv">6</td><td class="c-none">13</td>
-<td><div class="bar"><span style="width:14%"></span></div><span class="pct">14%</span></td></tr>
+<tr><td class="mono">ApiGateway</td><td>22</td><td class="c-detailed">6</td><td class="c-inv">6</td><td class="c-none">10</td>
+<td><div class="bar"><span style="width:27%"></span></div><span class="pct">27%</span></td></tr>
 <tr><td class="mono">SES</td><td>21</td><td class="c-detailed">0</td><td class="c-inv">16</td><td class="c-none">5</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Bedrock</td><td>20</td><td class="c-detailed">0</td><td class="c-inv">15</td><td class="c-none">5</td>
@@ -118,8 +118,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">SecurityHub</td><td>15</td><td class="c-detailed">1</td><td class="c-inv">6</td><td class="c-none">8</td>
 <td><div class="bar"><span style="width:7%"></span></div><span class="pct">7%</span></td></tr>
-<tr><td class="mono">ApiGatewayV2</td><td>14</td><td class="c-detailed">3</td><td class="c-inv">1</td><td class="c-none">10</td>
-<td><div class="bar"><span style="width:21%"></span></div><span class="pct">21%</span></td></tr>
+<tr><td class="mono">ApiGatewayV2</td><td>14</td><td class="c-detailed">6</td><td class="c-inv">1</td><td class="c-none">7</td>
+<td><div class="bar"><span style="width:43%"></span></div><span class="pct">43%</span></td></tr>
 <tr><td class="mono">QuickSight</td><td>14</td><td class="c-detailed">0</td><td class="c-inv">12</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">VpcLattice</td><td>14</td><td class="c-detailed">2</td><td class="c-inv">10</td><td class="c-none">2</td>
@@ -774,10 +774,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">8<div class="props">CustomerId, Description, Enabled, GenerateDistinctId, Name, StageKeys, Tags, Value</div></td></tr>
-<tr data-svc="ApiGateway" data-c="none" data-d="none" data-props="AuthType AuthorizerCredentials AuthorizerResultTtlInSeconds AuthorizerUri IdentitySource IdentityValidationExpression Name ProviderARNs RestApiId Type">
+<tr data-svc="ApiGateway" data-c="detailed" data-d="node" data-props="AuthType AuthorizerCredentials AuthorizerResultTtlInSeconds AuthorizerUri IdentitySource IdentityValidationExpression Name ProviderARNs RestApiId Type">
 <td class="mono">AWS::ApiGateway::Authorizer</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">captured inside apiGateways.authorizers[]</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge), routes (method/path + authorizer + target), authorizers</div></td>
 <td class="pc">10<div class="props">AuthType, AuthorizerCredentials, AuthorizerResultTtlInSeconds, AuthorizerUri, IdentitySource, IdentityValidationExpression, Name, ProviderARNs, RestApiId, Type</div></td></tr>
 <tr data-svc="ApiGateway" data-c="none" data-d="none" data-props="BasePath DomainName Id RestApiId Stage">
 <td class="mono">AWS::ApiGateway::BasePathMapping</td>
@@ -829,10 +829,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">5<div class="props">ResponseParameters, ResponseTemplates, ResponseType, RestApiId, StatusCode</div></td></tr>
-<tr data-svc="ApiGateway" data-c="none" data-d="none" data-props="ApiKeyRequired AuthorizationScopes AuthorizationType AuthorizerId HttpMethod Integration MethodResponses OperationName RequestModels RequestParameters RequestValidatorId ResourceId RestApiId">
+<tr data-svc="ApiGateway" data-c="detailed" data-d="node" data-props="ApiKeyRequired AuthorizationScopes AuthorizationType AuthorizerId HttpMethod Integration MethodResponses OperationName RequestModels RequestParameters RequestValidatorId ResourceId RestApiId">
 <td class="mono">AWS::ApiGateway::Method</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">captured inside apiGateways.routes[]</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge), routes (method/path + authorizer + target), authorizers</div></td>
 <td class="pc">13<div class="props">ApiKeyRequired, AuthorizationScopes, AuthorizationType, AuthorizerId, HttpMethod, Integration, MethodResponses, OperationName, RequestModels, RequestParameters, RequestValidatorId, ResourceId, RestApiId</div></td></tr>
 <tr data-svc="ApiGateway" data-c="none" data-d="none" data-props="ContentType Description Name RestApiId Schema">
 <td class="mono">AWS::ApiGateway::Model</td>
@@ -844,15 +844,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">Name, RestApiId, ValidateRequestBody, ValidateRequestParameters</div></td></tr>
-<tr data-svc="ApiGateway" data-c="none" data-d="none" data-props="ParentId PathPart RestApiId">
+<tr data-svc="ApiGateway" data-c="detailed" data-d="node" data-props="ParentId PathPart RestApiId">
 <td class="mono">AWS::ApiGateway::Resource</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">captured as apiGateways.routes[] paths</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge), routes (method/path + authorizer + target), authorizers</div></td>
 <td class="pc">3<div class="props">ParentId, PathPart, RestApiId</div></td></tr>
 <tr data-svc="ApiGateway" data-c="detailed" data-d="node" data-props="ApiKeySourceType BinaryMediaTypes Body BodyS3Location CloneFrom Description DisableExecuteApiEndpoint EndpointAccessMode EndpointConfiguration FailOnWarnings MinimumCompressionSize Mode Name Parameters Policy SecurityPolicy Tags">
 <td class="mono">AWS::ApiGateway::RestApi</td>
-<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">protocolType, endpointType, apiEndpoint, stages, vpcEndpointIds</div></td>
-<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge)</div></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">protocolType, endpointType, apiEndpoint, stages, vpcEndpointIds, routes (method+path, authorizer, integration uri), authorizers</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge), routes (method/path + authorizer + target), authorizers</div></td>
 <td class="pc">17<div class="props">ApiKeySourceType, BinaryMediaTypes, Body, BodyS3Location, CloneFrom, Description, DisableExecuteApiEndpoint, EndpointAccessMode, EndpointConfiguration, FailOnWarnings, MinimumCompressionSize, Mode, Name, Parameters, Policy, SecurityPolicy, Tags</div></td></tr>
 <tr data-svc="ApiGateway" data-c="inv-tag" data-d="panel-only" data-props="AccessLogSetting CacheClusterEnabled CacheClusterSize CanarySetting ClientCertificateId DeploymentId Description DocumentationVersion MethodSettings RestApiId StageName Tags TracingEnabled Variables">
 <td class="mono">AWS::ApiGateway::Stage</td>
@@ -876,8 +876,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td class="pc">4<div class="props">Description, Name, Tags, TargetArns</div></td></tr>
 <tr data-svc="ApiGatewayV2" data-c="detailed" data-d="node" data-props="ApiKeySelectionExpression BasePath Body BodyS3Location CorsConfiguration CredentialsArn Description DisableExecuteApiEndpoint DisableSchemaValidation FailOnWarnings IpAddressType Name ProtocolType RouteKey RouteSelectionExpression Tags Target Version">
 <td class="mono">AWS::ApiGatewayV2::Api</td>
-<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">HTTP/WS api: protocolType, apiEndpoint, stages</div></td>
-<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge)</div></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">HTTP/WS api: protocolType, apiEndpoint, stages, routes (routeKey, authorizer, target), authorizers</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge), routes (method/path + authorizer + target), authorizers</div></td>
 <td class="pc">18<div class="props">ApiKeySelectionExpression, BasePath, Body, BodyS3Location, CorsConfiguration, CredentialsArn, Description, DisableExecuteApiEndpoint, DisableSchemaValidation, FailOnWarnings, IpAddressType, Name, ProtocolType, RouteKey, RouteSelectionExpression, Tags, Target, Version</div></td></tr>
 <tr data-svc="ApiGatewayV2" data-c="none" data-d="none" data-props="ApiId Integration Route Stage">
 <td class="mono">AWS::ApiGatewayV2::ApiGatewayManagedOverrides</td>
@@ -889,10 +889,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">ApiId, ApiMappingKey, DomainName, Stage</div></td></tr>
-<tr data-svc="ApiGatewayV2" data-c="none" data-d="none" data-props="ApiId AuthorizerCredentialsArn AuthorizerPayloadFormatVersion AuthorizerResultTtlInSeconds AuthorizerType AuthorizerUri EnableSimpleResponses IdentitySource IdentityValidationExpression JwtConfiguration Name">
+<tr data-svc="ApiGatewayV2" data-c="detailed" data-d="node" data-props="ApiId AuthorizerCredentialsArn AuthorizerPayloadFormatVersion AuthorizerResultTtlInSeconds AuthorizerType AuthorizerUri EnableSimpleResponses IdentitySource IdentityValidationExpression JwtConfiguration Name">
 <td class="mono">AWS::ApiGatewayV2::Authorizer</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">captured inside apiGateways.authorizers[]</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge), routes (method/path + authorizer + target), authorizers</div></td>
 <td class="pc">11<div class="props">ApiId, AuthorizerCredentialsArn, AuthorizerPayloadFormatVersion, AuthorizerResultTtlInSeconds, AuthorizerType, AuthorizerUri, EnableSimpleResponses, IdentitySource, IdentityValidationExpression, JwtConfiguration, Name</div></td></tr>
 <tr data-svc="ApiGatewayV2" data-c="none" data-d="none" data-props="ApiId Description StageName">
 <td class="mono">AWS::ApiGatewayV2::Deployment</td>
@@ -904,10 +904,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGatewayDomainNames</code></div><div class="detail">v2 domain name + mappings</div></td>
 <td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: endpointTypes, certificateArns, mapping paths</div></td>
 <td class="pc">5<div class="props">DomainName, DomainNameConfigurations, MutualTlsAuthentication, RoutingMode, Tags</div></td></tr>
-<tr data-svc="ApiGatewayV2" data-c="none" data-d="none" data-props="ApiId ConnectionId ConnectionType ContentHandlingStrategy CredentialsArn Description IntegrationMethod IntegrationSubtype IntegrationType IntegrationUri PassthroughBehavior PayloadFormatVersion RequestParameters RequestTemplates ResponseParameters TemplateSelectionExpression TimeoutInMillis TlsConfig">
+<tr data-svc="ApiGatewayV2" data-c="detailed" data-d="node" data-props="ApiId ConnectionId ConnectionType ContentHandlingStrategy CredentialsArn Description IntegrationMethod IntegrationSubtype IntegrationType IntegrationUri PassthroughBehavior PayloadFormatVersion RequestParameters RequestTemplates ResponseParameters TemplateSelectionExpression TimeoutInMillis TlsConfig">
 <td class="mono">AWS::ApiGatewayV2::Integration</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">captured as apiGateways.routes[].target</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge), routes (method/path + authorizer + target), authorizers</div></td>
 <td class="pc">18<div class="props">ApiId, ConnectionId, ConnectionType, ContentHandlingStrategy, CredentialsArn, Description, IntegrationMethod, IntegrationSubtype, IntegrationType, IntegrationUri, PassthroughBehavior, PayloadFormatVersion, RequestParameters, RequestTemplates, ResponseParameters, TemplateSelectionExpression, TimeoutInMillis, TlsConfig</div></td></tr>
 <tr data-svc="ApiGatewayV2" data-c="none" data-d="none" data-props="ApiId ContentHandlingStrategy IntegrationId IntegrationResponseKey ResponseParameters ResponseTemplates TemplateSelectionExpression">
 <td class="mono">AWS::ApiGatewayV2::IntegrationResponse</td>
@@ -919,10 +919,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">5<div class="props">ApiId, ContentType, Description, Name, Schema</div></td></tr>
-<tr data-svc="ApiGatewayV2" data-c="none" data-d="none" data-props="ApiId ApiKeyRequired AuthorizationScopes AuthorizationType AuthorizerId ModelSelectionExpression OperationName RequestModels RequestParameters RouteKey RouteResponseSelectionExpression Target">
+<tr data-svc="ApiGatewayV2" data-c="detailed" data-d="node" data-props="ApiId ApiKeyRequired AuthorizationScopes AuthorizationType AuthorizerId ModelSelectionExpression OperationName RequestModels RequestParameters RouteKey RouteResponseSelectionExpression Target">
 <td class="mono">AWS::ApiGatewayV2::Route</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>apiGateways</code></div><div class="detail">captured inside apiGateways.routes[]</div></td>
+<td><span class="badge d-node">node · overview + focus</span><div class="detail">off-diagram: apiEndpoint, stages, vpcEndpointIds (edge), routes (method/path + authorizer + target), authorizers</div></td>
 <td class="pc">12<div class="props">ApiId, ApiKeyRequired, AuthorizationScopes, AuthorizationType, AuthorizerId, ModelSelectionExpression, OperationName, RequestModels, RequestParameters, RouteKey, RouteResponseSelectionExpression, Target</div></td></tr>
 <tr data-svc="ApiGatewayV2" data-c="none" data-d="none" data-props="ApiId ModelSelectionExpression ResponseModels ResponseParameters RouteId RouteResponseKey">
 <td class="mono">AWS::ApiGatewayV2::RouteResponse</td>

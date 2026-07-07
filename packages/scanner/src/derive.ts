@@ -445,6 +445,10 @@ export function deriveRegion(out: RegionSnapshot): void {
   for (const a of out.apiGateways) {
     a.stages.sort();
     a.vpcEndpointIds.sort();
+    a.routes.sort((x, y) => str(x.routeKey).localeCompare(str(y.routeKey)));
+    a.authorizers.sort((x, y) =>
+      `${str(x.id)}|${str(x.name)}`.localeCompare(`${str(y.id)}|${str(y.name)}`),
+    );
   }
   sortById(out.apiGatewayVpcLinks);
   for (const link of out.apiGatewayVpcLinks) {
