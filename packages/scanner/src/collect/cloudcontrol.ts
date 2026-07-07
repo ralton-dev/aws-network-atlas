@@ -33,7 +33,6 @@ const TYPE_NAMES = [
   'AWS::DynamoDB::Table',
   'AWS::SQS::Queue',
   'AWS::SNS::Topic',
-  'AWS::ECR::Repository',
   'AWS::CloudFormation::Stack',
   'AWS::StepFunctions::StateMachine',
   'AWS::Athena::WorkGroup',

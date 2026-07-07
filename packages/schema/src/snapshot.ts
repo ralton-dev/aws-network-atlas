@@ -582,6 +582,38 @@ export interface CognitoIdentityPool extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// ECR (regional): container registries + repositories
+// ---------------------------------------------------------------------------
+
+export interface EcrRepository extends BaseResource {
+  repositoryUri?: string;
+  /** MUTABLE or IMMUTABLE. */
+  imageTagMutability?: string;
+  /** From imageScanningConfiguration. */
+  scanOnPush?: boolean;
+  /** AES256 or KMS. */
+  encryptionType?: string;
+  kmsKey?: string;
+  /** Resource policy JSON (cross-account pull/push) — undefined if none. */
+  repositoryPolicy?: string;
+  /** Lifecycle policy JSON — undefined if none. */
+  lifecyclePolicy?: string;
+}
+
+/** Registry-level ECR config — one per region-per-account; id = the account/registry id. */
+export interface EcrRegistry extends BaseResource {
+  replicationRules: Array<{
+    destinations: Array<{ region?: string; registryId?: string }>;
+    repositoryFilters: string[];
+  }>;
+  /** Registry policy JSON — undefined if none. */
+  registryPolicy?: string;
+  pullThroughCacheRules: Array<{ ecrRepositoryPrefix?: string; upstreamRegistryUrl?: string }>;
+  /** Scan type + rule count summary, or undefined. */
+  scanningConfiguration?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1221,6 +1253,10 @@ export interface RegionSnapshot {
   cognitoUserPools: CognitoUserPool[];
   cognitoIdentityPools: CognitoIdentityPool[];
 
+  // container registry (regional)
+  ecrRepositories: EcrRepository[];
+  ecrRegistries: EcrRegistry[];
+
   generic: GenericResource[];
 }
 
@@ -1344,6 +1380,8 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     logGroups: [],
     cognitoUserPools: [],
     cognitoIdentityPools: [],
+    ecrRepositories: [],
+    ecrRegistries: [],
     generic: [],
   };
 }

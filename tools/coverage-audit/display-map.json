@@ -67,6 +67,8 @@
 "logGroups":{"render":"panel-only","label":"panel-only — collection not drawn","note":"a log-group node appears in focus only if a flow log's logGroupName matches; retentionDays, kmsKeyId, logGroupClass panel-only"},
 "cognitoUserPools":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"identity-tier auth config; not yet drawn on the graph"},
 "cognitoIdentityPools":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"federated identity → IAM role mapping; not yet drawn on the graph"},
+"ecrRepositories":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"repository + resource policies (cross-account grants); not yet drawn on the graph"},
+"ecrRegistries":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"registry replication + pull-through-cache + scanning config; not yet drawn"},
 "generic":{"render":"panel-only","label":"panel-only — Inventory list, grouped by service","note":"ARN / resourceType / tags / source only in panel; never on any graph view"},
 "directConnectGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: amazonSideAsn, state, ownerAccount, associations[] detail"},
 "hostedZones":{"render":"node","label":"node · overview + focus","note":"HIGH-VALUE GAP: records[] (the actual DNS records — name/type/ttl/values/aliasTarget) and recordsTruncated only in panel"},

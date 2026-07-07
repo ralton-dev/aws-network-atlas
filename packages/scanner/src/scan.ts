@@ -29,6 +29,7 @@ import { collectVpcWorkloads } from './collect/vpc-workloads.js';
 import { collectLattice } from './collect/lattice.js';
 import { collectLogs } from './collect/logs.js';
 import { collectCognito } from './collect/cognito.js';
+import { collectEcr } from './collect/ecr.js';
 import { collectGlobalAccelerator } from './collect/global-accelerator.js';
 import { collectCloudWan } from './collect/cloudwan.js';
 import { deriveRegion, sortErrors } from './derive.js';
@@ -87,6 +88,7 @@ export async function scanAccount(
           collectLattice(ctx, region, out),
           collectLogs(ctx, region, out),
           collectCognito(ctx, region, out),
+          collectEcr(ctx, region, out),
           collectGeneric(ctx, region, out),
           collectCloudControl(ctx, region, out),
         ]);

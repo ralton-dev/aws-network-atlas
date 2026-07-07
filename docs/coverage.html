@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">110</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">964</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">548</div><div class="l">Not collected at all</div></div>
+<div class="kpi det"><div class="n">115</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">963</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">544</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -168,8 +168,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">CloudWatch</td><td>9</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">ECR</td><td>9</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">7</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">ECR</td><td>9</td><td class="c-detailed">5</td><td class="c-inv">1</td><td class="c-none">3</td>
+<td><div class="bar"><span style="width:56%"></span></div><span class="pct">56%</span></td></tr>
 <tr><td class="mono">ImageBuilder</td><td>9</td><td class="c-detailed">0</td><td class="c-inv">9</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">IoTSiteWise</td><td>9</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">1</td>
@@ -3649,35 +3649,35 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">RepositoryCatalogData, RepositoryName, RepositoryPolicyText, Tags</div></td></tr>
-<tr data-svc="ECR" data-c="none" data-d="none" data-props="CredentialArn CustomRoleArn EcrRepositoryPrefix UpstreamRegistry UpstreamRegistryUrl UpstreamRepositoryPrefix">
+<tr data-svc="ECR" data-c="detailed" data-d="panel-only" data-props="CredentialArn CustomRoleArn EcrRepositoryPrefix UpstreamRegistry UpstreamRegistryUrl UpstreamRepositoryPrefix">
 <td class="mono">AWS::ECR::PullThroughCacheRule</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ecrRegistries</code></div><div class="detail">captured as ecrRegistries.pullThroughCacheRules</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">registry replication + pull-through-cache + scanning config; not yet drawn</div></td>
 <td class="pc">6<div class="props">CredentialArn, CustomRoleArn, EcrRepositoryPrefix, UpstreamRegistry, UpstreamRegistryUrl, UpstreamRepositoryPrefix</div></td></tr>
 <tr data-svc="ECR" data-c="none" data-d="none" data-props="PrincipalArn">
 <td class="mono">AWS::ECR::PullTimeUpdateExclusion</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">1<div class="props">PrincipalArn</div></td></tr>
-<tr data-svc="ECR" data-c="none" data-d="none" data-props="PolicyText">
+<tr data-svc="ECR" data-c="detailed" data-d="panel-only" data-props="PolicyText">
 <td class="mono">AWS::ECR::RegistryPolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ecrRegistries</code></div><div class="detail">captured as ecrRegistries.registryPolicy</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">registry replication + pull-through-cache + scanning config; not yet drawn</div></td>
 <td class="pc">1<div class="props">PolicyText</div></td></tr>
-<tr data-svc="ECR" data-c="none" data-d="none" data-props="Rules ScanType">
+<tr data-svc="ECR" data-c="detailed" data-d="panel-only" data-props="Rules ScanType">
 <td class="mono">AWS::ECR::RegistryScanningConfiguration</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ecrRegistries</code></div><div class="detail">captured as ecrRegistries.scanningConfiguration</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">registry replication + pull-through-cache + scanning config; not yet drawn</div></td>
 <td class="pc">2<div class="props">Rules, ScanType</div></td></tr>
-<tr data-svc="ECR" data-c="none" data-d="none" data-props="ReplicationConfiguration">
+<tr data-svc="ECR" data-c="detailed" data-d="panel-only" data-props="ReplicationConfiguration">
 <td class="mono">AWS::ECR::ReplicationConfiguration</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ecrRegistries</code></div><div class="detail">captured as ecrRegistries.replicationRules (cross-region/account image flow)</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">registry replication + pull-through-cache + scanning config; not yet drawn</div></td>
 <td class="pc">1<div class="props">ReplicationConfiguration</div></td></tr>
-<tr data-svc="ECR" data-c="inv" data-d="panel-only" data-props="EmptyOnDelete EncryptionConfiguration ImageScanningConfiguration ImageTagMutability ImageTagMutabilityExclusionFilters LifecyclePolicy RepositoryName RepositoryPolicyText Tags">
+<tr data-svc="ECR" data-c="detailed" data-d="panel-only" data-props="EmptyOnDelete EncryptionConfiguration ImageScanningConfiguration ImageTagMutability ImageTagMutabilityExclusionFilters LifecyclePolicy RepositoryName RepositoryPolicyText Tags">
 <td class="mono">AWS::ECR::Repository</td>
-<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ecrRepositories</code></div><div class="detail">uri, imageTagMutability, scanOnPush, encryption(KMS/AES256), repositoryPolicy (cross-account), lifecyclePolicy</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">repository + resource policies (cross-account grants); not yet drawn on the graph</div></td>
 <td class="pc">9<div class="props">EmptyOnDelete, EncryptionConfiguration, ImageScanningConfiguration, ImageTagMutability, ImageTagMutabilityExclusionFilters, LifecyclePolicy, RepositoryName, RepositoryPolicyText, Tags</div></td></tr>
 <tr data-svc="ECR" data-c="none" data-d="none" data-props="AppliedFor CustomRoleArn Description EncryptionConfiguration ImageTagMutability ImageTagMutabilityExclusionFilters LifecyclePolicy Prefix RepositoryPolicy ResourceTags">
 <td class="mono">AWS::ECR::RepositoryCreationTemplate</td>

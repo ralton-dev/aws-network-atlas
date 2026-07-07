@@ -444,6 +444,25 @@ export function deriveRegion(out: RegionSnapshot): void {
     pool.samlProviderArns.sort();
     pool.openIdConnectProviderArns.sort();
   }
+  sortById(out.ecrRepositories);
+  sortById(out.ecrRegistries);
+  for (const reg of out.ecrRegistries) {
+    for (const rule of reg.replicationRules) {
+      rule.repositoryFilters.sort();
+      rule.destinations.sort((a, b) =>
+        `${str(a.region)}|${str(a.registryId)}`.localeCompare(`${str(b.region)}|${str(b.registryId)}`),
+      );
+    }
+    reg.replicationRules.sort((a, b) =>
+      a.destinations
+        .map((d) => `${str(d.region)}|${str(d.registryId)}`)
+        .join(',')
+        .localeCompare(b.destinations.map((d) => `${str(d.region)}|${str(d.registryId)}`).join(',')),
+    );
+    reg.pullThroughCacheRules.sort((a, b) =>
+      str(a.ecrRepositoryPrefix).localeCompare(str(b.ecrRepositoryPrefix)),
+    );
+  }
 
   // The tagging and Cloud Control sweeps run concurrently and can both report
   // the same resource (Cloud Control dedupes against entries present at push
