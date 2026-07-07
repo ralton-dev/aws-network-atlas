@@ -938,6 +938,44 @@ export interface GuardDutyDetector extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// AWS Backup (regional): vaults + plans
+// ---------------------------------------------------------------------------
+
+/**
+ * Backup vault merged with its vault-lock settings and whether an access
+ * policy is attached — recoverability posture: is anything actually stored,
+ * and is it protected from deletion.
+ */
+export interface BackupVault extends BaseResource {
+  numberOfRecoveryPoints?: number;
+  /** Vault lock present (LockDate or min/max retention configured). */
+  locked?: boolean;
+  minRetentionDays?: number;
+  maxRetentionDays?: number;
+  /** GetBackupVaultAccessPolicy returned a policy. */
+  hasAccessPolicy?: boolean;
+}
+
+/**
+ * Backup plan with its rules (schedule, lifecycle, cross-region/account copy
+ * destinations) and a best-effort summary of what its selections cover.
+ */
+export interface BackupPlan extends BaseResource {
+  rules: Array<{
+    name?: string;
+    targetVault?: string;
+    scheduleExpression?: string;
+    moveToColdStorageAfterDays?: number;
+    deleteAfterDays?: number;
+    /** CopyActions[].DestinationBackupVaultArn (cross-region/account). */
+    copyToDestinations: string[];
+    continuousBackup?: boolean;
+  }>;
+  /** Union of resource selections summary (best-effort). */
+  selectionResourceTypes: string[];
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1653,6 +1691,10 @@ export interface RegionSnapshot {
   // GuardDuty posture (regional)
   guardDutyDetectors: GuardDutyDetector[];
 
+  // AWS Backup posture (regional)
+  backupVaults: BackupVault[];
+  backupPlans: BackupPlan[];
+
   generic: GenericResource[];
 }
 
@@ -1803,6 +1845,8 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     cloudTrailTrails: [],
     cloudTrailEventDataStores: [],
     guardDutyDetectors: [],
+    backupVaults: [],
+    backupPlans: [],
     generic: [],
   };
 }

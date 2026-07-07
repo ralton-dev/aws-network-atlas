@@ -94,6 +94,8 @@
 "cloudTrailTrails":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"audit-logging posture: multi-region/org, encryption, validation, whether logging is on, event selectors"},
 "cloudTrailEventDataStores":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"CloudTrail Lake event data stores"},
 "guardDutyDetectors":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"threat-detection posture: enabled, features, finding publishing"},
+"backupVaults":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"backup posture: recovery points, vault lock, access policy — is anything recoverable"},
+"backupPlans":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"backup plan rules (schedule/lifecycle/cross-region copy) + selections"},
 "generic":{"render":"panel-only","label":"panel-only — Inventory list, grouped by service","note":"ARN / resourceType / tags / source only in panel; never on any graph view"},
 "directConnectGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: amazonSideAsn, state, ownerAccount, associations[] detail"},
 "hostedZones":{"render":"node","label":"node · overview + focus","note":"HIGH-VALUE GAP: records[] (the actual DNS records — name/type/ttl/values/aliasTarget) and recordsTruncated only in panel"},

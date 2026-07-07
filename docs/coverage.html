@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">151</div><div class="l">Detailed collectors</div></div>
+<div class="kpi det"><div class="n">154</div><div class="l">Detailed collectors</div></div>
 <div class="kpi inv"><div class="n">938</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">533</div><div class="l">Not collected at all</div></div>
+<div class="kpi non"><div class="n">530</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -164,8 +164,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:10%"></span></div><span class="pct">10%</span></td></tr>
 <tr><td class="mono">WorkSpacesWeb</td><td>10</td><td class="c-detailed">0</td><td class="c-inv">10</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Backup</td><td>9</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">8</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Backup</td><td>9</td><td class="c-detailed">3</td><td class="c-inv">1</td><td class="c-none">5</td>
+<td><div class="bar"><span style="width:33%"></span></div><span class="pct">33%</span></td></tr>
 <tr><td class="mono">CloudWatch</td><td>9</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">ECR</td><td>9</td><td class="c-detailed">5</td><td class="c-inv">1</td><td class="c-none">3</td>
@@ -1329,20 +1329,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">2<div class="props">Export, Tags</div></td></tr>
-<tr data-svc="Backup" data-c="none" data-d="none" data-props="BackupPlan BackupPlanTags">
+<tr data-svc="Backup" data-c="detailed" data-d="panel-only" data-props="BackupPlan BackupPlanTags">
 <td class="mono">AWS::Backup::BackupPlan</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>backupPlans</code></div><div class="detail">rules (vault/schedule/lifecycle/copy-to cross-region-account), continuous backup, selections</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">backup plan rules (schedule/lifecycle/cross-region copy) + selections</div></td>
 <td class="pc">2<div class="props">BackupPlan, BackupPlanTags</div></td></tr>
-<tr data-svc="Backup" data-c="none" data-d="none" data-props="BackupPlanId BackupSelection">
+<tr data-svc="Backup" data-c="detailed" data-d="panel-only" data-props="BackupPlanId BackupSelection">
 <td class="mono">AWS::Backup::BackupSelection</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>backupPlans</code></div><div class="detail">captured as backupPlans selection resource types</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">backup plan rules (schedule/lifecycle/cross-region copy) + selections</div></td>
 <td class="pc">2<div class="props">BackupPlanId, BackupSelection</div></td></tr>
-<tr data-svc="Backup" data-c="none" data-d="none" data-props="AccessPolicy BackupVaultName BackupVaultTags EncryptionKeyArn LockConfiguration Notifications">
+<tr data-svc="Backup" data-c="detailed" data-d="panel-only" data-props="AccessPolicy BackupVaultName BackupVaultTags EncryptionKeyArn LockConfiguration Notifications">
 <td class="mono">AWS::Backup::BackupVault</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>backupVaults</code></div><div class="detail">recovery points, vault lock (min/max retention), access policy present</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">backup posture: recovery points, vault lock, access policy — is anything recoverable</div></td>
 <td class="pc">6<div class="props">AccessPolicy, BackupVaultName, BackupVaultTags, EncryptionKeyArn, LockConfiguration, Notifications</div></td></tr>
 <tr data-svc="Backup" data-c="none" data-d="none" data-props="FrameworkControls FrameworkDescription FrameworkName FrameworkTags">
 <td class="mono">AWS::Backup::Framework</td>

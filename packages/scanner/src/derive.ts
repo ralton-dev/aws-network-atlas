@@ -178,6 +178,8 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.cloudTrailTrails.length === 0 &&
     out.cloudTrailEventDataStores.length === 0 &&
     out.guardDutyDetectors.length === 0 &&
+    out.backupVaults.length === 0 &&
+    out.backupPlans.length === 0 &&
     // dhcpOptions deliberately absent: every region has an AWS default set.
     out.vpcs.every((v) => v.isDefault);
 
@@ -539,6 +541,13 @@ export function deriveRegion(out: RegionSnapshot): void {
   sortById(out.guardDutyDetectors);
   for (const d of out.guardDutyDetectors) {
     d.features.sort((a, b) => str(a.name).localeCompare(str(b.name)));
+  }
+  sortById(out.backupVaults);
+  sortById(out.backupPlans);
+  for (const plan of out.backupPlans) {
+    for (const rule of plan.rules) rule.copyToDestinations.sort();
+    plan.rules.sort((a, b) => str(a.name).localeCompare(str(b.name)));
+    plan.selectionResourceTypes.sort();
   }
   sortById(out.ecrRepositories);
   sortById(out.ecrRegistries);

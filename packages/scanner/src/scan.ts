@@ -41,6 +41,7 @@ import { collectFirehose } from './collect/firehose.js';
 import { collectConfig } from './collect/config-service.js';
 import { collectCloudTrail } from './collect/cloudtrail.js';
 import { collectGuardDuty } from './collect/guardduty.js';
+import { collectBackup } from './collect/backup.js';
 import { collectGlobalAccelerator } from './collect/global-accelerator.js';
 import { collectCloudWan } from './collect/cloudwan.js';
 import { deriveRegion, sortErrors } from './derive.js';
@@ -114,6 +115,7 @@ export async function scanAccount(
           collectConfig(ctx, region, out),
           collectCloudTrail(ctx, region, out),
           collectGuardDuty(ctx, region, out),
+          collectBackup(ctx, region, out),
           collectGeneric(ctx, region, out),
           collectCloudControl(ctx, region, out),
         ]);
