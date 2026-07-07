@@ -44,8 +44,23 @@ import SecretsManager from 'aws-icons/icons/architecture-service/AWSSecretsManag
 import Resolver from 'aws-icons/icons/resource/AmazonRoute53Resolver.svg?react';
 import ClientVpn from 'aws-icons/icons/architecture-service/AWSClientVPN.svg?react';
 import NetworkFirewall from 'aws-icons/icons/architecture-service/AWSNetworkFirewall.svg?react';
+import NetworkFirewallEndpoints from 'aws-icons/icons/resource/AWSNetworkFirewallEndpoints.svg?react';
+import DnsFirewall from 'aws-icons/icons/resource/AmazonRoute53ResolverDNSFirewall.svg?react';
 import ApiGw from 'aws-icons/icons/architecture-service/AmazonAPIGateway.svg?react';
 import CloudFront from 'aws-icons/icons/architecture-service/AmazonCloudFront.svg?react';
+import Waf from 'aws-icons/icons/architecture-service/AWSWAF.svg?react';
+import GlobalAccelerator from 'aws-icons/icons/architecture-service/AWSGlobalAccelerator.svg?react';
+import CloudWan from 'aws-icons/icons/architecture-service/AWSCloudWAN.svg?react';
+import VpcLattice from 'aws-icons/icons/architecture-service/AmazonVPCLattice.svg?react';
+import FlowLogs from 'aws-icons/icons/resource/AmazonVPCFlowLogs.svg?react';
+import CloudWatchLogs from 'aws-icons/icons/resource/AmazonCloudWatchLogs.svg?react';
+// VPC-attached workloads
+import Efs from 'aws-icons/icons/architecture-service/AmazonEFS.svg?react';
+import OpenSearch from 'aws-icons/icons/architecture-service/AmazonOpenSearchService.svg?react';
+import Msk from 'aws-icons/icons/architecture-service/AmazonManagedStreamingforApacheKafka.svg?react';
+import Redshift from 'aws-icons/icons/architecture-service/AmazonRedshift.svg?react';
+import AmazonMq from 'aws-icons/icons/architecture-service/AmazonMQ.svg?react';
+import RdsProxy from 'aws-icons/icons/resource/AmazonRDSProxyInstance.svg?react';
 // security groups, internet, on-prem DNS targets
 import Shield from 'aws-icons/icons/resource/Shield.svg?react';
 import Internet from 'aws-icons/icons/resource/Internetalt1.svg?react';
@@ -106,10 +121,44 @@ export const ICONS: Record<string, IconComponent> = {
   // additional network services
   'resolver-endpoint': Resolver,
   'resolver-rule': Resolver,
+  'resolver-query-log-config': Resolver,
+  'dns-firewall-rule-group': DnsFirewall,
   'client-vpn': ClientVpn,
   'network-firewall': NetworkFirewall,
+  'network-firewall-policy': NetworkFirewall,
+  'network-firewall-rule-group': NetworkFirewall,
+  'network-firewall-tls-config': NetworkFirewall,
+  'network-firewall-endpoint': NetworkFirewallEndpoints,
   apigw: ApiGw,
+  'apigw-vpc-link': ApiGw,
+  'apigw-domain': Globe,
   cloudfront: CloudFront,
+  'cloudfront-vpc-origin': CloudFront,
+  'waf-web-acl': Waf,
+  'waf-ip-set': Waf,
+  'waf-rule-group': Waf,
+  'global-accelerator': GlobalAccelerator,
+  'core-network': CloudWan,
+  'lattice-service-network': VpcLattice,
+  'lattice-service': VpcLattice,
+  'flow-log': FlowLogs,
+  'log-group': CloudWatchLogs,
+  'vpce-service': VpcEndpoints,
+  'instance-connect-endpoint': Eni,
+  'dhcp-options': RouteTable,
+  'dx-connection': DirectConnect,
+  'dx-lag': DirectConnect,
+  'dx-vif': DirectConnect,
+  'tgw-connect-peer': TgwAttachment,
+  // VPC-attached workloads
+  efs: Efs,
+  opensearch: OpenSearch,
+  msk: Msk,
+  redshift: Redshift,
+  mq: AmazonMq,
+  'rds-proxy': RdsProxy,
+  'elasticache-serverless': ElastiCacheNode,
+  'elasticache-replication-group': ElastiCacheNode,
   // security groups, internet, DNS targets
   sg: Shield,
   internet: Internet,

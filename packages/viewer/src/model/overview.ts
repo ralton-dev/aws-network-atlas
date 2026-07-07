@@ -269,7 +269,10 @@ function addAccountGlobal(
   }
 
   // --- Edge & global lane -----------------------------------------------------
-  const edgeCount = g.cloudFrontDistributions.length + g.hostedZones.length + g.s3Buckets.length;
+  const edgeCount =
+    g.cloudFrontDistributions.length + g.hostedZones.length + g.s3Buckets.length +
+    (g.globalAccelerators ?? []).length + (g.wafWebAcls ?? []).length +
+    (g.coreNetworks ?? []).length;
   if (edgeCount > 0) {
     const lane = ensureLane(b, `glb:${account.accountId}`, acctId, 'Edge & global', 'group-edge', 'external');
 
@@ -347,6 +350,84 @@ function addAccountGlobal(
     addCapped(b, g.s3Buckets, CAP_SERVICES, lane, `note:${lane}:s3`, 'S3 buckets', (bucket) =>
       leafNode(b, `s3:${bucket.name ?? bucket.id}`, lane, 's3', bucket.name ?? bucket.id, bucket.region ? `S3 · ${bucket.region}` : 'S3 bucket', bucket.id),
     );
+
+    // Global Accelerator: internet → accelerator → the VPC of each endpoint.
+    for (const ga of g.globalAccelerators ?? []) {
+      const gaNode = leafNode(b, `ga:${ga.id}`, lane, 'global-accelerator', ga.name ?? ga.id,
+        ga.dnsName ?? 'Global Accelerator', ga.arn ?? ga.id,
+        ga.enabled === false ? ['disabled'] : undefined);
+      const inKey = `inet-ga:${ga.id}`;
+      b.edges.set(inKey, {
+        id: `edge:${inKey}`,
+        source: ensureInternet(b),
+        target: gaNode,
+        type: 'annotated',
+        markerEnd: { type: MarkerType.ArrowClosed },
+        data: { edgeKind: 'edge-service', label: 'anycast', title: `Internet → Global Accelerator ${ga.name ?? ga.id}`, refId: ga.arn ?? ga.id },
+      });
+      for (const listener of ga.listeners) {
+        for (const group of listener.endpointGroups) {
+          for (const endpoint of group.endpoints) {
+            if (!endpoint.endpointId) continue;
+            const ref = index.byKey.get(endpoint.endpointId);
+            const vpcNode = ref?.vpcId
+              ? ensureVpcNode(b, ref.vpcId, ref.accountId, ref.region)
+              : undefined;
+            if (!vpcNode) continue;
+            const key = `gaep:${ga.id}|${vpcNode}`;
+            if (b.edges.has(key)) continue;
+            b.edges.set(key, {
+              id: `edge:${key}`,
+              source: gaNode,
+              target: vpcNode,
+              type: 'annotated',
+              markerEnd: { type: MarkerType.ArrowClosed },
+              data: { edgeKind: 'edge-service', label: `endpoint · ${ref?.name ?? group.region ?? ''}`.trim(), title: `Accelerator endpoint ${endpoint.endpointId}`, refId: ga.arn ?? ga.id },
+            });
+          }
+        }
+      }
+    }
+
+    // WAF (CLOUDFRONT scope): the ACL protecting each distribution.
+    for (const acl of g.wafWebAcls ?? []) {
+      const aclNode = leafNode(b, `waf:${acl.arn ?? acl.id}`, lane, 'waf-web-acl', acl.name ?? acl.id,
+        `WAF · ${acl.rules.length} rule${acl.rules.length === 1 ? '' : 's'}`, acl.arn ?? acl.id);
+      for (const dist of g.cloudFrontDistributions) {
+        if (!dist.webAclId || dist.webAclId !== (acl.arn ?? acl.id)) continue;
+        const key = `wafcf:${acl.id}|${dist.id}`;
+        b.edges.set(key, {
+          id: `edge:${key}`,
+          source: aclNode,
+          target: `cf:${dist.id}`,
+          type: 'annotated',
+          markerEnd: { type: MarkerType.ArrowClosed },
+          data: { edgeKind: 'uses', label: 'WAF protects', title: `${acl.name ?? acl.id} protects ${dist.name ?? dist.id}`, refId: acl.arn ?? acl.id },
+        });
+      }
+    }
+
+    // Cloud WAN core networks → the VPCs attached to them.
+    for (const cn of g.coreNetworks ?? []) {
+      const cnNode = leafNode(b, `corenet:${cn.id}`, lane, 'core-network', cn.name ?? cn.id,
+        `Cloud WAN · ${cn.segments.length} segment${cn.segments.length === 1 ? '' : 's'}`, cn.arn ?? cn.id);
+      for (const att of cn.attachments) {
+        const vpcId = att.resourceArn?.match(/vpc\/(vpc-[0-9a-f]+)/)?.[1];
+        if (!vpcId) continue;
+        const vpcNode = ensureVpcNode(b, vpcId, att.ownerAccountId, att.edgeLocation);
+        if (!vpcNode) continue;
+        const key = `cnatt:${cn.id}|${vpcNode}`;
+        if (b.edges.has(key)) continue;
+        b.edges.set(key, {
+          id: `edge:${key}`,
+          source: vpcNode,
+          target: cnNode,
+          type: 'annotated',
+          markerEnd: { type: MarkerType.ArrowClosed },
+          data: { edgeKind: 'tgw', label: att.segmentName ? `segment ${att.segmentName}` : 'core network', title: `Cloud WAN attachment ${att.id}`, refId: att.id },
+        });
+      }
+    }
   }
 }
 
@@ -486,6 +567,48 @@ function addRegionServices(
       });
     }
   }
+
+  // WAF (REGIONAL): the ACL protecting each ALB/API/AppSync, resolved to its VPC.
+  addCapped(b, region.wafWebAcls ?? [], CAP_SERVICES, regionId, `note:${regionId}:waf`, 'WAF web ACLs', (acl) => {
+    const aclNode = leafNode(b, `waf:${acl.arn ?? acl.id}`, regionId, 'waf-web-acl', acl.name ?? acl.id,
+      `WAF · ${acl.rules.length} rule${acl.rules.length === 1 ? '' : 's'}`, acl.arn ?? acl.id,
+      acl.associatedResourceArns.length === 0 ? ['unattached'] : undefined);
+    for (const resourceArn of acl.associatedResourceArns) {
+      const ref = index.byKey.get(resourceArn);
+      if (!ref?.vpcId) continue;
+      const vpcNode = ensureVpcNode(b, ref.vpcId, ref.accountId, ref.region);
+      if (!vpcNode) continue;
+      const key = `wafprot:${acl.id}|${vpcNode}`;
+      if (b.edges.has(key)) continue;
+      b.edges.set(key, {
+        id: `edge:${key}`,
+        source: aclNode,
+        target: vpcNode,
+        type: 'annotated',
+        markerEnd: { type: MarkerType.ArrowClosed },
+        data: { edgeKind: 'uses', label: `protects ${ref.name ?? ref.kind}`, title: `${acl.name ?? acl.id} protects ${ref.name ?? resourceArn}`, refId: acl.arn ?? acl.id },
+      });
+    }
+  });
+
+  // API Gateway custom domains → the APIs their mappings serve.
+  addCapped(b, region.apiGatewayDomainNames ?? [], CAP_SERVICES, regionId, `note:${regionId}:apigwdom`, 'API custom domains', (d) => {
+    const domNode = leafNode(b, `apigwdom:${d.id}`, regionId, 'apigw-domain', d.domainName,
+      'API custom domain', d.id);
+    for (const mapping of d.mappings) {
+      if (!mapping.apiId || !b.leaves.has(`apigw:${mapping.apiId}`)) continue;
+      const key = `apimap:${d.id}|${mapping.apiId}|${mapping.stage ?? ''}`;
+      if (b.edges.has(key)) continue;
+      b.edges.set(key, {
+        id: `edge:${key}`,
+        source: domNode,
+        target: `apigw:${mapping.apiId}`,
+        type: 'annotated',
+        markerEnd: { type: MarkerType.ArrowClosed },
+        data: { edgeKind: 'edge-service', label: mapping.stage ? `stage ${mapping.stage}` : 'custom domain', title: `${d.domainName} → API ${mapping.apiId}`, refId: d.id },
+      });
+    }
+  });
 
   // Resolver FORWARD rules: VPC → on-prem DNS target (the rule is the edge).
   for (const rule of region.resolverRules) {
@@ -952,6 +1075,76 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
             label: `DX association${assoc.state && assoc.state !== 'associated' ? ` (${assoc.state})` : ''}`,
             title: `Direct Connect gateway ${dxgw.name ?? dxgw.id}`,
             refId: dxgw.id,
+          },
+        });
+      }
+    }
+  }
+
+  // --- Direct Connect circuits: connection → (transit/private VIF) → target --
+  for (const account of index.snapshot.accounts) {
+    for (const region of account.regions) {
+      const connById = new Map((region.dxConnections ?? []).map((c) => [c.id, c]));
+      for (const vif of region.dxVirtualInterfaces ?? []) {
+        // The physical circuit the VIF rides.
+        const conn = vif.connectionId ? connById.get(vif.connectionId) : undefined;
+        const connNodeId = `dxconn:${vif.connectionId ?? vif.id}`;
+        if (!b.leaves.has(connNodeId)) {
+          b.leaves.set(connNodeId, {
+            id: connNodeId,
+            type: 'resource',
+            position: { x: 0, y: 0 },
+            parentId: ensureExt(b),
+            width: 170,
+            height: 96,
+            data: {
+              label: conn?.name ?? vif.connectionId ?? 'DX connection',
+              subtitle: [conn?.location, conn?.bandwidth].filter(Boolean).join(' · ') || 'Direct Connect circuit',
+              kind: 'dx-connection',
+              refId: vif.connectionId ?? vif.id,
+            },
+          });
+        }
+
+        // Where the VIF lands: a DX gateway (transit/private) or a VGW's VPC.
+        let tgt: string | undefined;
+        if (vif.directConnectGatewayId) {
+          const dxgwNodeId = `dxgw:${vif.directConnectGatewayId}`;
+          if (!b.leaves.has(dxgwNodeId)) {
+            b.leaves.set(dxgwNodeId, {
+              id: dxgwNodeId,
+              type: 'resource',
+              position: { x: 0, y: 0 },
+              parentId: ensureExt(b),
+              width: 150,
+              height: 96,
+              data: { label: vif.directConnectGatewayId, subtitle: 'Direct Connect gateway', kind: 'dxgw', refId: vif.directConnectGatewayId },
+            });
+          }
+          tgt = dxgwNodeId;
+        } else if (vif.virtualGatewayId) {
+          const resolved = vgwVpcAll.get(vif.virtualGatewayId);
+          if (resolved) tgt = ensureVpcNode(b, resolved.vpcId, resolved.accountId, resolved.region);
+        }
+        if (!tgt) continue;
+        const key = `dxvif:${vif.id}`;
+        if (b.edges.has(key)) continue;
+        b.edges.set(key, {
+          id: `edge:${key}`,
+          source: connNodeId,
+          target: tgt,
+          type: 'annotated',
+          markerEnd: { type: MarkerType.ArrowClosed },
+          data: {
+            edgeKind: 'dx',
+            label: `${vif.vifType ?? ''} VIF${vif.vlan !== undefined ? ` · vlan ${vif.vlan}` : ''}`.trim(),
+            title: `Virtual interface ${vif.name ?? vif.id}${vif.state && vif.state !== 'available' ? ` (${vif.state})` : ''}`,
+            routes: (vif.bgpPeers ?? []).map((p) => ({
+              from: `BGP AS${p.asn ?? '?'}`,
+              dest: p.addressFamily ?? 'ipv4',
+              state: p.status ?? p.state,
+            })),
+            refId: vif.id,
           },
         });
       }

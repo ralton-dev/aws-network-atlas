@@ -1,9 +1,11 @@
-import type {
-  AccountSnapshot,
-  Annotation,
-  AnnotationMap,
-  RegionSnapshot,
-  Snapshot,
+import {
+  emptyGlobal,
+  emptyRegionSnapshot,
+  type AccountSnapshot,
+  type Annotation,
+  type AnnotationMap,
+  type RegionSnapshot,
+  type Snapshot,
 } from '@atlas/schema';
 
 /** A uniform handle on any scanned resource, for search/details/navigation. */
@@ -142,6 +144,15 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
 export function buildIndex(): AtlasIndex {
   const snapshot = window.__ATLAS_DATA__ ?? EMPTY_SNAPSHOT;
   const annotations = window.__ATLAS_ANNOTATIONS__ ?? {};
+
+  // Normalize once at load: snapshots committed by older scanner versions
+  // predate some collections, so fill every missing array from the empty
+  // factories. Downstream graph builders can then index any collection
+  // without per-site `?? []` guards.
+  for (const account of snapshot.accounts) {
+    account.regions = account.regions.map((r) => ({ ...emptyRegionSnapshot(r.region), ...r }));
+    account.global = { ...emptyGlobal(), ...account.global };
+  }
 
   const all: ResourceRef[] = [];
   for (const account of snapshot.accounts) {

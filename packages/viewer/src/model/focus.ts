@@ -151,6 +151,20 @@ function collectRelations(index: AtlasIndex): Relation[] {
       }
       for (const ep of region.resolverEndpoints) for (const s of ep.subnetIds) place(ep.id, s, 'in subnet');
       for (const fw of region.networkFirewalls) for (const s of fw.subnetIds) place(fw.id, s, 'in subnet');
+      for (const p of region.rdsProxies) for (const s of p.subnetIds) place(p.id, s, 'in subnet');
+      for (const f of region.efsFileSystems) {
+        for (const mt of f.mountTargets) place(f.id, mt.subnetId, 'mount target in');
+      }
+      for (const d of region.openSearchDomains) {
+        if (d.subnetIds.length > 0) for (const s of d.subnetIds) place(d.id, s, 'in subnet');
+        else place(d.id, d.vpcId, 'in VPC');
+      }
+      for (const c of region.mskClusters) for (const s of c.subnetIds) place(c.id, s, 'in subnet');
+      for (const c of region.redshiftClusters) place(c.id, c.vpcId, 'in VPC');
+      for (const broker of region.mqBrokers) for (const s of broker.subnetIds) place(broker.id, s, 'in subnet');
+      for (const c of region.elastiCacheServerlessCaches) for (const s of c.subnetIds) place(c.id, s, 'in subnet');
+      for (const ice of region.instanceConnectEndpoints) place(ice.id, ice.subnetId, 'in subnet');
+      for (const link of region.apiGatewayVpcLinks) for (const s of link.subnetIds) place(link.id, s, 'in subnet');
 
       // --- subnet routing (grouped per subnet|target, like the VPC detail) ---
       for (const vpc of region.vpcs) {
@@ -199,6 +213,18 @@ function collectRelations(index: AtlasIndex): Relation[] {
         ...region.eksClusters.map((e) => ({ id: e.id, sgIds: e.securityGroupIds })),
         ...region.resolverEndpoints.map((e) => ({ id: e.id, sgIds: e.securityGroupIds })),
         ...region.clientVpnEndpoints.map((c) => ({ id: c.id, sgIds: c.securityGroupIds })),
+        ...region.rdsProxies.map((p) => ({ id: p.id, sgIds: p.securityGroupIds })),
+        ...region.efsFileSystems.map((f) => ({
+          id: f.id,
+          sgIds: [...new Set(f.mountTargets.flatMap((mt) => mt.securityGroupIds))],
+        })),
+        ...region.openSearchDomains.map((d) => ({ id: d.id, sgIds: d.securityGroupIds })),
+        ...region.mskClusters.map((c) => ({ id: c.id, sgIds: c.securityGroupIds })),
+        ...region.redshiftClusters.map((c) => ({ id: c.id, sgIds: c.securityGroupIds })),
+        ...region.mqBrokers.map((broker) => ({ id: broker.id, sgIds: broker.securityGroupIds })),
+        ...region.elastiCacheServerlessCaches.map((c) => ({ id: c.id, sgIds: c.securityGroupIds })),
+        ...region.instanceConnectEndpoints.map((e) => ({ id: e.id, sgIds: e.securityGroupIds })),
+        ...region.apiGatewayVpcLinks.map((link) => ({ id: link.id, sgIds: link.securityGroupIds })),
       ];
       for (const { id, sgIds } of sgAttach) {
         for (const sgId of sgIds) {
@@ -427,6 +453,212 @@ function collectRelations(index: AtlasIndex): Relation[] {
           refId: vpn.id,
         });
       }
+
+      // --- Network Firewall: firewall → policy → rule groups; endpoint links --
+      for (const fw of region.networkFirewalls) {
+        if (fw.firewallPolicyArn) {
+          add(`fwpol:${fw.id}`, fw.id, fw.firewallPolicyArn, {
+            edgeKind: 'uses',
+            label: 'firewall policy',
+            title: `${fw.name ?? fw.id} uses ${nameOf(fw.firewallPolicyArn)}`,
+            refId: fw.firewallPolicyArn,
+          });
+        }
+        // The vpce-… ids inspection route tables point at belong to this firewall.
+        for (const ep of fw.endpoints ?? []) {
+          if (!ep.endpointId) continue;
+          add(`fwep:${fw.id}|${ep.endpointId}`, ep.endpointId, fw.id, {
+            edgeKind: 'assoc',
+            label: 'firewall endpoint',
+            title: `${ep.endpointId} is ${fw.name ?? fw.id}'s endpoint in ${ep.availabilityZone ?? '?'}`,
+            refId: fw.arn ?? fw.id,
+          });
+        }
+      }
+      for (const policy of region.networkFirewallPolicies) {
+        const refs = [...policy.statelessRuleGroupRefs, ...policy.statefulRuleGroupRefs];
+        for (const ref of refs) {
+          add(`polrg:${policy.id}|${ref.arn}`, policy.arn ?? policy.id, ref.arn, {
+            edgeKind: 'uses',
+            label: ref.priority !== undefined ? `priority ${ref.priority}` : 'rule group',
+            title: `${policy.name ?? policy.id} evaluates ${nameOf(ref.arn)}`,
+            refId: ref.arn,
+          });
+        }
+      }
+
+      // --- WAF (REGIONAL): ACL → the resources it protects ---------------------
+      for (const acl of region.wafWebAcls) {
+        for (const resourceArn of acl.associatedResourceArns) {
+          add(`wafprot:${acl.id}|${resourceArn}`, acl.arn ?? acl.id, resourceArn, {
+            edgeKind: 'uses',
+            label: 'WAF protects',
+            title: `${acl.name ?? acl.id} protects ${nameOf(resourceArn)}`,
+            refId: acl.arn ?? acl.id,
+          });
+        }
+      }
+
+      // --- DNS Firewall rule groups → the VPCs they filter ---------------------
+      for (const rg of region.dnsFirewallRuleGroups) {
+        for (const assoc of rg.vpcAssociations) {
+          add(`dnsfw:${rg.id}|${assoc.vpcId}`, rg.id, assoc.vpcId, {
+            edgeKind: 'dns',
+            label: `DNS firewall${assoc.priority !== undefined ? ` · priority ${assoc.priority}` : ''}`,
+            title: `${rg.name ?? rg.id} filters DNS in ${nameOf(assoc.vpcId)}`,
+            refId: rg.id,
+          });
+        }
+      }
+
+      // --- PrivateLink provider side: service → backing LBs and consumers ------
+      for (const svc of region.vpcEndpointServices) {
+        for (const lbArn of [...svc.networkLoadBalancerArns, ...svc.gatewayLoadBalancerArns]) {
+          add(`vpcesvclb:${svc.id}|${lbArn}`, svc.id, lbArn, {
+            edgeKind: 'edge-service',
+            label: 'backed by',
+            title: `${svc.serviceName ?? svc.id} backed by ${nameOf(lbArn)}`,
+            refId: svc.id,
+          });
+        }
+        for (const conn of svc.connections) {
+          if (!conn.vpcEndpointId) continue;
+          add(`vpcesvcconn:${svc.id}|${conn.vpcEndpointId}`, conn.vpcEndpointId, svc.id, {
+            edgeKind: 'edge-service',
+            label: `consumer${conn.ownerAccountId ? ` · ${conn.ownerAccountId}` : ''}`,
+            title: `${conn.vpcEndpointId} consumes ${svc.serviceName ?? svc.id}`,
+            refId: svc.id,
+          });
+        }
+      }
+
+      // --- Direct Connect circuits: VIF links connection → DX gateway / VGW ----
+      for (const vif of region.dxVirtualInterfaces) {
+        const vifLabel = `${vif.vifType ?? ''} VIF${vif.vlan !== undefined ? ` · vlan ${vif.vlan}` : ''}`.trim();
+        const tgt = vif.directConnectGatewayId ?? vif.virtualGatewayId;
+        if (vif.connectionId && tgt) {
+          add(`dxvif:${vif.id}`, vif.connectionId, tgt, {
+            edgeKind: 'dx',
+            label: vifLabel,
+            title: `Virtual interface ${vif.name ?? vif.id}`,
+            refId: vif.id,
+          });
+        }
+        if (vif.connectionId) place(vif.id, vif.connectionId, 'rides');
+        if (tgt) {
+          add(`dxvifgw:${vif.id}`, vif.id, tgt, {
+            edgeKind: 'dx',
+            label: 'terminates at',
+            title: `${vif.name ?? vif.id} → ${nameOf(tgt)}`,
+            refId: vif.id,
+          });
+        }
+      }
+      for (const lag of region.dxLags) {
+        for (const connId of lag.connectionIds) {
+          add(`dxlag:${lag.id}|${connId}`, connId, lag.id, {
+            edgeKind: 'dx',
+            label: 'LAG member',
+            title: `${nameOf(connId)} is a member of ${lag.name ?? lag.id}`,
+            refId: lag.id,
+          });
+        }
+      }
+
+      // --- API Gateway custom domains & VPC links -------------------------------
+      for (const domain of region.apiGatewayDomainNames) {
+        for (const mapping of domain.mappings) {
+          if (!mapping.apiId) continue;
+          add(`apimap:${domain.id}|${mapping.apiId}|${mapping.stage ?? ''}`, domain.id, mapping.apiId, {
+            edgeKind: 'edge-service',
+            label: mapping.stage ? `stage ${mapping.stage}` : 'custom domain',
+            title: `${domain.domainName} → API ${nameOf(mapping.apiId)}`,
+            refId: domain.id,
+          });
+        }
+      }
+      for (const link of region.apiGatewayVpcLinks) {
+        for (const targetArn of link.targetArns) {
+          add(`vpclinktgt:${link.id}|${targetArn}`, link.id, targetArn, {
+            edgeKind: 'edge-service',
+            label: 'VPC link target',
+            title: `${link.name ?? link.id} → ${nameOf(targetArn)}`,
+            refId: link.id,
+          });
+        }
+      }
+
+      // --- Lambda function URLs: public HTTPS entry points ----------------------
+      for (const fn of region.lambdaFunctions) {
+        if (!fn.functionUrl?.url || fn.functionUrl.authType !== 'NONE') continue;
+        add(`fnurl:${fn.id}`, INTERNET, fn.id, {
+          edgeKind: 'edge-service',
+          label: 'public function URL',
+          title: `Internet → ${fn.name ?? fn.id} (no auth)`,
+          refId: fn.id,
+        });
+      }
+
+      // --- Flow logs: what is being logged, and to where -------------------------
+      for (const fl of region.flowLogs) {
+        if (fl.resourceId) {
+          add(`fl:${fl.id}`, fl.resourceId, fl.id, {
+            edgeKind: 'uses',
+            label: 'flow logs',
+            title: `${nameOf(fl.resourceId)} logs flows to ${fl.logGroupName ?? fl.logDestinationType ?? '?'}`,
+            refId: fl.id,
+          });
+        }
+        if (fl.logGroupName) {
+          add(`fldest:${fl.id}`, fl.id, fl.logGroupName, {
+            edgeKind: 'uses',
+            label: 'delivers to',
+            title: `${fl.name ?? fl.id} delivers to ${fl.logGroupName}`,
+            refId: fl.logGroupName,
+          });
+        }
+      }
+
+      // --- TGW Connect peers, ElastiCache groups, Lattice ------------------------
+      for (const peer of region.transitGatewayConnectPeers) {
+        if (!peer.attachmentId) continue;
+        add(`tgwcp:${peer.id}`, peer.id, peer.attachmentId, {
+          edgeKind: 'tgw',
+          label: peer.bgpAsn !== undefined ? `GRE/BGP AS${peer.bgpAsn}` : 'Connect peer',
+          title: `Connect peer ${peer.name ?? peer.id}`,
+          refId: peer.id,
+        });
+      }
+      for (const rg of region.elastiCacheReplicationGroups) {
+        for (const memberId of rg.memberClusterIds) {
+          add(`ecrg:${rg.id}|${memberId}`, rg.id, memberId, {
+            edgeKind: 'assoc',
+            label: 'replication member',
+            title: `${memberId} is a member of ${rg.name ?? rg.id}`,
+            refId: rg.id,
+          });
+        }
+      }
+      for (const sn of region.latticeServiceNetworks) {
+        for (const assoc of sn.vpcAssociations) {
+          if (!assoc.vpcId) continue;
+          add(`latvpc:${sn.id}|${assoc.vpcId}`, assoc.vpcId, sn.id, {
+            edgeKind: 'edge-service',
+            label: 'Lattice',
+            title: `${nameOf(assoc.vpcId)} associated with service network ${sn.name ?? sn.id}`,
+            refId: sn.id,
+          });
+        }
+        for (const assoc of sn.serviceAssociations) {
+          if (!assoc.serviceArn) continue;
+          add(`latsvc:${sn.id}|${assoc.serviceArn}`, assoc.serviceArn, sn.id, {
+            edgeKind: 'edge-service',
+            label: 'Lattice service',
+            title: `${assoc.serviceName ?? assoc.serviceArn} in service network ${sn.name ?? sn.id}`,
+            refId: sn.id,
+          });
+        }
+      }
     }
 
     // --- account-global: Route 53, CloudFront, IAM, Direct Connect -----------
@@ -522,6 +754,51 @@ function collectRelations(index: AtlasIndex): Relation[] {
           label: `DX association${assoc.state && assoc.state !== 'associated' ? ` (${assoc.state})` : ''}`,
           title: `Direct Connect gateway ${dxgw.name ?? dxgw.id}`,
           refId: dxgw.id,
+        });
+      }
+    }
+    for (const ga of g.globalAccelerators) {
+      const gaKey = ga.arn ?? ga.id;
+      add(`inetga:${ga.id}`, INTERNET, gaKey, {
+        edgeKind: 'edge-service',
+        label: 'anycast',
+        title: `Internet → Global Accelerator ${ga.name ?? ga.id}`,
+        refId: gaKey,
+      });
+      for (const listener of ga.listeners) {
+        for (const group of listener.endpointGroups) {
+          for (const endpoint of group.endpoints) {
+            if (!endpoint.endpointId) continue;
+            add(`gaep:${ga.id}|${endpoint.endpointId}`, gaKey, endpoint.endpointId, {
+              edgeKind: 'edge-service',
+              label: `endpoint${group.region ? ` · ${group.region}` : ''}`,
+              title: `Accelerator endpoint ${nameOf(endpoint.endpointId)}`,
+              refId: gaKey,
+            });
+          }
+        }
+      }
+    }
+    for (const acl of g.wafWebAcls) {
+      for (const dist of g.cloudFrontDistributions) {
+        if (!dist.webAclId || dist.webAclId !== (acl.arn ?? acl.id)) continue;
+        add(`wafcf:${acl.id}|${dist.id}`, acl.arn ?? acl.id, dist.arn ?? dist.id, {
+          edgeKind: 'uses',
+          label: 'WAF protects',
+          title: `${acl.name ?? acl.id} protects ${dist.name ?? dist.id}`,
+          refId: acl.arn ?? acl.id,
+        });
+      }
+    }
+    for (const cn of g.coreNetworks) {
+      for (const att of cn.attachments) {
+        const vpcId = att.resourceArn?.match(/vpc\/(vpc-[0-9a-f]+)/)?.[1];
+        if (!vpcId) continue;
+        add(`cnatt:${cn.id}|${vpcId}`, vpcId, cn.id, {
+          edgeKind: 'tgw',
+          label: att.segmentName ? `segment ${att.segmentName}` : 'core network',
+          title: `Cloud WAN attachment ${att.id}`,
+          refId: att.id,
         });
       }
     }
@@ -739,6 +1016,34 @@ function subtitleFor(index: AtlasIndex, ref: ResourceRef, center: ResourceRef | 
     case 'client-vpn': base = (raw['clientCidrBlock'] as string | undefined) ?? 'Client VPN'; break;
     case 'resolver-endpoint': base = `${String(raw['direction'] ?? 'resolver').toLowerCase()} resolver`; break;
     case 's3': base = 'S3 bucket'; break;
+    case 'network-firewall': base = 'network firewall'; break;
+    case 'network-firewall-policy': base = 'firewall policy'; break;
+    case 'network-firewall-rule-group': base = `${String(raw['ruleGroupType'] ?? '').toLowerCase()} rule group`.trim(); break;
+    case 'waf-web-acl': base = `WAF · ${((raw['rules'] as unknown[] | undefined) ?? []).length} rules`; break;
+    case 'waf-ip-set': base = 'WAF IP set'; break;
+    case 'dns-firewall-rule-group': base = 'DNS Firewall rule group'; break;
+    case 'global-accelerator': base = (raw['dnsName'] as string | undefined) ?? 'Global Accelerator'; break;
+    case 'core-network': base = 'Cloud WAN core network'; break;
+    case 'vpce-service': base = (raw['serviceName'] as string | undefined) ?? 'PrivateLink service'; break;
+    case 'flow-log': base = `flow logs → ${(raw['logGroupName'] as string | undefined) ?? (raw['logDestinationType'] as string | undefined) ?? '?'}`; break;
+    case 'log-group': base = 'log group'; break;
+    case 'dx-connection': base = [raw['location'], raw['bandwidth']].filter(Boolean).join(' · ') || 'DX connection'; break;
+    case 'dx-vif': base = `${(raw['vifType'] as string | undefined) ?? ''} VIF`.trim(); break;
+    case 'dx-lag': base = 'DX LAG'; break;
+    case 'efs': base = 'EFS file system'; break;
+    case 'opensearch': base = `OpenSearch ${(raw['engineVersion'] as string | undefined) ?? ''}`.trim(); break;
+    case 'msk': base = 'MSK cluster'; break;
+    case 'redshift': base = (raw['nodeType'] as string | undefined) ?? 'Redshift'; break;
+    case 'mq': base = `MQ · ${(raw['engineType'] as string | undefined) ?? ''}`.trim(); break;
+    case 'rds-proxy': base = 'RDS Proxy'; break;
+    case 'elasticache-serverless': base = `${(raw['engine'] as string | undefined) ?? 'cache'} · serverless`; break;
+    case 'elasticache-replication-group': base = 'replication group'; break;
+    case 'instance-connect-endpoint': base = 'EC2 Instance Connect'; break;
+    case 'apigw-domain': base = 'API custom domain'; break;
+    case 'apigw-vpc-link': base = 'API GW VPC link'; break;
+    case 'lattice-service-network': base = 'Lattice service network'; break;
+    case 'lattice-service': base = (raw['dnsEntry'] as string | undefined) ?? 'Lattice service'; break;
+    case 'tgw-connect-peer': base = 'TGW Connect peer'; break;
     default: base = ref.kind; break;
   }
   const ctx: string[] = [];

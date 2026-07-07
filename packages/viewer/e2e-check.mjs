@@ -32,12 +32,23 @@ const overview = {
   trustEdges: await page.locator('.edge-label', { hasText: 'assume-role' }).count(),
   dnsEdges: await page.locator('.edge-label', { hasText: 'DNS corp.acme.example' }).count(),
   openSgBadge: await page.locator('.badge', { hasText: 'internet-open SG' }).count(),
+  // full-coverage additions
+  globalAccelerator: await page.locator('.resource-node', { hasText: 'prod-edge' }).count(),
+  wafCloudFront: await page.locator('.resource-node', { hasText: 'prod-waf' }).count(),
+  wafRegional: await page.locator('.resource-node', { hasText: 'prod-alb-waf' }).count(),
+  dxConnection: await page.locator('.resource-node', { hasText: 'hq-dx-1g' }).count(),
+  dxVifEdge: await page.locator('.edge-label', { hasText: 'transit VIF' }).count(),
 };
 console.log('overview:', JSON.stringify(overview));
 if (overview.securityLanes === 0) problems.push('overview: no Identity & security lane');
 if (overview.internetNode === 0) problems.push('overview: no Internet node');
 if (overview.cloudfront === 0) problems.push('overview: CloudFront distribution missing');
 if (overview.trustEdges === 0) problems.push('overview: no cross-account IAM trust edges');
+if (overview.globalAccelerator === 0) problems.push('overview: Global Accelerator missing');
+if (overview.wafCloudFront === 0) problems.push('overview: CloudFront-scope WAF ACL missing');
+if (overview.wafRegional === 0) problems.push('overview: regional WAF ACL missing');
+if (overview.dxConnection === 0) problems.push('overview: DX connection missing');
+if (overview.dxVifEdge === 0) problems.push('overview: DX VIF edge missing');
 await page.screenshot({ path: '/tmp/atlas-everything-overview.png', fullPage: false });
 
 // Drill into the prod VPC (dispatch dblclick directly — edge labels can
@@ -67,8 +78,23 @@ const detail = {
   sgRule8080: await page.locator('.edge-label.edge-label-sg-rule', { hasText: 'tcp 8080' }).count(),
   sgRule5432: await page.locator('.edge-label.edge-label-sg-rule', { hasText: 'tcp 5432' }).count(),
   exposure443: await page.locator('.edge-label.edge-label-sg-open', { hasText: 'tcp 443' }).count(),
+  // full-coverage additions: firewall policy chain, WAF, EFS, DNS Firewall, flow log
+  fwPolicy: await page.locator('.resource-node', { hasText: 'prod-policy' }).count(),
+  fwRuleGroups: await page.locator('.resource-node', { hasText: 'prod-egress-domains' }).count(),
+  fwPolicyEdge: await page.locator('.edge-label', { hasText: 'firewall policy' }).count(),
+  wafEdge: await page.locator('.edge-label', { hasText: 'WAF protects' }).count(),
+  efs: await page.locator('.resource-node', { hasText: 'prod-shared-assets' }).count(),
+  dnsFirewall: await page.locator('.resource-node', { hasText: 'prod-dns-firewall' }).count(),
+  flowLog: await page.locator('.resource-node', { hasText: 'prod-vpc-flow' }).count(),
 };
 console.log('vpc-detail:', JSON.stringify(detail));
+if (detail.fwPolicy === 0) problems.push('vpc: Network Firewall policy node missing');
+if (detail.fwRuleGroups === 0) problems.push('vpc: Network Firewall rule group node missing');
+if (detail.fwPolicyEdge === 0) problems.push('vpc: firewall → policy edge missing');
+if (detail.wafEdge === 0) problems.push('vpc: WAF protects edge missing');
+if (detail.efs === 0) problems.push('vpc: EFS file system node missing');
+if (detail.dnsFirewall === 0) problems.push('vpc: DNS Firewall rule group node missing');
+if (detail.flowLog === 0) problems.push('vpc: flow log node missing');
 if (detail.sgNodes === 0) problems.push('vpc: no security group nodes');
 if (detail.sgRuleLabels === 0) problems.push('vpc: no SG rule edges');
 if (detail.exposureLabels === 0) problems.push('vpc: no internet-exposure edges');
@@ -82,7 +108,7 @@ if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connect
 // The expected numbers come from running the builders directly over the
 // same fixture (npx tsx graph-check.mts, which also asserts every edge
 // endpoint resolves to a node). Update both together on fixture changes.
-const EXPECTED_EDGES = { overview: 24, prodVpc: 55 };
+const EXPECTED_EDGES = { overview: 29, prodVpc: 60 };
 if (overview.edges !== EXPECTED_EDGES.overview)
   problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
 if (detail.edges !== EXPECTED_EDGES.prodVpc)

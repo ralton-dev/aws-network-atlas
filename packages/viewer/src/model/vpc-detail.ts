@@ -186,6 +186,47 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
   for (const cache of region.elastiCacheClusters.filter((c) => c.vpcId === vpcId)) {
     leaves.set(`res:${cache.id}`, leaf(`res:${cache.id}`, vpcNodeId, 'elasticache', cache.name ?? cache.id, cache.engine, cache.id));
   }
+  const inVpcSubnets = (subnetIds: string[]): boolean =>
+    subnetIds.some((s) => subnets.some((x) => x.id === s));
+  for (const proxy of region.rdsProxies.filter((p) => p.vpcId === vpcId)) {
+    leaves.set(`res:${proxy.id}`, leaf(`res:${proxy.id}`, vpcNodeId, 'rds-proxy', proxy.name ?? proxy.id, `RDS Proxy · ${proxy.engineFamily ?? ''}`, proxy.id));
+  }
+  for (const fs of region.efsFileSystems.filter((f) => f.vpcId === vpcId)) {
+    leaves.set(`res:${fs.id}`, leaf(
+      `res:${fs.id}`, vpcNodeId, 'efs', fs.name ?? fs.id,
+      `EFS · ${fs.mountTargets.length} mount target${fs.mountTargets.length === 1 ? '' : 's'}`, fs.id,
+    ));
+  }
+  for (const d of region.openSearchDomains.filter((d) => d.vpcId === vpcId)) {
+    leaves.set(`res:${d.id}`, leaf(`res:${d.id}`, vpcNodeId, 'opensearch', d.name ?? d.id, `OpenSearch ${d.engineVersion ?? ''}`, d.id));
+  }
+  for (const c of region.mskClusters) {
+    if (!inVpcSubnets(c.subnetIds)) continue;
+    leaves.set(`res:${c.id}`, leaf(`res:${c.id}`, vpcNodeId, 'msk', c.name ?? c.id, `MSK · ${c.clusterType?.toLowerCase() ?? 'kafka'}`, c.id));
+  }
+  for (const c of region.redshiftClusters.filter((c) => c.vpcId === vpcId)) {
+    leaves.set(`res:${c.id}`, leaf(
+      `res:${c.id}`, vpcNodeId, 'redshift', c.name ?? c.id, `Redshift · ${c.nodeType ?? ''}`, c.id,
+      c.publiclyAccessible ? ['public'] : undefined,
+    ));
+  }
+  for (const broker of region.mqBrokers) {
+    if (!inVpcSubnets(broker.subnetIds)) continue;
+    leaves.set(`res:${broker.id}`, leaf(
+      `res:${broker.id}`, vpcNodeId, 'mq', broker.name ?? broker.id, `MQ · ${broker.engineType ?? ''}`, broker.id,
+      broker.publiclyAccessible ? ['public'] : undefined,
+    ));
+  }
+  for (const cache of region.elastiCacheServerlessCaches) {
+    if (!inVpcSubnets(cache.subnetIds)) continue;
+    leaves.set(`res:${cache.id}`, leaf(`res:${cache.id}`, vpcNodeId, 'elasticache-serverless', cache.name ?? cache.id, `${cache.engine ?? 'cache'} · serverless`, cache.id));
+  }
+  for (const ice of region.instanceConnectEndpoints.filter((e) => e.vpcId === vpcId)) {
+    leaves.set(`res:${ice.id}`, leaf(
+      `res:${ice.id}`, subnetNode(ice.subnetId) ?? vpcNodeId, 'instance-connect-endpoint',
+      ice.name ?? ice.id, 'EC2 Instance Connect', ice.id,
+    ));
+  }
 
   // --- external connectivity nodes + route-derived edges ---------------------
   const ensureExt = (id: string, kind: string, label: string, subtitle?: string, refId?: string): string => {
@@ -237,13 +278,112 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     }
   }
 
-  // --- Network Firewall endpoints (live in subnets) ---------------------------
+  // --- Network Firewall: firewall → policy → rule groups ---------------------
   for (const fw of region.networkFirewalls.filter((f) => f.vpcId === vpcId)) {
     leaves.set(`res:${fw.id}`, leaf(
       `res:${fw.id}`, subnetNode(fw.subnetIds[0]) ?? vpcNodeId, 'network-firewall',
       fw.name ?? fw.id, 'network firewall', fw.id,
       fw.status && fw.status !== 'READY' ? [fw.status] : undefined,
     ));
+
+    const policy = region.networkFirewallPolicies.find(
+      (p) => p.arn !== undefined && p.arn === fw.firewallPolicyArn,
+    );
+    if (!policy) continue;
+    const ruleGroupRefs = [
+      ...policy.statelessRuleGroupRefs.map((r) => ({ ...r, type: 'stateless' })),
+      ...policy.statefulRuleGroupRefs.map((r) => ({ ...r, type: 'stateful' })),
+    ];
+    const policyNode = ensureSec(
+      `nfwp:${policy.arn ?? policy.id}`, 'network-firewall-policy', policy.name ?? policy.id,
+      `firewall policy · ${ruleGroupRefs.length} rule group${ruleGroupRefs.length === 1 ? '' : 's'}`,
+      policy.arn ?? policy.id,
+    );
+    addEdge(`fwpol:${fw.id}`, `res:${fw.id}`, policyNode, {
+      edgeKind: 'uses',
+      label: 'firewall policy',
+      title: `${fw.name ?? fw.id} uses policy ${policy.name ?? policy.id}`,
+      refId: policy.arn ?? policy.id,
+    });
+    for (const ref of ruleGroupRefs) {
+      const rg = region.networkFirewallRuleGroups.find((r) => r.arn === ref.arn);
+      const ruleCount =
+        (rg?.statelessRules.length ?? 0) +
+        (rg?.statefulRules.length ?? 0) +
+        (rg?.domainList ? rg.domainList.targets.length : 0);
+      const subtitle = rg
+        ? rg.rulesString !== undefined
+          ? `${ref.type} · suricata rules`
+          : `${ref.type} · ${ruleCount} rule${ruleCount === 1 ? '' : 's'}`
+        : `${ref.type} rule group`;
+      const rgNode = ensureSec(
+        `nfwrg:${ref.arn}`, 'network-firewall-rule-group',
+        rg?.name ?? ref.arn.split('/').pop() ?? ref.arn, subtitle, rg?.arn ?? ref.arn,
+      );
+      addEdge(`polrg:${policy.id}|${ref.arn}`, policyNode, rgNode, {
+        edgeKind: 'uses',
+        label: ref.priority !== undefined ? `priority ${ref.priority}` : 'rules',
+        title: `${policy.name ?? policy.id} evaluates ${rg?.name ?? ref.arn}`,
+        refId: rg?.arn ?? ref.arn,
+      });
+    }
+  }
+
+  // --- WAF: web ACLs protecting load balancers in this VPC --------------------
+  for (const acl of region.wafWebAcls) {
+    for (const resourceArn of acl.associatedResourceArns) {
+      if (!leaves.has(`res:${resourceArn}`)) continue;
+      const aclNode = ensureSec(
+        `waf:${acl.id}`, 'waf-web-acl', acl.name ?? acl.id,
+        `WAF · ${acl.rules.length} rule${acl.rules.length === 1 ? '' : 's'}`, acl.arn ?? acl.id,
+      );
+      addEdge(`wafprot:${acl.id}|${resourceArn}`, aclNode, `res:${resourceArn}`, {
+        edgeKind: 'uses',
+        label: 'WAF protects',
+        title: `${acl.name ?? acl.id} protects ${index.byKey.get(resourceArn)?.name ?? resourceArn}`,
+        refId: acl.arn ?? acl.id,
+      });
+    }
+  }
+
+  // --- DNS Firewall rule groups filtering this VPC ----------------------------
+  for (const rg of region.dnsFirewallRuleGroups) {
+    if (!rg.vpcAssociations.some((a) => a.vpcId === vpcId)) continue;
+    const count = rg.ruleCount ?? rg.rules.length;
+    ensureSec(
+      `dnsfw:${rg.id}`, 'dns-firewall-rule-group', rg.name ?? rg.id,
+      `DNS Firewall · ${count} rule${count === 1 ? '' : 's'}`, rg.id,
+    );
+  }
+
+  // --- Flow logs on this VPC ---------------------------------------------------
+  for (const fl of region.flowLogs.filter((f) => f.resourceId === vpcId)) {
+    ensureSec(
+      `fl:${fl.id}`, 'flow-log', fl.name ?? fl.id,
+      `flow logs → ${fl.logGroupName ?? fl.logDestination?.split(':').pop() ?? fl.logDestinationType ?? '?'}`,
+      fl.id,
+    );
+  }
+
+  // --- PrivateLink: endpoint services backed by load balancers here -----------
+  for (const svc of region.vpcEndpointServices) {
+    const backingLbArns = [...svc.networkLoadBalancerArns, ...svc.gatewayLoadBalancerArns].filter(
+      (arn) => leaves.has(`res:${arn}`),
+    );
+    if (backingLbArns.length === 0) continue;
+    const svcNode = ensureExt(
+      `vpces:${svc.id}`, 'vpce-service', svc.name ?? svc.serviceName ?? svc.id,
+      `PrivateLink · ${svc.connections.length} consumer${svc.connections.length === 1 ? '' : 's'}`,
+      svc.id,
+    );
+    for (const arn of backingLbArns) {
+      addEdge(`vpcesvc:${svc.id}|${arn}`, `res:${arn}`, svcNode, {
+        edgeKind: 'edge-service',
+        label: 'PrivateLink service',
+        title: `${svc.serviceName ?? svc.id} exposed via PrivateLink`,
+        refId: svc.id,
+      });
+    }
   }
 
   // --- Client VPN: remote-access entry point ---------------------------------
@@ -343,6 +483,17 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     ...region.eksClusters.filter((e) => e.vpcId === vpcId).map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
     ...region.resolverEndpoints.filter((e) => e.vpcId === vpcId).map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
     ...region.clientVpnEndpoints.filter((c) => c.vpcId === vpcId).map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.rdsProxies.filter((p) => p.vpcId === vpcId).map((p) => ({ nodeId: `res:${p.id}`, sgIds: p.securityGroupIds })),
+    ...region.efsFileSystems.filter((f) => f.vpcId === vpcId).map((f) => ({
+      nodeId: `res:${f.id}`,
+      sgIds: [...new Set(f.mountTargets.flatMap((mt) => mt.securityGroupIds))],
+    })),
+    ...region.openSearchDomains.filter((d) => d.vpcId === vpcId).map((d) => ({ nodeId: `res:${d.id}`, sgIds: d.securityGroupIds })),
+    ...region.mskClusters.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.redshiftClusters.filter((c) => c.vpcId === vpcId).map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.mqBrokers.map((broker) => ({ nodeId: `res:${broker.id}`, sgIds: broker.securityGroupIds })),
+    ...region.elastiCacheServerlessCaches.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.instanceConnectEndpoints.filter((e) => e.vpcId === vpcId).map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
   ];
   for (const { nodeId, sgIds } of sgAttachSources) {
     if (!leaves.has(nodeId)) continue;
