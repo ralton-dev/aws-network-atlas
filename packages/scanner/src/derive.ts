@@ -444,6 +444,8 @@ export function deriveRegion(out: RegionSnapshot): void {
     pool.samlProviderArns.sort();
     pool.openIdConnectProviderArns.sort();
   }
+  sortById(out.dynamoDbTables);
+  for (const t of out.dynamoDbTables) t.globalTableReplicas.sort();
   sortById(out.ecrRepositories);
   sortById(out.ecrRegistries);
   for (const reg of out.ecrRegistries) {

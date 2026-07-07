@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">115</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">963</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">544</div><div class="l">Not collected at all</div></div>
+<div class="kpi det"><div class="n">117</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">962</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">543</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -454,8 +454,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">DirectoryService</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">DynamoDB</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">DynamoDB</td><td>2</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">ElementalInference</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">FIS</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">1</td>
@@ -3069,15 +3069,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">14<div class="props">AdminUserName, AdminUserPassword, AuthType, BackupRetentionPeriod, ClusterName, KmsKeyId, PreferredBackupWindow, PreferredMaintenanceWindow, ShardCapacity, ShardCount, ShardInstanceCount, SubnetIds, Tags, VpcSecurityGroupIds</div></td></tr>
-<tr data-svc="DynamoDB" data-c="none" data-d="none" data-props="AttributeDefinitions BillingMode GlobalSecondaryIndexes GlobalTableSourceArn GlobalTableWitnesses KeySchema LocalSecondaryIndexes MultiRegionConsistency ReadOnDemandThroughputSettings ReadProvisionedThroughputSettings Replicas SSESpecification StreamSpecification TableName TimeToLiveSpecification WarmThroughput WriteOnDemandThroughputSettings WriteProvisionedThroughputSettings">
+<tr data-svc="DynamoDB" data-c="detailed" data-d="panel-only" data-props="AttributeDefinitions BillingMode GlobalSecondaryIndexes GlobalTableSourceArn GlobalTableWitnesses KeySchema LocalSecondaryIndexes MultiRegionConsistency ReadOnDemandThroughputSettings ReadProvisionedThroughputSettings Replicas SSESpecification StreamSpecification TableName TimeToLiveSpecification WarmThroughput WriteOnDemandThroughputSettings WriteProvisionedThroughputSettings">
 <td class="mono">AWS::DynamoDB::GlobalTable</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dynamoDbTables</code></div><div class="detail">captured as dynamoDbTables.globalTableReplicas (multi-region)</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">keys, encryption, streams, PITR, global-table replicas; cross-region replicas could later be edges</div></td>
 <td class="pc">18<div class="props">AttributeDefinitions, BillingMode, GlobalSecondaryIndexes, GlobalTableSourceArn, GlobalTableWitnesses, KeySchema, LocalSecondaryIndexes, MultiRegionConsistency, ReadOnDemandThroughputSettings, ReadProvisionedThroughputSettings, Replicas, SSESpecification, StreamSpecification, TableName, TimeToLiveSpecification, WarmThroughput, WriteOnDemandThroughputSettings, WriteProvisionedThroughputSettings</div></td></tr>
-<tr data-svc="DynamoDB" data-c="inv" data-d="panel-only" data-props="AttributeDefinitions BillingMode ContributorInsightsSpecification DeletionProtectionEnabled GlobalSecondaryIndexes ImportSourceSpecification KeySchema KinesisStreamSpecification LocalSecondaryIndexes OnDemandThroughput PointInTimeRecoverySpecification ProvisionedThroughput ResourcePolicy SSESpecification StreamSpecification TableClass TableName Tags TimeToLiveSpecification WarmThroughput">
+<tr data-svc="DynamoDB" data-c="detailed" data-d="panel-only" data-props="AttributeDefinitions BillingMode ContributorInsightsSpecification DeletionProtectionEnabled GlobalSecondaryIndexes ImportSourceSpecification KeySchema KinesisStreamSpecification LocalSecondaryIndexes OnDemandThroughput PointInTimeRecoverySpecification ProvisionedThroughput ResourcePolicy SSESpecification StreamSpecification TableClass TableName Tags TimeToLiveSpecification WarmThroughput">
 <td class="mono">AWS::DynamoDB::Table</td>
-<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dynamoDbTables</code></div><div class="detail">keySchema, billingMode, SSE(KMS), streams, PITR, TTL, globalTableReplicas, deletionProtection</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">keys, encryption, streams, PITR, global-table replicas; cross-region replicas could later be edges</div></td>
 <td class="pc">20<div class="props">AttributeDefinitions, BillingMode, ContributorInsightsSpecification, DeletionProtectionEnabled, GlobalSecondaryIndexes, ImportSourceSpecification, KeySchema, KinesisStreamSpecification, LocalSecondaryIndexes, OnDemandThroughput, PointInTimeRecoverySpecification, ProvisionedThroughput, ResourcePolicy, SSESpecification, StreamSpecification, TableClass, TableName, Tags, TimeToLiveSpecification, WarmThroughput</div></td></tr>
 <tr data-svc="EC2" data-c="inv-tag" data-d="panel-only" data-props="OutputFormat S3BucketName S3BucketPrefix Schedule Tags">
 <td class="mono">AWS::EC2::CapacityManagerDataExport</td>

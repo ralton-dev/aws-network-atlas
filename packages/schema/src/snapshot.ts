@@ -1016,6 +1016,33 @@ export interface MqBroker extends BaseResource {
   securityGroupIds: string[];
 }
 
+/** DynamoDB table detail (DescribeTable + PITR + TTL) — read-only metadata. */
+export interface DynamoDbTable extends BaseResource {
+  status?: string;
+  /** PROVISIONED | PAY_PER_REQUEST. */
+  billingMode?: string;
+  itemCount?: number;
+  sizeBytes?: number;
+  /** KeySchema HASH attribute name. */
+  partitionKey?: string;
+  /** KeySchema RANGE attribute name. */
+  sortKey?: string;
+  /** From SSEDescription.SSEType (AES256 | KMS). */
+  sseType?: string;
+  /** SSEDescription.KMSMasterKeyArn. */
+  kmsKey?: string;
+  streamEnabled?: boolean;
+  streamViewType?: string;
+  streamArn?: string;
+  /** Point-in-time recovery, from DescribeContinuousBackups. */
+  pitrEnabled?: boolean;
+  /** From DescribeTimeToLive (status ENABLED). */
+  ttlEnabled?: boolean;
+  /** Replicas[].RegionName — non-empty means a global table. */
+  globalTableReplicas: string[];
+  deletionProtectionEnabled?: boolean;
+}
+
 export interface RdsProxy extends BaseResource {
   engineFamily?: string;
   status?: string;
@@ -1223,6 +1250,7 @@ export interface RegionSnapshot {
   mskClusters: MskCluster[];
   redshiftClusters: RedshiftCluster[];
   mqBrokers: MqBroker[];
+  dynamoDbTables: DynamoDbTable[];
 
   // security services (regional)
   kmsKeys: KmsKey[];
@@ -1357,6 +1385,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     mskClusters: [],
     redshiftClusters: [],
     mqBrokers: [],
+    dynamoDbTables: [],
     kmsKeys: [],
     acmCertificates: [],
     secrets: [],

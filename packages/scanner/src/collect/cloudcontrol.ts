@@ -30,7 +30,6 @@ import { AwsContext, guard } from '../aws.js';
  * catches untagged buckets.
  */
 const TYPE_NAMES = [
-  'AWS::DynamoDB::Table',
   'AWS::SQS::Queue',
   'AWS::SNS::Topic',
   'AWS::CloudFormation::Stack',

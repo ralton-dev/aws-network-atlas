@@ -44,6 +44,7 @@
 "mskClusters":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: state, kafkaVersion, numberOfBrokerNodes"},
 "redshiftClusters":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: numberOfNodes, state, endpoint, subnetGroupName"},
 "mqBrokers":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: deploymentMode, state"},
+"dynamoDbTables":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"keys, encryption, streams, PITR, global-table replicas; cross-region replicas could later be edges"},
 "kmsKeys":{"render":"node","label":"node · overview (customer-managed only) + focus","note":"AWS-managed keys collapsed to a note; keyState, keyUsage, keySpec, multiRegion, extra aliases only in panel"},
 "acmCertificates":{"render":"node","label":"node · overview + VPC-detail + focus","note":"off-diagram: subjectAlternativeNames, renewalEligibility, notAfter (notAfter only in VD subtitle)"},
 "secrets":{"render":"node","label":"node · overview + focus","note":"off-diagram: lastRotatedDate, lastChangedDate, kmsKeyId (edge)"},

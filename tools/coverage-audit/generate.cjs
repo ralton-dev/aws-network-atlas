@@ -161,6 +161,8 @@ const DETAILED = {
   'AWS::Cognito::UserPoolIdentityProvider': { field: 'cognitoUserPools', attrs: 'captured as cognitoUserPools.identityProviders' },
   'AWS::Cognito::IdentityPool': { field: 'cognitoIdentityPools', attrs: 'allowUnauthenticated, cognitoUserPoolProviders, saml/oidc providers, auth/unauth roleArns' },
   'AWS::Cognito::IdentityPoolRoleAttachment': { field: 'cognitoIdentityPools', attrs: 'captured as cognitoIdentityPools auth/unauth roleArns' },
+  'AWS::DynamoDB::Table': { field: 'dynamoDbTables', attrs: 'keySchema, billingMode, SSE(KMS), streams, PITR, TTL, globalTableReplicas, deletionProtection' },
+  'AWS::DynamoDB::GlobalTable': { field: 'dynamoDbTables', attrs: 'captured as dynamoDbTables.globalTableReplicas (multi-region)' },
   'AWS::ECR::Repository': { field: 'ecrRepositories', attrs: 'uri, imageTagMutability, scanOnPush, encryption(KMS/AES256), repositoryPolicy (cross-account), lifecyclePolicy' },
   'AWS::ECR::RegistryPolicy': { field: 'ecrRegistries', attrs: 'captured as ecrRegistries.registryPolicy' },
   'AWS::ECR::ReplicationConfiguration': { field: 'ecrRegistries', attrs: 'captured as ecrRegistries.replicationRules (cross-region/account image flow)' },

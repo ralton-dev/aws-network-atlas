@@ -97,6 +97,7 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('msk', region.mskClusters as unknown as Array<Record<string, unknown>>);
   add('redshift', region.redshiftClusters as unknown as Array<Record<string, unknown>>);
   add('mq', region.mqBrokers as unknown as Array<Record<string, unknown>>);
+  add('dynamodb-table', region.dynamoDbTables as unknown as Array<Record<string, unknown>>);
   // security services
   add('kms', region.kmsKeys as unknown as Array<Record<string, unknown>>);
   add('acm', region.acmCertificates as unknown as Array<Record<string, unknown>>);
