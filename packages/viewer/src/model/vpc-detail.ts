@@ -150,10 +150,14 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     const azSubnet = subnets.find(
       (s) => rds.subnetIds.includes(s.id) && s.availabilityZone === rds.availabilityZone,
     );
+    const rdsBadges = [
+      ...(rds.multiAz ? ['multi-AZ'] : []),
+      ...(rds.publiclyAccessible === true ? ['public'] : []),
+    ];
     leaves.set(`res:${rds.id}`, leaf(
       `res:${rds.id}`, azSubnet ? `res:${azSubnet.id}` : vpcNodeId, 'rds',
       rds.name ?? rds.id, rds.engine, rds.id,
-      rds.multiAz ? ['multi-AZ'] : undefined,
+      rdsBadges.length > 0 ? rdsBadges : undefined,
     ));
   }
 
@@ -209,10 +213,14 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     leaves.set(`res:${fs.id}`, leaf(
       `res:${fs.id}`, vpcNodeId, 'efs', fs.name ?? fs.id,
       `EFS · ${fs.mountTargets.length} mount target${fs.mountTargets.length === 1 ? '' : 's'}`, fs.id,
+      fs.encrypted === false ? ['unencrypted'] : undefined,
     ));
   }
   for (const d of region.openSearchDomains.filter((d) => d.vpcId === vpcId)) {
-    leaves.set(`res:${d.id}`, leaf(`res:${d.id}`, vpcNodeId, 'opensearch', d.name ?? d.id, `OpenSearch ${d.engineVersion ?? ''}`, d.id));
+    leaves.set(`res:${d.id}`, leaf(
+      `res:${d.id}`, vpcNodeId, 'opensearch', d.name ?? d.id, `OpenSearch ${d.engineVersion ?? ''}`, d.id,
+      d.inVpc === false ? ['public'] : undefined,
+    ));
   }
   for (const c of region.mskClusters) {
     if (!inVpcSubnets(c.subnetIds)) continue;
