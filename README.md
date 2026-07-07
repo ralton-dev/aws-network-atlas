@@ -104,12 +104,23 @@ not just core topology.
   Click a rule edge for the full ingress/egress table.
 - **Relationship edges** — secret → KMS key (*encrypted by*), VPC → ACM cert (*TLS*),
   IAM role → the instance/Lambda that assumes it, Resolver rule → on-prem DNS target.
+- **Focus / connections view** — select any resource and hit **Focus on connections** (in
+  the details panel) to open a view scoped to *just that resource and everything wired to
+  it*, each edge labelled by the relationship. Focus an EC2 instance and you get its IAM
+  role (*assumes role*), security groups (*applies to*, plus their allow-chain), subnet/VPC
+  (*in subnet* / *in VPC*), NAT/IGW/TGW/peering routing, its load balancer + CloudFront
+  path, and Route 53 — its dependency neighbourhood ("blast radius"), not the whole VPC.
+  The breadcrumb walks you back.
 - **Pan / Arrange toggle** — defaults to **Pan** (nodes locked, so click-drag pans the
   canvas); flip to **Arrange** to drag nodes around (positions persist per view).
 - **Layers** — hide/show by resource kind or edge kind (with live counts), or hide an
   individual node (right-click or the details panel). Every category is toggleable, so a
   busy VPC declutters to just what you care about.
-- **Search** — fuzzy search across names, IDs, ARNs, tags, and your annotations.
+- **Search** — fuzzy search across names, IDs, ARNs, tags, annotations, **and every
+  resource's field values**: a private IP, a subnet CIDR, a CloudFront alias
+  (`www.acme.example`), an RDS endpoint host, a Resolver domain, a KMS alias, an ACM SAN —
+  they all resolve to the owning resource (IPs/CIDRs/hostnames are kept intact as search
+  terms; name/ID matches still rank first).
 - **Inventory** — every resource found, grouped by account ▸ region ▸ service, including
   things that aren't on the diagram.
 - **Details panel** — click anything for properties, tags, rules, and your notes.
