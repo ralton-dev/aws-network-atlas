@@ -146,6 +146,10 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('dms-replication-instance', region.dmsReplicationInstances as unknown as Array<Record<string, unknown>>);
   add('dms-endpoint', region.dmsEndpoints as unknown as Array<Record<string, unknown>>);
   add('dms-replication-task', region.dmsReplicationTasks as unknown as Array<Record<string, unknown>>);
+  // DataSync
+  add('datasync-agent', region.dataSyncAgents as unknown as Array<Record<string, unknown>>);
+  add('datasync-location', region.dataSyncLocations as unknown as Array<Record<string, unknown>>);
+  add('datasync-task', region.dataSyncTasks as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {

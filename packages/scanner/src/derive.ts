@@ -168,6 +168,9 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.dmsReplicationInstances.length === 0 &&
     out.dmsEndpoints.length === 0 &&
     out.dmsReplicationTasks.length === 0 &&
+    out.dataSyncAgents.length === 0 &&
+    out.dataSyncLocations.length === 0 &&
+    out.dataSyncTasks.length === 0 &&
     // dhcpOptions deliberately absent: every region has an AWS default set.
     out.vpcs.every((v) => v.isDefault);
 
@@ -507,6 +510,14 @@ export function deriveRegion(out: RegionSnapshot): void {
   }
   sortById(out.dmsEndpoints);
   sortById(out.dmsReplicationTasks);
+  sortById(out.dataSyncAgents);
+  for (const a of out.dataSyncAgents) {
+    a.subnetArns.sort();
+    a.securityGroupArns.sort();
+  }
+  sortById(out.dataSyncLocations);
+  for (const l of out.dataSyncLocations) l.securityGroupArns.sort();
+  sortById(out.dataSyncTasks);
   sortById(out.ecrRepositories);
   sortById(out.ecrRegistries);
   for (const reg of out.ecrRegistries) {

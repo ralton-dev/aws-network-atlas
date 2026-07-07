@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">135</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">949</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">142</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">942</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">538</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -126,8 +126,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:14%"></span></div><span class="pct">14%</span></td></tr>
 <tr><td class="mono">AppStream</td><td>13</td><td class="c-detailed">0</td><td class="c-inv">6</td><td class="c-none">7</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">DataSync</td><td>13</td><td class="c-detailed">0</td><td class="c-inv">13</td><td class="c-none">0</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">DataSync</td><td>13</td><td class="c-detailed">7</td><td class="c-inv">6</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:54%"></span></div><span class="pct">54%</span></td></tr>
 <tr><td class="mono">Lambda</td><td>13</td><td class="c-detailed">1</td><td class="c-inv">5</td><td class="c-none">7</td>
 <td><div class="bar"><span style="width:8%"></span></div><span class="pct">8%</span></td></tr>
 <tr><td class="mono">AppSync</td><td>12</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">8</td>
@@ -2734,20 +2734,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">7<div class="props">Activate, Description, Name, ParameterObjects, ParameterValues, PipelineObjects, PipelineTags</div></td></tr>
-<tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="ActivationKey AgentName SecurityGroupArns SubnetArns Tags VpcEndpointId">
+<tr data-svc="DataSync" data-c="detailed" data-d="panel-only" data-props="ActivationKey AgentName SecurityGroupArns SubnetArns Tags VpcEndpointId">
 <td class="mono">AWS::DataSync::Agent</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dataSyncAgents</code></div><div class="detail">endpointType, VPC-attached PrivateLink: vpcEndpointId + subnetArns + securityGroupArns</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED when PrivateLink (subnet+SG ARNs) — candidate to draw on drill-down</div></td>
 <td class="pc">6<div class="props">ActivationKey, AgentName, SecurityGroupArns, SubnetArns, Tags, VpcEndpointId</div></td></tr>
 <tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="AgentArns AzureAccessTier AzureBlobAuthenticationType AzureBlobContainerUrl AzureBlobSasConfiguration AzureBlobType CmkSecretConfig CustomSecretConfig Subdirectory Tags">
 <td class="mono">AWS::DataSync::LocationAzureBlob</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">AgentArns, AzureAccessTier, AzureBlobAuthenticationType, AzureBlobContainerUrl, AzureBlobSasConfiguration, AzureBlobType, CmkSecretConfig, CustomSecretConfig, Subdirectory, Tags</div></td></tr>
-<tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="AccessPointArn Ec2Config EfsFilesystemArn FileSystemAccessRoleArn InTransitEncryption Subdirectory Tags">
+<tr data-svc="DataSync" data-c="detailed" data-d="panel-only" data-props="AccessPointArn Ec2Config EfsFilesystemArn FileSystemAccessRoleArn InTransitEncryption Subdirectory Tags">
 <td class="mono">AWS::DataSync::LocationEFS</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dataSyncLocations</code></div><div class="detail">VPC-attached: subnetArn + securityGroupArns (EFS/FSx)</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">EFS/FSx locations are VPC-attached (subnet+SG) — candidate to draw</div></td>
 <td class="pc">7<div class="props">AccessPointArn, Ec2Config, EfsFilesystemArn, FileSystemAccessRoleArn, InTransitEncryption, Subdirectory, Tags</div></td></tr>
 <tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="FsxFilesystemArn SecurityGroupArns Subdirectory Tags">
 <td class="mono">AWS::DataSync::LocationFSxLustre</td>
@@ -2764,40 +2764,40 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">FsxFilesystemArn, Protocol, SecurityGroupArns, Subdirectory, Tags</div></td></tr>
-<tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="CmkSecretConfig CustomSecretConfig Domain FsxFilesystemArn Password SecurityGroupArns Subdirectory Tags User">
+<tr data-svc="DataSync" data-c="detailed" data-d="panel-only" data-props="CmkSecretConfig CustomSecretConfig Domain FsxFilesystemArn Password SecurityGroupArns Subdirectory Tags User">
 <td class="mono">AWS::DataSync::LocationFSxWindows</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dataSyncLocations</code></div><div class="detail">VPC-attached: securityGroupArns</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">EFS/FSx locations are VPC-attached (subnet+SG) — candidate to draw</div></td>
 <td class="pc">9<div class="props">CmkSecretConfig, CustomSecretConfig, Domain, FsxFilesystemArn, Password, SecurityGroupArns, Subdirectory, Tags, User</div></td></tr>
 <tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="AgentArns AuthenticationType BlockSize CmkSecretConfig CustomSecretConfig KerberosKeytab KerberosKrb5Conf KerberosPrincipal KmsKeyProviderUri NameNodes QopConfiguration ReplicationFactor SimpleUser Subdirectory Tags">
 <td class="mono">AWS::DataSync::LocationHDFS</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">15<div class="props">AgentArns, AuthenticationType, BlockSize, CmkSecretConfig, CustomSecretConfig, KerberosKeytab, KerberosKrb5Conf, KerberosPrincipal, KmsKeyProviderUri, NameNodes, QopConfiguration, ReplicationFactor, SimpleUser, Subdirectory, Tags</div></td></tr>
-<tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="MountOptions OnPremConfig ServerHostname Subdirectory Tags">
+<tr data-svc="DataSync" data-c="detailed" data-d="panel-only" data-props="MountOptions OnPremConfig ServerHostname Subdirectory Tags">
 <td class="mono">AWS::DataSync::LocationNFS</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dataSyncLocations</code></div><div class="detail">captured as dataSyncLocations</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">EFS/FSx locations are VPC-attached (subnet+SG) — candidate to draw</div></td>
 <td class="pc">5<div class="props">MountOptions, OnPremConfig, ServerHostname, Subdirectory, Tags</div></td></tr>
 <tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="AccessKey AgentArns BucketName CmkSecretConfig CustomSecretConfig SecretKey ServerCertificate ServerHostname ServerPort ServerProtocol Subdirectory Tags">
 <td class="mono">AWS::DataSync::LocationObjectStorage</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">12<div class="props">AccessKey, AgentArns, BucketName, CmkSecretConfig, CustomSecretConfig, SecretKey, ServerCertificate, ServerHostname, ServerPort, ServerProtocol, Subdirectory, Tags</div></td></tr>
-<tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="S3BucketArn S3Config S3StorageClass Subdirectory Tags">
+<tr data-svc="DataSync" data-c="detailed" data-d="panel-only" data-props="S3BucketArn S3Config S3StorageClass Subdirectory Tags">
 <td class="mono">AWS::DataSync::LocationS3</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dataSyncLocations</code></div><div class="detail">captured as dataSyncLocations (s3 — no VPC attachment)</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">EFS/FSx locations are VPC-attached (subnet+SG) — candidate to draw</div></td>
 <td class="pc">5<div class="props">S3BucketArn, S3Config, S3StorageClass, Subdirectory, Tags</div></td></tr>
-<tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="AgentArns AuthenticationType CmkSecretConfig CustomSecretConfig DnsIpAddresses Domain KerberosKeytab KerberosKrb5Conf KerberosPrincipal MountOptions Password ServerHostname Subdirectory Tags User">
+<tr data-svc="DataSync" data-c="detailed" data-d="panel-only" data-props="AgentArns AuthenticationType CmkSecretConfig CustomSecretConfig DnsIpAddresses Domain KerberosKeytab KerberosKrb5Conf KerberosPrincipal MountOptions Password ServerHostname Subdirectory Tags User">
 <td class="mono">AWS::DataSync::LocationSMB</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dataSyncLocations</code></div><div class="detail">captured as dataSyncLocations</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">EFS/FSx locations are VPC-attached (subnet+SG) — candidate to draw</div></td>
 <td class="pc">15<div class="props">AgentArns, AuthenticationType, CmkSecretConfig, CustomSecretConfig, DnsIpAddresses, Domain, KerberosKeytab, KerberosKrb5Conf, KerberosPrincipal, MountOptions, Password, ServerHostname, Subdirectory, Tags, User</div></td></tr>
-<tr data-svc="DataSync" data-c="inv-tag" data-d="panel-only" data-props="CloudWatchLogGroupArn DestinationLocationArn Excludes Includes ManifestConfig Name Options Schedule SourceLocationArn Tags TaskMode TaskReportConfig">
+<tr data-svc="DataSync" data-c="detailed" data-d="panel-only" data-props="CloudWatchLogGroupArn DestinationLocationArn Excludes Includes ManifestConfig Name Options Schedule SourceLocationArn Tags TaskMode TaskReportConfig">
 <td class="mono">AWS::DataSync::Task</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>dataSyncTasks</code></div><div class="detail">source→destination location ARNs, status</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">source→destination transfer; could later be edges</div></td>
 <td class="pc">12<div class="props">CloudWatchLogGroupArn, DestinationLocationArn, Excludes, Includes, ManifestConfig, Name, Options, Schedule, SourceLocationArn, Tags, TaskMode, TaskReportConfig</div></td></tr>
 <tr data-svc="DataZone" data-c="none" data-d="none" data-props="AwsLocation Configurations Description DomainIdentifier EnableTrustedIdentityPropagation EnvironmentIdentifier Name ProjectIdentifier Props Scope">
 <td class="mono">AWS::DataZone::Connection</td>

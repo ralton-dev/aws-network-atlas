@@ -789,6 +789,40 @@ export interface DmsReplicationTask extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// DataSync (regional): agents, locations, tasks
+// ---------------------------------------------------------------------------
+
+/** DataSync agent — VPC-ATTACHED when EndpointType is PRIVATE_LINK. */
+export interface DataSyncAgent extends BaseResource {
+  status?: string;
+  /** PUBLIC | PRIVATE_LINK | FIPS. */
+  endpointType?: string;
+  /** PrivateLinkConfig.VpcEndpointId. */
+  vpcEndpointId?: string;
+  /** PrivateLinkConfig.SubnetArns. */
+  subnetArns: string[];
+  /** PrivateLinkConfig.SecurityGroupArns. */
+  securityGroupArns: string[];
+}
+
+/** DataSync location — EFS/FSx locations are VPC-ATTACHED (subnet + SGs). */
+export interface DataSyncLocation extends BaseResource {
+  /** Derived from the LocationUri scheme (s3/efs/nfs/smb/fsxWindows/…). */
+  locationType?: string;
+  locationUri?: string;
+  /** EFS Ec2Config.SubnetArn (VPC-attached locations). */
+  subnetArn?: string;
+  /** EFS Ec2Config.SecurityGroupArns / FSx SecurityGroupArns. */
+  securityGroupArns: string[];
+}
+
+export interface DataSyncTask extends BaseResource {
+  status?: string;
+  sourceLocationArn?: string;
+  destinationLocationArn?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1484,6 +1518,11 @@ export interface RegionSnapshot {
   dmsEndpoints: DmsEndpoint[];
   dmsReplicationTasks: DmsReplicationTask[];
 
+  // DataSync (regional)
+  dataSyncAgents: DataSyncAgent[];
+  dataSyncLocations: DataSyncLocation[];
+  dataSyncTasks: DataSyncTask[];
+
   generic: GenericResource[];
 }
 
@@ -1624,6 +1663,9 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     dmsReplicationInstances: [],
     dmsEndpoints: [],
     dmsReplicationTasks: [],
+    dataSyncAgents: [],
+    dataSyncLocations: [],
+    dataSyncTasks: [],
     generic: [],
   };
 }
