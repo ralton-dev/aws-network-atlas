@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">148</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">941</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">150</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">939</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">533</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -262,8 +262,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">CertificateManager</td><td>5</td><td class="c-detailed">1</td><td class="c-inv">3</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:20%"></span></div><span class="pct">20%</span></td></tr>
-<tr><td class="mono">CloudTrail</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">CloudTrail</td><td>5</td><td class="c-detailed">2</td><td class="c-inv">2</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:40%"></span></div><span class="pct">40%</span></td></tr>
 <tr><td class="mono">EntityResolution</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Evidently</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">0</td>
@@ -2054,20 +2054,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">Name, RefreshSchedule, Tags, TerminationProtectionEnabled, Widgets</div></td></tr>
-<tr data-svc="CloudTrail" data-c="inv-tag" data-d="panel-only" data-props="AdvancedEventSelectors BillingMode ContextKeySelectors FederationEnabled FederationRoleArn IngestionEnabled InsightSelectors InsightsDestination KmsKeyId MaxEventSize MultiRegionEnabled Name OrganizationEnabled RetentionPeriod Tags TerminationProtectionEnabled">
+<tr data-svc="CloudTrail" data-c="detailed" data-d="panel-only" data-props="AdvancedEventSelectors BillingMode ContextKeySelectors FederationEnabled FederationRoleArn IngestionEnabled InsightSelectors InsightsDestination KmsKeyId MaxEventSize MultiRegionEnabled Name OrganizationEnabled RetentionPeriod Tags TerminationProtectionEnabled">
 <td class="mono">AWS::CloudTrail::EventDataStore</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cloudTrailEventDataStores</code></div><div class="detail">status, multiRegion, org, retention (Lake)</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">CloudTrail Lake event data stores</div></td>
 <td class="pc">16<div class="props">AdvancedEventSelectors, BillingMode, ContextKeySelectors, FederationEnabled, FederationRoleArn, IngestionEnabled, InsightSelectors, InsightsDestination, KmsKeyId, MaxEventSize, MultiRegionEnabled, Name, OrganizationEnabled, RetentionPeriod, Tags, TerminationProtectionEnabled</div></td></tr>
 <tr data-svc="CloudTrail" data-c="none" data-d="none" data-props="ResourceArn ResourcePolicy">
 <td class="mono">AWS::CloudTrail::ResourcePolicy</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">2<div class="props">ResourceArn, ResourcePolicy</div></td></tr>
-<tr data-svc="CloudTrail" data-c="inv-tag" data-d="panel-only" data-props="AdvancedEventSelectors AggregationConfigurations CloudWatchLogsLogGroupArn CloudWatchLogsRoleArn EnableLogFileValidation EventSelectors IncludeGlobalServiceEvents InsightSelectors IsLogging IsMultiRegionTrail IsOrganizationTrail KMSKeyId S3BucketName S3KeyPrefix SnsTopicName Tags TrailName">
+<tr data-svc="CloudTrail" data-c="detailed" data-d="panel-only" data-props="AdvancedEventSelectors AggregationConfigurations CloudWatchLogsLogGroupArn CloudWatchLogsRoleArn EnableLogFileValidation EventSelectors IncludeGlobalServiceEvents InsightSelectors IsLogging IsMultiRegionTrail IsOrganizationTrail KMSKeyId S3BucketName S3KeyPrefix SnsTopicName Tags TrailName">
 <td class="mono">AWS::CloudTrail::Trail</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cloudTrailTrails</code></div><div class="detail">multiRegion, org, S3, KMS, log-file validation, CW Logs, SNS, isLogging, event selectors</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">audit-logging posture: multi-region/org, encryption, validation, whether logging is on, event selectors</div></td>
 <td class="pc">17<div class="props">AdvancedEventSelectors, AggregationConfigurations, CloudWatchLogsLogGroupArn, CloudWatchLogsRoleArn, EnableLogFileValidation, EventSelectors, IncludeGlobalServiceEvents, InsightSelectors, IsLogging, IsMultiRegionTrail, IsOrganizationTrail, KMSKeyId, S3BucketName, S3KeyPrefix, SnsTopicName, Tags, TrailName</div></td></tr>
 <tr data-svc="CloudWatch" data-c="inv-tag" data-d="panel-only" data-props="ActionsEnabled AlarmActions AlarmDescription AlarmName ComparisonOperator DatapointsToAlarm Dimensions EvaluateLowSampleCountPercentile EvaluationCriteria EvaluationInterval EvaluationPeriods ExtendedStatistic InsufficientDataActions MetricName Metrics Namespace OKActions Period Statistic Tags Threshold ThresholdMetricId TreatMissingData Unit">
 <td class="mono">AWS::CloudWatch::Alarm</td>

@@ -91,6 +91,8 @@
 "configRecorders":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"whether Config recording is on, what it records, and where it delivers — governance posture"},
 "configRules":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"Config rules (managed/custom) + state"},
 "configConformancePacks":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"conformance packs"},
+"cloudTrailTrails":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"audit-logging posture: multi-region/org, encryption, validation, whether logging is on, event selectors"},
+"cloudTrailEventDataStores":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"CloudTrail Lake event data stores"},
 "generic":{"render":"panel-only","label":"panel-only — Inventory list, grouped by service","note":"ARN / resourceType / tags / source only in panel; never on any graph view"},
 "directConnectGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: amazonSideAsn, state, ownerAccount, associations[] detail"},
 "hostedZones":{"render":"node","label":"node · overview + focus","note":"HIGH-VALUE GAP: records[] (the actual DNS records — name/type/ttl/values/aliasTarget) and recordsTruncated only in panel"},

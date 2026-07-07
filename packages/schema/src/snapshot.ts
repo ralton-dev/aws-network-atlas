@@ -884,6 +884,40 @@ export interface ConfigConformancePack extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// CloudTrail (regional): trails + Lake event data stores
+// ---------------------------------------------------------------------------
+
+/**
+ * CloudTrail trail merged with its status (GetTrailStatus) and event
+ * selectors (GetEventSelectors) — audit-logging posture: whether logging is
+ * on, what it covers, and where it delivers.
+ */
+export interface CloudTrailTrail extends BaseResource {
+  homeRegion?: string;
+  isMultiRegionTrail?: boolean;
+  isOrganizationTrail?: boolean;
+  s3BucketName?: string;
+  kmsKeyId?: string;
+  logFileValidationEnabled?: boolean;
+  cloudWatchLogsLogGroupArn?: string;
+  snsTopicArn?: string;
+  /** From GetTrailStatus. */
+  isLogging?: boolean;
+  /** From GetEventSelectors. */
+  includeManagementEvents?: boolean;
+  /** Any data resource selector present. */
+  hasDataEvents?: boolean;
+}
+
+/** CloudTrail Lake event data store. */
+export interface CloudTrailEventDataStore extends BaseResource {
+  status?: string;
+  multiRegionEnabled?: boolean;
+  organizationEnabled?: boolean;
+  retentionPeriod?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1592,6 +1626,10 @@ export interface RegionSnapshot {
   configRules: ConfigRule[];
   configConformancePacks: ConfigConformancePack[];
 
+  // CloudTrail posture (regional)
+  cloudTrailTrails: CloudTrailTrail[];
+  cloudTrailEventDataStores: CloudTrailEventDataStore[];
+
   generic: GenericResource[];
 }
 
@@ -1739,6 +1777,8 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     configRecorders: [],
     configRules: [],
     configConformancePacks: [],
+    cloudTrailTrails: [],
+    cloudTrailEventDataStores: [],
     generic: [],
   };
 }

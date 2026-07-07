@@ -199,6 +199,8 @@ const DETAILED = {
   'AWS::Config::ConfigRule': { field: 'configRules', attrs: 'source (AWS/custom), state' },
   'AWS::Config::ConformancePack': { field: 'configConformancePacks', attrs: 'status' },
   'AWS::Config::OrganizationConformancePack': { field: 'configConformancePacks', attrs: 'captured as configConformancePacks' },
+  'AWS::CloudTrail::Trail': { field: 'cloudTrailTrails', attrs: 'multiRegion, org, S3, KMS, log-file validation, CW Logs, SNS, isLogging, event selectors' },
+  'AWS::CloudTrail::EventDataStore': { field: 'cloudTrailEventDataStores', attrs: 'status, multiRegion, org, retention (Lake)' },
   'AWS::Route53::HostedZone': { field: 'hostedZones', attrs: 'zoneName, privateZone, recordCount, vpcAssociations, A/AAAA/CNAME records' },
   'AWS::Route53::RecordSet': { field: 'hostedZones', attrs: 'captured inside hostedZones.records[]' },
   'AWS::Route53::RecordSetGroup': { field: 'hostedZones', attrs: 'captured inside hostedZones.records[]' },
