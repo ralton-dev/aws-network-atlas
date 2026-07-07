@@ -33,10 +33,10 @@ const TYPE_NAMES = [
   'AWS::CloudFormation::Stack',
   'AWS::Athena::WorkGroup',
   'AWS::ECS::Cluster',
-  // Kinesis streams / Firehose delivery streams are log + flow-log
-  // destinations; without these two an untagged stream is invisible.
+  // Kinesis streams are log + flow-log destinations; without this an untagged
+  // stream is invisible. (Firehose delivery streams moved to a dedicated
+  // collector — collect/firehose.ts.)
   'AWS::Kinesis::Stream',
-  'AWS::KinesisFirehose::DeliveryStream',
   // Note: AWS::Logs::LogGroup moved to a dedicated collector (collect/logs.ts)
   // — paginated with no cap, plus retention/KMS detail.
 ] as const;

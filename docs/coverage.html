@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">142</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">942</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">143</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">941</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">538</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -590,8 +590,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">KendraRanking</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">KinesisFirehose</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">KinesisFirehose</td><td>1</td><td class="c-detailed">1</td><td class="c-inv">0</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">LaunchWizard</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">LookoutEquipment</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
@@ -5269,10 +5269,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">2<div class="props">ApplicationName, ReferenceDataSource</div></td></tr>
-<tr data-svc="KinesisFirehose" data-c="inv" data-d="panel-only" data-props="AmazonOpenSearchServerlessDestinationConfiguration AmazonopensearchserviceDestinationConfiguration DatabaseSourceConfiguration DeliveryStreamEncryptionConfigurationInput DeliveryStreamName DeliveryStreamType DirectPutSourceConfiguration ElasticsearchDestinationConfiguration ExtendedS3DestinationConfiguration HttpEndpointDestinationConfiguration IcebergDestinationConfiguration KinesisStreamSourceConfiguration MSKSourceConfiguration RedshiftDestinationConfiguration S3DestinationConfiguration SnowflakeDestinationConfiguration SplunkDestinationConfiguration Tags">
+<tr data-svc="KinesisFirehose" data-c="detailed" data-d="panel-only" data-props="AmazonOpenSearchServerlessDestinationConfiguration AmazonopensearchserviceDestinationConfiguration DatabaseSourceConfiguration DeliveryStreamEncryptionConfigurationInput DeliveryStreamName DeliveryStreamType DirectPutSourceConfiguration ElasticsearchDestinationConfiguration ExtendedS3DestinationConfiguration HttpEndpointDestinationConfiguration IcebergDestinationConfiguration KinesisStreamSourceConfiguration MSKSourceConfiguration RedshiftDestinationConfiguration S3DestinationConfiguration SnowflakeDestinationConfiguration SplunkDestinationConfiguration Tags">
 <td class="mono">AWS::KinesisFirehose::DeliveryStream</td>
-<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>firehoseDeliveryStreams</code></div><div class="detail">destinationType, deliveryStreamType, KMS, source ARN; VPC-attached (subnet+SG) for in-VPC OpenSearch destinations</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED when destination is in-VPC OpenSearch/Elasticsearch (subnet+SG) — candidate to draw</div></td>
 <td class="pc">18<div class="props">AmazonOpenSearchServerlessDestinationConfiguration, AmazonopensearchserviceDestinationConfiguration, DatabaseSourceConfiguration, DeliveryStreamEncryptionConfigurationInput, DeliveryStreamName, DeliveryStreamType, DirectPutSourceConfiguration, ElasticsearchDestinationConfiguration, ExtendedS3DestinationConfiguration, HttpEndpointDestinationConfiguration, IcebergDestinationConfiguration, KinesisStreamSourceConfiguration, MSKSourceConfiguration, RedshiftDestinationConfiguration, S3DestinationConfiguration, SnowflakeDestinationConfiguration, SplunkDestinationConfiguration, Tags</div></td></tr>
 <tr data-svc="KinesisVideo" data-c="inv-tag" data-d="panel-only" data-props="MessageTtlSeconds Name Tags Type">
 <td class="mono">AWS::KinesisVideo::SignalingChannel</td>

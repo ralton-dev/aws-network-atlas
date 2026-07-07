@@ -823,6 +823,32 @@ export interface DataSyncTask extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Kinesis Data Firehose (regional): delivery streams
+// ---------------------------------------------------------------------------
+
+/**
+ * Firehose delivery stream — VPC-ATTACHED when the destination is an in-VPC
+ * OpenSearch/Elasticsearch domain (VpcConfigurationDescription: subnet + SG).
+ */
+export interface FirehoseDeliveryStream extends BaseResource {
+  status?: string;
+  /** DirectPut | KinesisStreamAsSource | MSKAsSource. */
+  deliveryStreamType?: string;
+  /** s3 | extendedS3 | opensearch | elasticsearch | redshift | http | splunk | snowflake. */
+  destinationType?: string;
+  /** DeliveryStreamEncryptionConfiguration.KeyARN. */
+  kmsKeyArn?: string;
+  /** KinesisStreamSourceDescription.KinesisStreamARN or MSKSourceDescription.MSKClusterARN. */
+  sourceStreamArn?: string;
+  // VPC attachment (only when destination is in-VPC OpenSearch/Elasticsearch):
+  vpcId?: string;
+  /** VpcConfigurationDescription.SubnetIds. */
+  subnetIds: string[];
+  /** VpcConfigurationDescription.SecurityGroupIds. */
+  securityGroupIds: string[];
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1523,6 +1549,9 @@ export interface RegionSnapshot {
   dataSyncLocations: DataSyncLocation[];
   dataSyncTasks: DataSyncTask[];
 
+  // Kinesis Data Firehose (regional)
+  firehoseDeliveryStreams: FirehoseDeliveryStream[];
+
   generic: GenericResource[];
 }
 
@@ -1666,6 +1695,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     dataSyncAgents: [],
     dataSyncLocations: [],
     dataSyncTasks: [],
+    firehoseDeliveryStreams: [],
     generic: [],
   };
 }

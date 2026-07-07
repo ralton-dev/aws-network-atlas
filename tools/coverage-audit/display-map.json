@@ -87,6 +87,7 @@
 "dataSyncAgents":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC-ATTACHED when PrivateLink (subnet+SG ARNs) — candidate to draw on drill-down"},
 "dataSyncLocations":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"EFS/FSx locations are VPC-attached (subnet+SG) — candidate to draw"},
 "dataSyncTasks":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"source→destination transfer; could later be edges"},
+"firehoseDeliveryStreams":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC-ATTACHED when destination is in-VPC OpenSearch/Elasticsearch (subnet+SG) — candidate to draw"},
 "generic":{"render":"panel-only","label":"panel-only — Inventory list, grouped by service","note":"ARN / resourceType / tags / source only in panel; never on any graph view"},
 "directConnectGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: amazonSideAsn, state, ownerAccount, associations[] detail"},
 "hostedZones":{"render":"node","label":"node · overview + focus","note":"HIGH-VALUE GAP: records[] (the actual DNS records — name/type/ttl/values/aliasTarget) and recordsTruncated only in panel"},

@@ -193,6 +193,7 @@ const DETAILED = {
   'AWS::DataSync::LocationSMB': { field: 'dataSyncLocations', attrs: 'captured as dataSyncLocations' },
   'AWS::DataSync::LocationFSxWindows': { field: 'dataSyncLocations', attrs: 'VPC-attached: securityGroupArns' },
   'AWS::DataSync::Task': { field: 'dataSyncTasks', attrs: 'source→destination location ARNs, status' },
+  'AWS::KinesisFirehose::DeliveryStream': { field: 'firehoseDeliveryStreams', attrs: 'destinationType, deliveryStreamType, KMS, source ARN; VPC-attached (subnet+SG) for in-VPC OpenSearch destinations' },
   'AWS::Route53::HostedZone': { field: 'hostedZones', attrs: 'zoneName, privateZone, recordCount, vpcAssociations, A/AAAA/CNAME records' },
   'AWS::Route53::RecordSet': { field: 'hostedZones', attrs: 'captured inside hostedZones.records[]' },
   'AWS::Route53::RecordSetGroup': { field: 'hostedZones', attrs: 'captured inside hostedZones.records[]' },

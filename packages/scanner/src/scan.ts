@@ -37,6 +37,7 @@ import { collectStepFunctions } from './collect/stepfunctions.js';
 import { collectGlue } from './collect/glue.js';
 import { collectDms } from './collect/dms.js';
 import { collectDataSync } from './collect/datasync.js';
+import { collectFirehose } from './collect/firehose.js';
 import { collectGlobalAccelerator } from './collect/global-accelerator.js';
 import { collectCloudWan } from './collect/cloudwan.js';
 import { deriveRegion, sortErrors } from './derive.js';
@@ -106,6 +107,7 @@ export async function scanAccount(
           collectGlue(ctx, region, out),
           collectDms(ctx, region, out),
           collectDataSync(ctx, region, out),
+          collectFirehose(ctx, region, out),
           collectGeneric(ctx, region, out),
           collectCloudControl(ctx, region, out),
         ]);

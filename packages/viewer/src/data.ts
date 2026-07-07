@@ -150,6 +150,8 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('datasync-agent', region.dataSyncAgents as unknown as Array<Record<string, unknown>>);
   add('datasync-location', region.dataSyncLocations as unknown as Array<Record<string, unknown>>);
   add('datasync-task', region.dataSyncTasks as unknown as Array<Record<string, unknown>>);
+  // Kinesis Data Firehose
+  add('firehose-delivery-stream', region.firehoseDeliveryStreams as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {
