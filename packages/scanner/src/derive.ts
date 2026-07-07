@@ -146,6 +146,16 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.instanceConnectEndpoints.length === 0 &&
     out.dxLags.length === 0 &&
     out.transitGatewayConnectPeers.length === 0 &&
+    // Detailed collections that no longer route through the Cloud Control /
+    // tagging sweeps (promoted from generic inventory). Without these a region
+    // holding only untagged tables/queues/topics/repos/pools would be dropped.
+    out.cognitoUserPools.length === 0 &&
+    out.cognitoIdentityPools.length === 0 &&
+    out.ecrRepositories.length === 0 &&
+    out.ecrRegistries.length === 0 &&
+    out.dynamoDbTables.length === 0 &&
+    out.snsTopics.length === 0 &&
+    out.sqsQueues.length === 0 &&
     // dhcpOptions deliberately absent: every region has an AWS default set.
     out.vpcs.every((v) => v.isDefault);
 
