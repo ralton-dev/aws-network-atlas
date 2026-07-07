@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">104</div><div class="l">Detailed collectors</div></div>
+<div class="kpi det"><div class="n">110</div><div class="l">Detailed collectors</div></div>
 <div class="kpi inv"><div class="n">964</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">554</div><div class="l">Not collected at all</div></div>
+<div class="kpi non"><div class="n">548</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -96,8 +96,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">CloudFormation</td><td>18</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">16</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Cognito</td><td>18</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">18</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Cognito</td><td>18</td><td class="c-detailed">6</td><td class="c-inv">0</td><td class="c-none">12</td>
+<td><div class="bar"><span style="width:33%"></span></div><span class="pct">33%</span></td></tr>
 <tr><td class="mono">DataZone</td><td>17</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">16</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Greengrass</td><td>16</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">8</td>
@@ -2224,20 +2224,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">CreatedBy, DetailType, EventTypeId, EventTypeIds, Name, Resource, Status, Tags, TargetAddress, Targets</div></td></tr>
-<tr data-svc="Cognito" data-c="none" data-d="none" data-props="AllowClassicFlow AllowUnauthenticatedIdentities CognitoEvents CognitoIdentityProviders CognitoStreams DeveloperProviderName IdentityPoolName IdentityPoolTags OpenIdConnectProviderARNs PushSync SamlProviderARNs SupportedLoginProviders">
+<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="AllowClassicFlow AllowUnauthenticatedIdentities CognitoEvents CognitoIdentityProviders CognitoStreams DeveloperProviderName IdentityPoolName IdentityPoolTags OpenIdConnectProviderARNs PushSync SamlProviderARNs SupportedLoginProviders">
 <td class="mono">AWS::Cognito::IdentityPool</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoIdentityPools</code></div><div class="detail">allowUnauthenticated, cognitoUserPoolProviders, saml/oidc providers, auth/unauth roleArns</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">federated identity → IAM role mapping; not yet drawn on the graph</div></td>
 <td class="pc">12<div class="props">AllowClassicFlow, AllowUnauthenticatedIdentities, CognitoEvents, CognitoIdentityProviders, CognitoStreams, DeveloperProviderName, IdentityPoolName, IdentityPoolTags, OpenIdConnectProviderARNs, PushSync, SamlProviderARNs, SupportedLoginProviders</div></td></tr>
 <tr data-svc="Cognito" data-c="none" data-d="none" data-props="IdentityPoolId IdentityProviderName PrincipalTags UseDefaults">
 <td class="mono">AWS::Cognito::IdentityPoolPrincipalTag</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">IdentityPoolId, IdentityProviderName, PrincipalTags, UseDefaults</div></td></tr>
-<tr data-svc="Cognito" data-c="none" data-d="none" data-props="IdentityPoolId RoleMappings Roles">
+<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="IdentityPoolId RoleMappings Roles">
 <td class="mono">AWS::Cognito::IdentityPoolRoleAttachment</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoIdentityPools</code></div><div class="detail">captured as cognitoIdentityPools auth/unauth roleArns</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">federated identity → IAM role mapping; not yet drawn on the graph</div></td>
 <td class="pc">3<div class="props">IdentityPoolId, RoleMappings, Roles</div></td></tr>
 <tr data-svc="Cognito" data-c="none" data-d="none" data-props="LogConfigurations UserPoolId">
 <td class="mono">AWS::Cognito::LogDeliveryConfiguration</td>
@@ -2254,30 +2254,30 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">6<div class="props">ClientId, Enforcement, Links, TermsName, TermsSource, UserPoolId</div></td></tr>
-<tr data-svc="Cognito" data-c="none" data-d="none" data-props="AccountRecoverySetting AdminCreateUserConfig AliasAttributes AutoVerifiedAttributes DeletionProtection DeviceConfiguration EmailAuthenticationMessage EmailAuthenticationSubject EmailConfiguration EmailVerificationMessage EmailVerificationSubject EnabledMfas IssuerConfiguration KeyConfiguration LambdaConfig MfaConfiguration Policies Schema SmsAuthenticationMessage SmsConfiguration SmsVerificationMessage UserAttributeUpdateSettings UserPoolAddOns UserPoolName UserPoolTags UserPoolTier UsernameAttributes UsernameConfiguration VerificationMessageTemplate WebAuthnFactorConfiguration WebAuthnRelyingPartyID WebAuthnUserVerification">
+<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="AccountRecoverySetting AdminCreateUserConfig AliasAttributes AutoVerifiedAttributes DeletionProtection DeviceConfiguration EmailAuthenticationMessage EmailAuthenticationSubject EmailConfiguration EmailVerificationMessage EmailVerificationSubject EnabledMfas IssuerConfiguration KeyConfiguration LambdaConfig MfaConfiguration Policies Schema SmsAuthenticationMessage SmsConfiguration SmsVerificationMessage UserAttributeUpdateSettings UserPoolAddOns UserPoolName UserPoolTags UserPoolTier UsernameAttributes UsernameConfiguration VerificationMessageTemplate WebAuthnFactorConfiguration WebAuthnRelyingPartyID WebAuthnUserVerification">
 <td class="mono">AWS::Cognito::UserPool</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoUserPools</code></div><div class="detail">passwordPolicy, mfaConfiguration, advancedSecurityMode, deletionProtection, domain, identityProviders, appClients (oauth flows/callbacks/idps)</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">identity-tier auth config; not yet drawn on the graph</div></td>
 <td class="pc">32<div class="props">AccountRecoverySetting, AdminCreateUserConfig, AliasAttributes, AutoVerifiedAttributes, DeletionProtection, DeviceConfiguration, EmailAuthenticationMessage, EmailAuthenticationSubject, EmailConfiguration, EmailVerificationMessage, EmailVerificationSubject, EnabledMfas, IssuerConfiguration, KeyConfiguration, LambdaConfig, MfaConfiguration, Policies, Schema, SmsAuthenticationMessage, SmsConfiguration, SmsVerificationMessage, UserAttributeUpdateSettings, UserPoolAddOns, UserPoolName, UserPoolTags, UserPoolTier, UsernameAttributes, UsernameConfiguration, VerificationMessageTemplate, WebAuthnFactorConfiguration, WebAuthnRelyingPartyID, WebAuthnUserVerification</div></td></tr>
-<tr data-svc="Cognito" data-c="none" data-d="none" data-props="AccessTokenValidity AllowedOAuthFlows AllowedOAuthFlowsUserPoolClient AllowedOAuthScopes AnalyticsConfiguration AuthSessionValidity CallbackURLs ClientName DefaultRedirectURI EnablePropagateAdditionalUserContextData EnableTokenRevocation ExplicitAuthFlows GenerateSecret IdTokenValidity LogoutURLs PreventUserExistenceErrors ReadAttributes RefreshTokenRotation RefreshTokenValidity SupportedIdentityProviders TokenValidityUnits UserPoolId WriteAttributes">
+<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="AccessTokenValidity AllowedOAuthFlows AllowedOAuthFlowsUserPoolClient AllowedOAuthScopes AnalyticsConfiguration AuthSessionValidity CallbackURLs ClientName DefaultRedirectURI EnablePropagateAdditionalUserContextData EnableTokenRevocation ExplicitAuthFlows GenerateSecret IdTokenValidity LogoutURLs PreventUserExistenceErrors ReadAttributes RefreshTokenRotation RefreshTokenValidity SupportedIdentityProviders TokenValidityUnits UserPoolId WriteAttributes">
 <td class="mono">AWS::Cognito::UserPoolClient</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoUserPools</code></div><div class="detail">captured inside cognitoUserPools.appClients[]</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">identity-tier auth config; not yet drawn on the graph</div></td>
 <td class="pc">23<div class="props">AccessTokenValidity, AllowedOAuthFlows, AllowedOAuthFlowsUserPoolClient, AllowedOAuthScopes, AnalyticsConfiguration, AuthSessionValidity, CallbackURLs, ClientName, DefaultRedirectURI, EnablePropagateAdditionalUserContextData, EnableTokenRevocation, ExplicitAuthFlows, GenerateSecret, IdTokenValidity, LogoutURLs, PreventUserExistenceErrors, ReadAttributes, RefreshTokenRotation, RefreshTokenValidity, SupportedIdentityProviders, TokenValidityUnits, UserPoolId, WriteAttributes</div></td></tr>
-<tr data-svc="Cognito" data-c="none" data-d="none" data-props="CustomDomainConfig Domain ManagedLoginVersion Routing UserPoolId">
+<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="CustomDomainConfig Domain ManagedLoginVersion Routing UserPoolId">
 <td class="mono">AWS::Cognito::UserPoolDomain</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoUserPools</code></div><div class="detail">captured as cognitoUserPools.domain</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">identity-tier auth config; not yet drawn on the graph</div></td>
 <td class="pc">5<div class="props">CustomDomainConfig, Domain, ManagedLoginVersion, Routing, UserPoolId</div></td></tr>
 <tr data-svc="Cognito" data-c="none" data-d="none" data-props="Description GroupName Precedence RoleArn UserPoolId">
 <td class="mono">AWS::Cognito::UserPoolGroup</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">5<div class="props">Description, GroupName, Precedence, RoleArn, UserPoolId</div></td></tr>
-<tr data-svc="Cognito" data-c="none" data-d="none" data-props="AttributeMapping IdpIdentifiers ProviderDetails ProviderName ProviderType UserPoolId">
+<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="AttributeMapping IdpIdentifiers ProviderDetails ProviderName ProviderType UserPoolId">
 <td class="mono">AWS::Cognito::UserPoolIdentityProvider</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoUserPools</code></div><div class="detail">captured as cognitoUserPools.identityProviders</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">identity-tier auth config; not yet drawn on the graph</div></td>
 <td class="pc">6<div class="props">AttributeMapping, IdpIdentifiers, ProviderDetails, ProviderName, ProviderType, UserPoolId</div></td></tr>
 <tr data-svc="Cognito" data-c="none" data-d="none" data-props="EmailConfiguration LambdaConfig SmsConfiguration Status UserPoolId UserPoolTags">
 <td class="mono">AWS::Cognito::UserPoolRegionalConfigurationAttachment</td>

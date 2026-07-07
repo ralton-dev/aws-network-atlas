@@ -65,6 +65,8 @@
 "latticeServiceNetworks":{"render":"node","label":"node · focus only","note":"not on overview/VPC-detail; authType, counts, association statuses only in panel"},
 "latticeServices":{"render":"node","label":"node · focus only (as edge endpoint)","note":"customDomainName, status, authType only in panel"},
 "logGroups":{"render":"panel-only","label":"panel-only — collection not drawn","note":"a log-group node appears in focus only if a flow log's logGroupName matches; retentionDays, kmsKeyId, logGroupClass panel-only"},
+"cognitoUserPools":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"identity-tier auth config; not yet drawn on the graph"},
+"cognitoIdentityPools":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"federated identity → IAM role mapping; not yet drawn on the graph"},
 "generic":{"render":"panel-only","label":"panel-only — Inventory list, grouped by service","note":"ARN / resourceType / tags / source only in panel; never on any graph view"},
 "directConnectGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: amazonSideAsn, state, ownerAccount, associations[] detail"},
 "hostedZones":{"render":"node","label":"node · overview + focus","note":"HIGH-VALUE GAP: records[] (the actual DNS records — name/type/ttl/values/aliasTarget) and recordsTruncated only in panel"},

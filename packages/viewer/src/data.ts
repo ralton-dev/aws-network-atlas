@@ -120,6 +120,9 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('lattice-service-network', region.latticeServiceNetworks as unknown as Array<Record<string, unknown>>);
   add('lattice-service', region.latticeServices as unknown as Array<Record<string, unknown>>);
   add('log-group', region.logGroups as unknown as Array<Record<string, unknown>>);
+  // identity services
+  add('cognito-user-pool', region.cognitoUserPools as unknown as Array<Record<string, unknown>>);
+  add('cognito-identity-pool', region.cognitoIdentityPools as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {

@@ -426,6 +426,24 @@ export function deriveRegion(out: RegionSnapshot): void {
   sortById(out.latticeServiceNetworks);
   sortById(out.latticeServices);
   sortById(out.logGroups);
+  sortById(out.cognitoUserPools);
+  for (const pool of out.cognitoUserPools) {
+    pool.identityProviders.sort();
+    pool.appClients.sort((a, b) => a.id.localeCompare(b.id));
+    for (const c of pool.appClients) {
+      c.allowedOAuthFlows.sort();
+      c.allowedOAuthScopes.sort();
+      c.callbackUrls.sort();
+      c.supportedIdentityProviders.sort();
+      c.explicitAuthFlows.sort();
+    }
+  }
+  sortById(out.cognitoIdentityPools);
+  for (const pool of out.cognitoIdentityPools) {
+    pool.cognitoUserPoolProviders.sort();
+    pool.samlProviderArns.sort();
+    pool.openIdConnectProviderArns.sort();
+  }
 
   // The tagging and Cloud Control sweeps run concurrently and can both report
   // the same resource (Cloud Control dedupes against entries present at push

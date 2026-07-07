@@ -542,6 +542,46 @@ export interface ElastiCacheCluster extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Cognito (regional): user pools + federated identity pools
+// ---------------------------------------------------------------------------
+
+export interface CognitoUserPool extends BaseResource {
+  status?: string;
+  /** OFF | ON | OPTIONAL. */
+  mfaConfiguration?: string;
+  passwordMinimumLength?: number;
+  /** From UserPoolAddOns. */
+  advancedSecurityMode?: string;
+  deletionProtection?: string;
+  estimatedNumberOfUsers?: number;
+  domain?: string;
+  /** Provider names from ListIdentityProviders. */
+  identityProviders: string[];
+  appClients: Array<{
+    id: string;
+    name?: string;
+    allowedOAuthFlows: string[];
+    allowedOAuthScopes: string[];
+    callbackUrls: string[];
+    supportedIdentityProviders: string[];
+    explicitAuthFlows: string[];
+    generateSecret?: boolean;
+  }>;
+}
+
+export interface CognitoIdentityPool extends BaseResource {
+  allowUnauthenticatedIdentities?: boolean;
+  allowClassicFlow?: boolean;
+  /** CognitoIdentityProviders[].ClientId (the user-pool app clients trusted). */
+  cognitoUserPoolProviders: string[];
+  samlProviderArns: string[];
+  openIdConnectProviderArns: string[];
+  /** From GetIdentityPoolRoles. */
+  authenticatedRoleArn?: string;
+  unauthenticatedRoleArn?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Identity & access (IAM — account-global)
 // ---------------------------------------------------------------------------
 
@@ -1177,6 +1217,10 @@ export interface RegionSnapshot {
   latticeServices: LatticeService[];
   logGroups: LogGroup[];
 
+  // identity services (regional)
+  cognitoUserPools: CognitoUserPool[];
+  cognitoIdentityPools: CognitoIdentityPool[];
+
   generic: GenericResource[];
 }
 
@@ -1298,6 +1342,8 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     latticeServiceNetworks: [],
     latticeServices: [],
     logGroups: [],
+    cognitoUserPools: [],
+    cognitoIdentityPools: [],
     generic: [],
   };
 }
