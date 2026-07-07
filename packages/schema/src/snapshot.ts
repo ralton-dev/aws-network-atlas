@@ -1575,6 +1575,25 @@ export interface Route53HostedZone extends BaseResource {
 export interface S3Bucket extends BaseResource {
   region?: string;
   creationDate?: string;
+  /** GetBucketPolicy .Policy (JSON document) — undefined if no policy. */
+  policy?: string;
+  /** GetBucketPolicyStatus .PolicyStatus.IsPublic. */
+  isPublic?: boolean;
+  /** GetPublicAccessBlock configuration. */
+  publicAccessBlock?: {
+    blockPublicAcls?: boolean;
+    ignorePublicAcls?: boolean;
+    blockPublicPolicy?: boolean;
+    restrictPublicBuckets?: boolean;
+  };
+  /** ServerSideEncryptionConfiguration.Rules[0] SSEAlgorithm (AES256 | aws:kms). */
+  encryptionAlgorithm?: string;
+  /** ServerSideEncryptionConfiguration.Rules[0] KMSMasterKeyID. */
+  encryptionKmsKeyId?: string;
+  /** GetBucketVersioning .Status (Enabled | Suspended) — undefined = never enabled. */
+  versioning?: string;
+  /** GetBucketAcl grants include AllUsers / AuthenticatedUsers. */
+  aclHasPublicGrant?: boolean;
 }
 
 // ---------------------------------------------------------------------------

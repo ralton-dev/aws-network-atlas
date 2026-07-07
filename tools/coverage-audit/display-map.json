@@ -103,7 +103,7 @@
 "generic":{"render":"panel-only","label":"panel-only — Inventory list, grouped by service","note":"ARN / resourceType / tags / source only in panel; never on any graph view"},
 "directConnectGateways":{"render":"node","label":"node · overview + focus","note":"off-diagram: amazonSideAsn, state, ownerAccount, associations[] detail"},
 "hostedZones":{"render":"node","label":"node · overview + focus","note":"HIGH-VALUE GAP: records[] (the actual DNS records — name/type/ttl/values/aliasTarget) and recordsTruncated only in panel"},
-"s3Buckets":{"render":"node","label":"node · overview (capped 6) + focus (as CF origin)","note":"creationDate only in panel; >6 buckets collapsed to a note"},
+"s3Buckets":{"render":"node","label":"node · overview (capped 6) + focus (as CF origin)","note":"panel now carries policy/isPublic, public-access block, encryption (SSE + KMS), versioning, ACL public grants; >6 buckets collapsed to a note"},
 "iamRoles":{"render":"node","label":"node · overview (capped 8) + VPC-detail + focus","note":"off-diagram: path, assumeRolePolicyDocument (parsed for trust only), attachedManagedPolicyArns, inlinePolicyNames, maxSessionDuration, lastUsed"},
 "iamUsers":{"render":"node","label":"node · overview (capped 8) + focus","note":"off-diagram: path, passwordLastUsed, hasConsoleAccess; mfaDeviceCount/accessKeyIds only drive badges"},
 "iamGroups":{"render":"node","label":"node · overview + focus","note":"off-diagram: attachedManagedPolicyArns, inlinePolicyNames"},

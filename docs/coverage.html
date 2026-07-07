@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">190</div><div class="l">Detailed collectors</div></div>
+<div class="kpi det"><div class="n">191</div><div class="l">Detailed collectors</div></div>
 <div class="kpi inv"><div class="n">935</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">497</div><div class="l">Not collected at all</div></div>
+<div class="kpi non"><div class="n">496</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -160,8 +160,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Redshift</td><td>10</td><td class="c-detailed">1</td><td class="c-inv">5</td><td class="c-none">4</td>
 <td><div class="bar"><span style="width:10%"></span></div><span class="pct">10%</span></td></tr>
-<tr><td class="mono">S3</td><td>10</td><td class="c-detailed">1</td><td class="c-inv">6</td><td class="c-none">3</td>
-<td><div class="bar"><span style="width:10%"></span></div><span class="pct">10%</span></td></tr>
+<tr><td class="mono">S3</td><td>10</td><td class="c-detailed">2</td><td class="c-inv">6</td><td class="c-none">2</td>
+<td><div class="bar"><span style="width:20%"></span></div><span class="pct">20%</span></td></tr>
 <tr><td class="mono">WorkSpacesWeb</td><td>10</td><td class="c-detailed">0</td><td class="c-inv">10</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Backup</td><td>9</td><td class="c-detailed">3</td><td class="c-inv">1</td><td class="c-none">5</td>
@@ -7311,13 +7311,13 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td class="pc">7<div class="props">Bucket, BucketAccountId, Name, Policy, PublicAccessBlockConfiguration, Tags, VpcConfiguration</div></td></tr>
 <tr data-svc="S3" data-c="detailed" data-d="node" data-props="AbacStatus AccelerateConfiguration AccessControl AnalyticsConfigurations BucketEncryption BucketName BucketNamePrefix BucketNamespace CorsConfiguration IntelligentTieringConfigurations InventoryConfigurations LifecycleConfiguration LoggingConfiguration MetadataConfiguration MetadataTableConfiguration MetricsConfigurations NotificationConfiguration ObjectLockConfiguration ObjectLockEnabled OwnershipControls PublicAccessBlockConfiguration ReplicationConfiguration Tags VersioningConfiguration WebsiteConfiguration">
 <td class="mono">AWS::S3::Bucket</td>
-<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>s3Buckets</code></div><div class="detail">region, creationDate, tags (name-level only; no policy/ACL/encryption)</div></td>
-<td><span class="badge d-node">node · overview (capped 6) + focus (as CF origin)</span><div class="detail">creationDate only in panel; &gt;6 buckets collapsed to a note</div></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>s3Buckets</code></div><div class="detail">region, creationDate, tags, policy + isPublic, public-access block, encryption (SSE algorithm + KMS key), versioning, public ACL grants</div></td>
+<td><span class="badge d-node">node · overview (capped 6) + focus (as CF origin)</span><div class="detail">panel now carries policy/isPublic, public-access block, encryption (SSE + KMS), versioning, ACL public grants; &gt;6 buckets collapsed to a note</div></td>
 <td class="pc">25<div class="props">AbacStatus, AccelerateConfiguration, AccessControl, AnalyticsConfigurations, BucketEncryption, BucketName, BucketNamePrefix, BucketNamespace, CorsConfiguration, IntelligentTieringConfigurations, InventoryConfigurations, LifecycleConfiguration, LoggingConfiguration, MetadataConfiguration, MetadataTableConfiguration, MetricsConfigurations, NotificationConfiguration, ObjectLockConfiguration, ObjectLockEnabled, OwnershipControls, PublicAccessBlockConfiguration, ReplicationConfiguration, Tags, VersioningConfiguration, WebsiteConfiguration</div></td></tr>
-<tr data-svc="S3" data-c="none" data-d="none" data-props="Bucket PolicyDocument">
+<tr data-svc="S3" data-c="detailed" data-d="node" data-props="Bucket PolicyDocument">
 <td class="mono">AWS::S3::BucketPolicy</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>s3Buckets</code></div><div class="detail">captured as s3Buckets.policy + isPublic</div></td>
+<td><span class="badge d-node">node · overview (capped 6) + focus (as CF origin)</span><div class="detail">panel now carries policy/isPublic, public-access block, encryption (SSE + KMS), versioning, ACL public grants; &gt;6 buckets collapsed to a note</div></td>
 <td class="pc">2<div class="props">Bucket, PolicyDocument</div></td></tr>
 <tr data-svc="S3" data-c="none" data-d="none" data-props="Name PublicAccessBlockConfiguration Regions">
 <td class="mono">AWS::S3::MultiRegionAccessPoint</td>

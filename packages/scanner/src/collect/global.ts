@@ -9,9 +9,18 @@ import {
   DescribeDirectConnectGatewaysCommand,
   DescribeDirectConnectGatewayAssociationsCommand,
 } from '@aws-sdk/client-direct-connect';
-import { S3Client, ListBucketsCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  ListBucketsCommand,
+  GetBucketPolicyCommand,
+  GetBucketPolicyStatusCommand,
+  GetPublicAccessBlockCommand,
+  GetBucketEncryptionCommand,
+  GetBucketVersioningCommand,
+  GetBucketAclCommand,
+} from '@aws-sdk/client-s3';
 import pLimit from 'p-limit';
-import type { AccountSnapshot, DnsRecord } from '@atlas/schema';
+import type { AccountSnapshot, DnsRecord, S3Bucket } from '@atlas/schema';
 import { AwsContext, guard } from '../aws.js';
 
 /** Record types worth stitching to resources; NS/SOA/TXT/MX are noise here. */
@@ -26,6 +35,16 @@ const MAX_RECORDS_PER_ZONE = 2000;
  * few records survive the type filter — deadly against Route 53's ~5 rps limit.
  */
 const MAX_SCANNED_RECORDS_PER_ZONE = 10000;
+
+/** How many buckets are enriched concurrently with per-bucket Get* calls. */
+const S3_DETAIL_CONCURRENCY = 8;
+
+/**
+ * Per-account cap on buckets enriched with policy/encryption/versioning
+ * detail. Past the cap buckets keep name/region/tags only and a ScanError
+ * records the truncation — six Get* calls per bucket adds up fast.
+ */
+const MAX_S3_DETAIL = 500;
 
 /**
  * Global (non-regional) resources, collected once per account:
@@ -196,5 +215,90 @@ export async function collectGlobal(ctx: AwsContext, out: AccountSnapshot['globa
         creationDate: b.CreationDate?.toISOString(),
       });
     }
+
+    // Enrich each bucket with audit-relevant depth. Per-bucket Get* calls
+    // must go to the bucket's own region or S3 returns redirects/errors.
+    if (out.s3Buckets.length > MAX_S3_DETAIL) {
+      errors.push({
+        service: 's3',
+        operation: 'GetBucketDetail',
+        message:
+          `Account has ${out.s3Buckets.length} buckets; only the first ` +
+          `${MAX_S3_DETAIL} were enriched with policy/encryption/versioning detail.`,
+      });
+    }
+    const limit = pLimit(S3_DETAIL_CONCURRENCY);
+    await Promise.all(
+      out.s3Buckets.slice(0, MAX_S3_DETAIL).map((bucket) =>
+        limit(() => enrichBucket(ctx, bucket)),
+      ),
+    );
   });
+}
+
+/**
+ * Fill in policy / public-access / encryption / versioning / ACL depth for
+ * one bucket. Each Get* throws when the setting is absent (or on partial
+ * permissions), so every call gets its own try/catch and failures simply
+ * leave the field undefined — enrichment never aborts the scan.
+ */
+async function enrichBucket(ctx: AwsContext, bucket: S3Bucket): Promise<void> {
+  const Bucket = bucket.id;
+  const s3 = ctx.client(S3Client, bucket.region ?? 'us-east-1');
+
+  try {
+    const res = await s3.send(new GetBucketPolicyStatusCommand({ Bucket }));
+    bucket.isPublic = res.PolicyStatus?.IsPublic;
+  } catch {
+    /* no policy or access denied */
+  }
+
+  try {
+    const res = await s3.send(new GetBucketPolicyCommand({ Bucket }));
+    bucket.policy = res.Policy;
+  } catch {
+    /* NoSuchBucketPolicy or access denied */
+  }
+
+  try {
+    const res = await s3.send(new GetPublicAccessBlockCommand({ Bucket }));
+    const cfg = res.PublicAccessBlockConfiguration;
+    if (cfg) {
+      bucket.publicAccessBlock = {
+        blockPublicAcls: cfg.BlockPublicAcls,
+        ignorePublicAcls: cfg.IgnorePublicAcls,
+        blockPublicPolicy: cfg.BlockPublicPolicy,
+        restrictPublicBuckets: cfg.RestrictPublicBuckets,
+      };
+    }
+  } catch {
+    /* NoSuchPublicAccessBlockConfiguration or access denied */
+  }
+
+  try {
+    const res = await s3.send(new GetBucketEncryptionCommand({ Bucket }));
+    const rule = res.ServerSideEncryptionConfiguration?.Rules?.[0];
+    bucket.encryptionAlgorithm = rule?.ApplyServerSideEncryptionByDefault?.SSEAlgorithm;
+    bucket.encryptionKmsKeyId = rule?.ApplyServerSideEncryptionByDefault?.KMSMasterKeyID;
+  } catch {
+    /* ServerSideEncryptionConfigurationNotFoundError or access denied */
+  }
+
+  try {
+    const res = await s3.send(new GetBucketVersioningCommand({ Bucket }));
+    bucket.versioning = res.Status;
+  } catch {
+    /* access denied */
+  }
+
+  try {
+    const res = await s3.send(new GetBucketAclCommand({ Bucket }));
+    bucket.aclHasPublicGrant = (res.Grants ?? []).some(
+      (g) =>
+        g.Grantee?.URI?.endsWith('AllUsers') === true ||
+        g.Grantee?.URI?.endsWith('AuthenticatedUsers') === true,
+    );
+  } catch {
+    /* access denied */
+  }
 }
