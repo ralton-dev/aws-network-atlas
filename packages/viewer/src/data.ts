@@ -34,8 +34,10 @@ const EMPTY_SNAPSHOT: Snapshot = { version: 1, generatedAt: '', accounts: [] };
 
 function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: RegionSnapshot): void {
   const ctx = { accountId: account.accountId, region: region.region };
-  const add = (kind: string, items: Array<Record<string, unknown>>, vpcKey = 'vpcId'): void => {
-    for (const item of items) {
+  // `?? []` throughout: collections added in later scanner versions are absent
+  // from older committed snapshots, and the viewer must still load them.
+  const add = (kind: string, items: Array<Record<string, unknown>> | undefined, vpcKey = 'vpcId'): void => {
+    for (const item of items ?? []) {
       all.push({
         kind,
         id: String(item['id'] ?? ''),
@@ -59,14 +61,22 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('sg', region.securityGroups as unknown as Array<Record<string, unknown>>);
   add('eni', region.networkInterfaces as unknown as Array<Record<string, unknown>>);
   add('vpce', region.vpcEndpoints as unknown as Array<Record<string, unknown>>);
+  add('vpce-service', region.vpcEndpointServices as unknown as Array<Record<string, unknown>>);
   add('prefix-list', region.prefixLists as unknown as Array<Record<string, unknown>>);
+  add('flow-log', region.flowLogs as unknown as Array<Record<string, unknown>>);
+  add('dhcp-options', region.dhcpOptions as unknown as Array<Record<string, unknown>>);
+  add('instance-connect-endpoint', region.instanceConnectEndpoints as unknown as Array<Record<string, unknown>>);
   add('pcx', region.peeringConnections as unknown as Array<Record<string, unknown>>);
   add('tgw', region.transitGateways as unknown as Array<Record<string, unknown>>);
   add('tgw-attachment', region.transitGatewayAttachments as unknown as Array<Record<string, unknown>>);
   add('tgw-rt', region.transitGatewayRouteTables as unknown as Array<Record<string, unknown>>);
+  add('tgw-connect-peer', region.transitGatewayConnectPeers as unknown as Array<Record<string, unknown>>);
   add('vgw', region.vpnGateways as unknown as Array<Record<string, unknown>>);
   add('cgw', region.customerGateways as unknown as Array<Record<string, unknown>>);
   add('vpn', region.vpnConnections as unknown as Array<Record<string, unknown>>);
+  add('dx-connection', region.dxConnections as unknown as Array<Record<string, unknown>>);
+  add('dx-lag', region.dxLags as unknown as Array<Record<string, unknown>>);
+  add('dx-vif', region.dxVirtualInterfaces as unknown as Array<Record<string, unknown>>);
   add('lb', region.loadBalancers as unknown as Array<Record<string, unknown>>);
   add('tg', region.targetGroups as unknown as Array<Record<string, unknown>>);
   add('instance', region.instances as unknown as Array<Record<string, unknown>>);
@@ -74,19 +84,40 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('lambda', region.lambdaFunctions as unknown as Array<Record<string, unknown>>);
   add('rds', region.rdsInstances as unknown as Array<Record<string, unknown>>);
   add('rds-cluster', region.rdsClusters as unknown as Array<Record<string, unknown>>);
+  add('rds-proxy', region.rdsProxies as unknown as Array<Record<string, unknown>>);
   add('ecs', region.ecsServices as unknown as Array<Record<string, unknown>>);
   add('eks', region.eksClusters as unknown as Array<Record<string, unknown>>);
   add('elasticache', region.elastiCacheClusters as unknown as Array<Record<string, unknown>>);
+  add('elasticache-replication-group', region.elastiCacheReplicationGroups as unknown as Array<Record<string, unknown>>);
+  add('elasticache-serverless', region.elastiCacheServerlessCaches as unknown as Array<Record<string, unknown>>);
+  add('efs', region.efsFileSystems as unknown as Array<Record<string, unknown>>);
+  add('opensearch', region.openSearchDomains as unknown as Array<Record<string, unknown>>);
+  add('msk', region.mskClusters as unknown as Array<Record<string, unknown>>);
+  add('redshift', region.redshiftClusters as unknown as Array<Record<string, unknown>>);
+  add('mq', region.mqBrokers as unknown as Array<Record<string, unknown>>);
   // security services
   add('kms', region.kmsKeys as unknown as Array<Record<string, unknown>>);
   add('acm', region.acmCertificates as unknown as Array<Record<string, unknown>>);
   add('secret', region.secrets as unknown as Array<Record<string, unknown>>);
+  add('waf-web-acl', region.wafWebAcls as unknown as Array<Record<string, unknown>>);
+  add('waf-ip-set', region.wafIpSets as unknown as Array<Record<string, unknown>>);
+  add('waf-rule-group', region.wafRuleGroups as unknown as Array<Record<string, unknown>>);
   // additional network services
   add('resolver-endpoint', region.resolverEndpoints as unknown as Array<Record<string, unknown>>);
   add('resolver-rule', region.resolverRules as unknown as Array<Record<string, unknown>>);
+  add('dns-firewall-rule-group', region.dnsFirewallRuleGroups as unknown as Array<Record<string, unknown>>);
+  add('resolver-query-log-config', region.resolverQueryLogConfigs as unknown as Array<Record<string, unknown>>);
   add('client-vpn', region.clientVpnEndpoints as unknown as Array<Record<string, unknown>>);
   add('network-firewall', region.networkFirewalls as unknown as Array<Record<string, unknown>>);
+  add('network-firewall-policy', region.networkFirewallPolicies as unknown as Array<Record<string, unknown>>);
+  add('network-firewall-rule-group', region.networkFirewallRuleGroups as unknown as Array<Record<string, unknown>>);
+  add('network-firewall-tls-config', region.networkFirewallTlsConfigs as unknown as Array<Record<string, unknown>>);
   add('apigw', region.apiGateways as unknown as Array<Record<string, unknown>>);
+  add('apigw-vpc-link', region.apiGatewayVpcLinks as unknown as Array<Record<string, unknown>>);
+  add('apigw-domain', region.apiGatewayDomainNames as unknown as Array<Record<string, unknown>>);
+  add('lattice-service-network', region.latticeServiceNetworks as unknown as Array<Record<string, unknown>>);
+  add('lattice-service', region.latticeServices as unknown as Array<Record<string, unknown>>);
+  add('log-group', region.logGroups as unknown as Array<Record<string, unknown>>);
 
   // Lambda vpcId lives inside vpcConfig.
   for (const ref of all) {
@@ -96,7 +127,7 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
     }
   }
 
-  for (const g of region.generic) {
+  for (const g of region.generic ?? []) {
     all.push({
       kind: 'generic',
       id: g.arn,
@@ -136,16 +167,22 @@ export function buildIndex(): AtlasIndex {
       });
     }
     // IAM + CloudFront are account-global (region '').
-    const globalKinds: Array<[string, Array<{ id: string; arn?: string; name?: string }>]> = [
+    const globalKinds: Array<[string, Array<{ id: string; arn?: string; name?: string }> | undefined]> = [
       ['iam-role', account.global.iamRoles],
       ['iam-user', account.global.iamUsers],
       ['iam-group', account.global.iamGroups],
       ['iam-policy', account.global.iamPolicies],
       ['iam-instance-profile', account.global.iamInstanceProfiles],
       ['cloudfront', account.global.cloudFrontDistributions],
+      ['cloudfront-vpc-origin', account.global.cloudFrontVpcOrigins],
+      ['global-accelerator', account.global.globalAccelerators],
+      ['core-network', account.global.coreNetworks],
+      ['waf-web-acl', account.global.wafWebAcls],
+      ['waf-ip-set', account.global.wafIpSets],
+      ['waf-rule-group', account.global.wafRuleGroups],
     ];
     for (const [kind, items] of globalKinds) {
-      for (const item of items) {
+      for (const item of items ?? []) {
         all.push({
           kind, id: item.id, arn: item.arn, name: item.name,
           accountId: account.accountId, region: '',

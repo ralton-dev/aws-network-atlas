@@ -13,13 +13,21 @@ import {
   paginateDescribeManagedPrefixLists,
   paginateGetManagedPrefixListEntries,
   paginateDescribeVpcPeeringConnections,
+  paginateDescribeVpcEndpointServiceConfigurations,
+  paginateDescribeVpcEndpointConnections,
+  paginateDescribeFlowLogs,
+  paginateDescribeDhcpOptions,
+  paginateDescribeInstanceConnectEndpoints,
   DescribeAddressesCommand,
   DescribeVpnGatewaysCommand,
   DescribeCustomerGatewaysCommand,
   DescribeVpnConnectionsCommand,
+  DescribeVpcAttributeCommand,
+  DescribeVpcEndpointServicePermissionsCommand,
   type Route as SdkRoute,
   type IpPermission,
 } from '@aws-sdk/client-ec2';
+import pLimit from 'p-limit';
 import type {
   RegionSnapshot,
   Route,
@@ -88,11 +96,12 @@ const ENDPOINT_TYPES = new Set(['Interface', 'Gateway', 'GatewayLoadBalancer', '
 export async function collectNetwork(
   ctx: AwsContext,
   region: string,
-  accountId: string,
+  _accountId: string,
   out: RegionSnapshot,
 ): Promise<void> {
   const ec2 = ctx.client(EC2Client, region);
   const errors = out.errors;
+  const limit = pLimit(8);
 
   await guard(errors, 'ec2', 'DescribeVpcs', async () => {
     for await (const page of paginateDescribeVpcs({ client: ec2 }, {})) {
@@ -112,9 +121,30 @@ export async function collectNetwork(
             .filter((c): c is string => !!c),
           isDefault: v.IsDefault ?? false,
           state: v.State,
+          dhcpOptionsId: v.DhcpOptionsId,
         });
       }
     }
+    // DNS attributes decide whether private-DNS endpoints and private hosted
+    // zones actually resolve inside the VPC — worth 2 calls per VPC.
+    await Promise.all(
+      out.vpcs.map((vpc) =>
+        limit(() =>
+          guard(errors, 'ec2', `DescribeVpcAttribute(${vpc.id})`, async () => {
+            const [dnsSupport, dnsHostnames] = await Promise.all([
+              ec2.send(
+                new DescribeVpcAttributeCommand({ VpcId: vpc.id, Attribute: 'enableDnsSupport' }),
+              ),
+              ec2.send(
+                new DescribeVpcAttributeCommand({ VpcId: vpc.id, Attribute: 'enableDnsHostnames' }),
+              ),
+            ]);
+            vpc.enableDnsSupport = dnsSupport.EnableDnsSupport?.Value;
+            vpc.enableDnsHostnames = dnsHostnames.EnableDnsHostnames?.Value;
+          }),
+        ),
+      ),
+    );
   });
 
   await guard(errors, 'ec2', 'DescribeSubnets', async () => {
@@ -318,9 +348,73 @@ export async function collectNetwork(
           routeTableIds: ep.RouteTableIds ?? [],
           networkInterfaceIds: ep.NetworkInterfaceIds ?? [],
           privateDnsEnabled: ep.PrivateDnsEnabled,
+          policyDocument: ep.PolicyDocument,
         });
       }
     }
+  });
+
+  // PrivateLink provider side: endpoint services THIS account exposes, who is
+  // allowed to connect, and which consumer endpoints are connected in.
+  await guard(errors, 'ec2', 'DescribeVpcEndpointServiceConfigurations', async () => {
+    // Service id -> consumer connections; one sweep covers every service.
+    const connectionsByService = new Map<
+      string,
+      Array<{ vpcEndpointId?: string; ownerAccountId?: string; state?: string }>
+    >();
+    await guard(errors, 'ec2', 'DescribeVpcEndpointConnections', async () => {
+      for await (const page of paginateDescribeVpcEndpointConnections({ client: ec2 }, {})) {
+        for (const conn of page.VpcEndpointConnections ?? []) {
+          if (!conn.ServiceId) continue;
+          const list = connectionsByService.get(conn.ServiceId) ?? [];
+          list.push({
+            vpcEndpointId: conn.VpcEndpointId,
+            ownerAccountId: conn.VpcEndpointOwner,
+            state: conn.VpcEndpointState,
+          });
+          connectionsByService.set(conn.ServiceId, list);
+        }
+      }
+    });
+
+    const services: RegionSnapshot['vpcEndpointServices'] = [];
+    for await (const page of paginateDescribeVpcEndpointServiceConfigurations({ client: ec2 }, {})) {
+      for (const svc of page.ServiceConfigurations ?? []) {
+        if (!svc.ServiceId) continue;
+        const tags = toTags(svc.Tags);
+        services.push({
+          id: svc.ServiceId,
+          name: nameTag(tags) ?? svc.ServiceName,
+          tags,
+          serviceName: svc.ServiceName,
+          serviceType: svc.ServiceType?.[0]?.ServiceType,
+          availabilityZones: svc.AvailabilityZones ?? [],
+          acceptanceRequired: svc.AcceptanceRequired,
+          managesVpcEndpoints: svc.ManagesVpcEndpoints,
+          networkLoadBalancerArns: svc.NetworkLoadBalancerArns ?? [],
+          gatewayLoadBalancerArns: svc.GatewayLoadBalancerArns ?? [],
+          supportedIpAddressTypes: (svc.SupportedIpAddressTypes ?? []) as string[],
+          privateDnsName: svc.PrivateDnsName,
+          allowedPrincipals: [],
+          connections: connectionsByService.get(svc.ServiceId) ?? [],
+        });
+      }
+    }
+    await Promise.all(
+      services.map((svc) =>
+        limit(() =>
+          guard(errors, 'ec2', `DescribeVpcEndpointServicePermissions(${svc.id})`, async () => {
+            const res = await ec2.send(
+              new DescribeVpcEndpointServicePermissionsCommand({ ServiceId: svc.id }),
+            );
+            svc.allowedPrincipals = (res.AllowedPrincipals ?? [])
+              .map((p) => p.Principal)
+              .filter((p): p is string => !!p);
+          }),
+        ),
+      ),
+    );
+    out.vpcEndpointServices.push(...services);
   });
 
   await guard(errors, 'ec2', 'DescribeManagedPrefixLists', async () => {
@@ -328,8 +422,11 @@ export async function collectNetwork(
       for (const pl of page.PrefixLists ?? []) {
         const tags = toTags(pl.Tags);
         const cidrs: string[] = [];
-        // AWS-managed lists (e.g. every S3 CIDR) are huge and not ours — skip entries.
-        if (pl.OwnerId === accountId && pl.PrefixListId) {
+        // AWS-managed lists (OwnerId "AWS", e.g. every S3 CIDR) are huge and
+        // not ours — skip entries. RAM-shared lists from sibling accounts ARE
+        // fetched: they're bounded by MaxEntries and routinely referenced in
+        // routes and SG rules.
+        if (pl.OwnerId !== 'AWS' && pl.PrefixListId) {
           await guard(errors, 'ec2', `GetManagedPrefixListEntries(${pl.PrefixListId})`, async () => {
             for await (const entryPage of paginateGetManagedPrefixListEntries(
               { client: ec2 },
@@ -435,7 +532,76 @@ export async function collectNetwork(
           status: t.Status,
           statusMessage: t.StatusMessage,
         })),
+        staticRoutes: (vpn.Routes ?? [])
+          .map((r) => r.DestinationCidrBlock)
+          .filter((c): c is string => !!c),
+        staticRoutesOnly: vpn.Options?.StaticRoutesOnly,
+        localIpv4NetworkCidr: vpn.Options?.LocalIpv4NetworkCidr,
+        remoteIpv4NetworkCidr: vpn.Options?.RemoteIpv4NetworkCidr,
       });
+    }
+  });
+
+  await guard(errors, 'ec2', 'DescribeFlowLogs', async () => {
+    for await (const page of paginateDescribeFlowLogs({ client: ec2 }, {})) {
+      for (const fl of page.FlowLogs ?? []) {
+        const tags = toTags(fl.Tags);
+        out.flowLogs.push({
+          id: fl.FlowLogId!,
+          name: nameTag(tags),
+          tags,
+          resourceId: fl.ResourceId,
+          trafficType: fl.TrafficType,
+          logDestinationType: fl.LogDestinationType,
+          logDestination: fl.LogDestination,
+          logGroupName: fl.LogGroupName,
+          status: fl.FlowLogStatus,
+          maxAggregationInterval: fl.MaxAggregationInterval,
+        });
+      }
+    }
+  });
+
+  await guard(errors, 'ec2', 'DescribeDhcpOptions', async () => {
+    for await (const page of paginateDescribeDhcpOptions({ client: ec2 }, {})) {
+      for (const d of page.DhcpOptions ?? []) {
+        const tags = toTags(d.Tags);
+        const options: Record<string, string[]> = {};
+        for (const cfg of d.DhcpConfigurations ?? []) {
+          if (!cfg.Key) continue;
+          options[cfg.Key] = (cfg.Values ?? [])
+            .map((v) => v.Value)
+            .filter((v): v is string => !!v)
+            .sort();
+        }
+        out.dhcpOptions.push({
+          id: d.DhcpOptionsId!,
+          name: nameTag(tags),
+          tags,
+          options,
+          // Filled from Vpc.dhcpOptionsId in the derive step.
+          vpcIds: [],
+        });
+      }
+    }
+  });
+
+  await guard(errors, 'ec2', 'DescribeInstanceConnectEndpoints', async () => {
+    for await (const page of paginateDescribeInstanceConnectEndpoints({ client: ec2 }, {})) {
+      for (const ice of page.InstanceConnectEndpoints ?? []) {
+        const tags = toTags(ice.Tags);
+        out.instanceConnectEndpoints.push({
+          id: ice.InstanceConnectEndpointId!,
+          arn: ice.InstanceConnectEndpointArn,
+          name: nameTag(tags),
+          tags,
+          vpcId: ice.VpcId,
+          subnetId: ice.SubnetId,
+          state: ice.State,
+          securityGroupIds: ice.SecurityGroupIds ?? [],
+          preserveClientIp: ice.PreserveClientIp,
+        });
+      }
     }
   });
 }

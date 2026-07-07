@@ -37,6 +37,9 @@ export interface Vpc extends BaseResource {
   ipv6CidrBlocks: string[];
   isDefault: boolean;
   state?: string;
+  dhcpOptionsId?: string;
+  enableDnsSupport?: boolean;
+  enableDnsHostnames?: boolean;
 }
 
 export interface Subnet extends BaseResource {
@@ -174,6 +177,54 @@ export interface VpcEndpoint extends BaseResource {
   routeTableIds: string[];
   networkInterfaceIds: string[];
   privateDnsEnabled?: boolean;
+  /** The endpoint policy JSON (gateway endpoints: controls S3/DynamoDB access). */
+  policyDocument?: string;
+}
+
+/** PrivateLink provider side: an endpoint service THIS account exposes. */
+export interface VpcEndpointService extends BaseResource {
+  serviceName?: string;
+  serviceType?: string;
+  availabilityZones: string[];
+  acceptanceRequired?: boolean;
+  managesVpcEndpoints?: boolean;
+  networkLoadBalancerArns: string[];
+  gatewayLoadBalancerArns: string[];
+  supportedIpAddressTypes: string[];
+  privateDnsName?: string;
+  /** Principals (account/role ARNs or '*') allowed to connect. */
+  allowedPrincipals: string[];
+  /** Consumer endpoints connected to this service (possibly other accounts). */
+  connections: Array<{ vpcEndpointId?: string; ownerAccountId?: string; state?: string }>;
+}
+
+export interface FlowLog extends BaseResource {
+  /** What is being logged: vpc-…, subnet-…, eni-…, or tgw-…. */
+  resourceId?: string;
+  trafficType?: string;
+  /** cloud-watch-logs | s3 | kinesis-data-firehose. */
+  logDestinationType?: string;
+  /** Destination ARN (bucket/log group/delivery stream). */
+  logDestination?: string;
+  logGroupName?: string;
+  status?: string;
+  maxAggregationInterval?: number;
+}
+
+export interface DhcpOptions extends BaseResource {
+  /** Raw configuration: key (domain-name-servers, ntp-servers, …) -> values. */
+  options: Record<string, string[]>;
+  /** VPCs using this option set (derived from Vpc.dhcpOptionsId). */
+  vpcIds: string[];
+}
+
+/** EC2 Instance Connect Endpoint (SSH/RDP into private instances without a bastion). */
+export interface InstanceConnectEndpoint extends BaseResource {
+  vpcId?: string;
+  subnetId?: string;
+  state?: string;
+  securityGroupIds: string[];
+  preserveClientIp?: boolean;
 }
 
 export interface ManagedPrefixList extends BaseResource {
@@ -247,6 +298,8 @@ export interface TransitGatewayRouteTable extends BaseResource {
   isDefaultPropagation: boolean;
   routes: TransitGatewayRoute[];
   associations: Array<{ attachmentId: string; resourceId?: string; resourceType?: string }>;
+  /** Attachments propagating routes into this table (explains propagated routes). */
+  propagations?: Array<{ attachmentId: string; resourceId?: string; resourceType?: string; state?: string }>;
 }
 
 export interface VpnGateway extends BaseResource {
@@ -268,6 +321,61 @@ export interface VpnConnection extends BaseResource {
   state?: string;
   category?: string;
   tunnels: Array<{ outsideIp?: string; status?: string; statusMessage?: string }>;
+  /** Destination CIDRs of static routes over this connection. */
+  staticRoutes?: string[];
+  staticRoutesOnly?: boolean;
+  localIpv4NetworkCidr?: string;
+  remoteIpv4NetworkCidr?: string;
+}
+
+/** GRE/BGP peer on a Transit Gateway Connect attachment. */
+export interface TransitGatewayConnectPeer extends BaseResource {
+  attachmentId?: string;
+  state?: string;
+  insideCidrBlocks: string[];
+  peerAddress?: string;
+  transitGatewayAddress?: string;
+  bgpAsn?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Direct Connect (regional pieces: physical connections, LAGs, VIFs)
+// ---------------------------------------------------------------------------
+
+export interface DxConnection extends BaseResource {
+  location?: string;
+  bandwidth?: string;
+  state?: string;
+  vlan?: number;
+  partnerName?: string;
+  lagId?: string;
+  ownerAccount?: string;
+}
+
+export interface DxLag extends BaseResource {
+  location?: string;
+  connectionsBandwidth?: string;
+  numberOfConnections?: number;
+  connectionIds: string[];
+  state?: string;
+  ownerAccount?: string;
+}
+
+export interface DxVirtualInterface extends BaseResource {
+  /** private | public | transit. */
+  vifType?: string;
+  state?: string;
+  vlan?: number;
+  bgpAsn?: number;
+  amazonSideAsn?: number;
+  connectionId?: string;
+  directConnectGatewayId?: string;
+  virtualGatewayId?: string;
+  ownerAccount?: string;
+  amazonAddress?: string;
+  customerAddress?: string;
+  routeFilterPrefixes: string[];
+  bgpPeers: Array<{ asn?: number; addressFamily?: string; state?: string; status?: string }>;
 }
 
 export interface DirectConnectGateway extends BaseResource {
@@ -288,10 +396,28 @@ export interface DirectConnectGateway extends BaseResource {
 // Load balancing
 // ---------------------------------------------------------------------------
 
+export interface ListenerRule {
+  /** Rule priority ("default" for the listener default action). */
+  priority?: string;
+  /** Compact conditions, e.g. "host=api.example.com", "path=/v1/*". */
+  conditions: string[];
+  /** forward | redirect | fixed-response | authenticate-oidc | authenticate-cognito. */
+  actionType?: string;
+  targetGroupArns: string[];
+  /** For redirect actions: compact target, e.g. "https://example.com:443/#{path}". */
+  redirect?: string;
+  /** For fixed-response actions: the status code. */
+  fixedResponseCode?: string;
+}
+
 export interface LoadBalancerListener {
   port?: number;
   protocol?: string;
   targetGroupArns: string[];
+  /** SNI certificates (default certificate first). */
+  certificateArns?: string[];
+  /** Non-default routing rules (host/path/header routing). */
+  rules?: ListenerRule[];
 }
 
 export interface LoadBalancer extends BaseResource {
@@ -304,6 +430,8 @@ export interface LoadBalancer extends BaseResource {
   dnsName?: string;
   state?: string;
   listeners: LoadBalancerListener[];
+  /** Classic ELBs only: registered instance ids. */
+  instanceIds?: string[];
 }
 
 export interface TargetGroup extends BaseResource {
@@ -350,6 +478,8 @@ export interface LambdaFunction extends BaseResource {
   /** Execution role the function assumes. */
   roleArn?: string;
   vpcConfig?: { vpcId?: string; subnetIds: string[]; securityGroupIds: string[] };
+  /** Function URL, if configured (authType NONE = publicly invokable). */
+  functionUrl?: { url?: string; authType?: string };
 }
 
 export interface RdsInstance extends BaseResource {
@@ -529,6 +659,22 @@ export interface ClientVpnEndpoint extends BaseResource {
   associatedSubnetIds: string[];
   status?: string;
   splitTunnel?: boolean;
+  /** The endpoint's own route table. */
+  routes?: Array<{
+    destinationCidr?: string;
+    targetSubnet?: string;
+    origin?: string;
+    status?: string;
+    description?: string;
+  }>;
+  /** Which client groups may reach which destination networks. */
+  authorizationRules?: Array<{
+    destinationCidr?: string;
+    groupId?: string;
+    accessAll?: boolean;
+    status?: string;
+    description?: string;
+  }>;
 }
 
 export interface NetworkFirewall extends BaseResource {
@@ -537,6 +683,145 @@ export interface NetworkFirewall extends BaseResource {
   firewallPolicyArn?: string;
   deleteProtection?: boolean;
   status?: string;
+  /**
+   * Per-AZ firewall endpoints (from FirewallStatus.SyncStates). These are the
+   * vpce-… ids that inspection route tables point at — the link between a
+   * route and this firewall.
+   */
+  endpoints?: Array<{ availabilityZone?: string; subnetId?: string; endpointId?: string }>;
+  /** Where ALERT/FLOW/TLS logs are delivered. */
+  logDestinations?: Array<{ logType?: string; destinationType?: string; destination?: string }>;
+}
+
+export interface NetworkFirewallPolicy extends BaseResource {
+  description?: string;
+  statelessDefaultActions: string[];
+  statelessFragmentDefaultActions: string[];
+  statelessRuleGroupRefs: Array<{ arn: string; priority?: number }>;
+  statefulRuleGroupRefs: Array<{ arn: string; priority?: number }>;
+  statefulDefaultActions: string[];
+  /** DEFAULT_ACTION_ORDER or STRICT_ORDER. */
+  statefulRuleOrder?: string;
+  tlsInspectionConfigurationArn?: string;
+}
+
+export interface NetworkFirewallStatelessRule {
+  priority?: number;
+  actions: string[];
+  sources: string[];
+  destinations: string[];
+  /** Port specs as "80" or "1024-65535". */
+  sourcePorts: string[];
+  destinationPorts: string[];
+  protocols: number[];
+}
+
+export interface NetworkFirewallStatefulRule {
+  action?: string;
+  protocol?: string;
+  source?: string;
+  sourcePort?: string;
+  direction?: string;
+  destination?: string;
+  destinationPort?: string;
+  /** Suricata rule id (sid), when present. */
+  sid?: string;
+}
+
+export interface NetworkFirewallRuleGroup extends BaseResource {
+  /** STATELESS or STATEFUL. */
+  ruleGroupType?: string;
+  description?: string;
+  capacity?: number;
+  consumedCapacity?: number;
+  numberOfAssociations?: number;
+  statelessRules: NetworkFirewallStatelessRule[];
+  statefulRules: NetworkFirewallStatefulRule[];
+  /** Raw Suricata rules, when the group is defined as a rules string. */
+  rulesString?: string;
+  /** Domain-list rules source (allow/deny listed domains). */
+  domainList?: { targets: string[]; targetTypes: string[]; action?: string };
+}
+
+export interface NetworkFirewallTlsConfig extends BaseResource {
+  description?: string;
+  certificateArns: string[];
+}
+
+// ---------------------------------------------------------------------------
+// WAF v2 (REGIONAL per region; CLOUDFRONT scope collected account-globally)
+// ---------------------------------------------------------------------------
+
+export interface WafRuleSummary {
+  name: string;
+  priority?: number;
+  /** Rule action (ALLOW/BLOCK/COUNT/CAPTCHA/CHALLENGE) or "use-rule-group-actions". */
+  action?: string;
+  /**
+   * Compact statement descriptor, e.g. "managedRuleGroup:AWS/AWSManagedRulesCommonRuleSet",
+   * "ruleGroup:arn:…", "ipSet:arn:…", "rateBased:2000", "geoMatch", "byteMatch", "and(…)".
+   */
+  statement?: string;
+}
+
+export interface WafWebAcl extends BaseResource {
+  scope: 'REGIONAL' | 'CLOUDFRONT';
+  description?: string;
+  defaultAction?: string;
+  capacity?: number;
+  rules: WafRuleSummary[];
+  /**
+   * Resources this ACL protects (ALB/API GW/AppSync ARNs). Empty for
+   * CLOUDFRONT scope — match via CloudFrontDistribution.webAclId instead.
+   */
+  associatedResourceArns: string[];
+}
+
+export interface WafIpSet extends BaseResource {
+  scope: 'REGIONAL' | 'CLOUDFRONT';
+  description?: string;
+  ipAddressVersion?: string;
+  addresses: string[];
+}
+
+/** Customer-managed WAF rule group. */
+export interface WafRuleGroup extends BaseResource {
+  scope: 'REGIONAL' | 'CLOUDFRONT';
+  description?: string;
+  capacity?: number;
+  rules: WafRuleSummary[];
+}
+
+// ---------------------------------------------------------------------------
+// Route 53 Resolver DNS Firewall & query logging
+// ---------------------------------------------------------------------------
+
+export interface DnsFirewallRule {
+  name?: string;
+  priority?: number;
+  /** ALLOW, BLOCK, or ALERT. */
+  action?: string;
+  blockResponse?: string;
+  firewallDomainListId?: string;
+  domainListName?: string;
+  /** Domains in the list (capped; AWS-managed lists are not expanded). */
+  domains: string[];
+}
+
+export interface DnsFirewallRuleGroup extends BaseResource {
+  status?: string;
+  ruleCount?: number;
+  shareStatus?: string;
+  rules: DnsFirewallRule[];
+  vpcAssociations: Array<{ vpcId: string; priority?: number; mutationProtection?: string }>;
+}
+
+export interface ResolverQueryLogConfig extends BaseResource {
+  destinationArn?: string;
+  status?: string;
+  shareStatus?: string;
+  /** VPCs whose resolver queries are logged to this config. */
+  vpcIds: string[];
 }
 
 export interface ApiGateway extends BaseResource {
@@ -550,6 +835,142 @@ export interface ApiGateway extends BaseResource {
   vpcEndpointIds: string[];
 }
 
+/** API Gateway VPC link: connects an API to NLBs (v1) or subnets (v2). */
+export interface ApiGatewayVpcLink extends BaseResource {
+  version: 'v1' | 'v2';
+  status?: string;
+  /** v1: the NLB ARNs behind the link. */
+  targetArns: string[];
+  /** v2: the subnets/SGs the link's ENIs use. */
+  subnetIds: string[];
+  securityGroupIds: string[];
+}
+
+/** API Gateway custom domain (v1 + v2), with which API/stage each path maps to. */
+export interface ApiGatewayDomainName extends BaseResource {
+  domainName: string;
+  endpointTypes: string[];
+  certificateArns: string[];
+  mappings: Array<{ apiId?: string; stage?: string; path?: string }>;
+}
+
+// ---------------------------------------------------------------------------
+// VPC Lattice
+// ---------------------------------------------------------------------------
+
+export interface LatticeServiceNetwork extends BaseResource {
+  numberOfAssociatedServices?: number;
+  numberOfAssociatedVpcs?: number;
+  authType?: string;
+  vpcAssociations: Array<{ vpcId?: string; status?: string }>;
+  serviceAssociations: Array<{ serviceArn?: string; serviceName?: string; status?: string }>;
+}
+
+export interface LatticeService extends BaseResource {
+  dnsEntry?: string;
+  customDomainName?: string;
+  status?: string;
+  authType?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Observability plumbing
+// ---------------------------------------------------------------------------
+
+export interface LogGroup extends BaseResource {
+  retentionDays?: number;
+  storedBytes?: number;
+  kmsKeyId?: string;
+  logGroupClass?: string;
+}
+
+// ---------------------------------------------------------------------------
+// VPC-attached workloads (previously only visible as anonymous ENIs)
+// ---------------------------------------------------------------------------
+
+export interface EfsFileSystem extends BaseResource {
+  state?: string;
+  encrypted?: boolean;
+  performanceMode?: string;
+  vpcId?: string;
+  mountTargets: Array<{
+    id: string;
+    subnetId?: string;
+    ipAddress?: string;
+    availabilityZone?: string;
+    securityGroupIds: string[];
+  }>;
+}
+
+export interface OpenSearchDomain extends BaseResource {
+  engineVersion?: string;
+  endpoint?: string;
+  /** No VPC options = publicly reachable endpoint. */
+  inVpc: boolean;
+  vpcId?: string;
+  subnetIds: string[];
+  securityGroupIds: string[];
+}
+
+export interface MskCluster extends BaseResource {
+  clusterType?: string;
+  state?: string;
+  kafkaVersion?: string;
+  numberOfBrokerNodes?: number;
+  subnetIds: string[];
+  securityGroupIds: string[];
+}
+
+export interface RedshiftCluster extends BaseResource {
+  nodeType?: string;
+  numberOfNodes?: number;
+  state?: string;
+  vpcId?: string;
+  subnetGroupName?: string;
+  subnetIds: string[];
+  securityGroupIds: string[];
+  publiclyAccessible?: boolean;
+  endpoint?: { address?: string; port?: number };
+  availabilityZone?: string;
+}
+
+export interface MqBroker extends BaseResource {
+  engineType?: string;
+  deploymentMode?: string;
+  state?: string;
+  publiclyAccessible?: boolean;
+  subnetIds: string[];
+  securityGroupIds: string[];
+}
+
+export interface RdsProxy extends BaseResource {
+  engineFamily?: string;
+  status?: string;
+  endpoint?: string;
+  vpcId?: string;
+  subnetIds: string[];
+  securityGroupIds: string[];
+  requireTls?: boolean;
+}
+
+export interface ElastiCacheServerlessCache extends BaseResource {
+  engine?: string;
+  status?: string;
+  endpoint?: string;
+  subnetIds: string[];
+  securityGroupIds: string[];
+}
+
+export interface ElastiCacheReplicationGroup extends BaseResource {
+  description?: string;
+  status?: string;
+  memberClusterIds: string[];
+  clusterModeEnabled?: boolean;
+  automaticFailover?: string;
+  primaryEndpoint?: string;
+  readerEndpoint?: string;
+}
+
 /** CloudFront distributions are account-global. */
 export interface CloudFrontDistribution extends BaseResource {
   domainName?: string;
@@ -559,11 +980,75 @@ export interface CloudFrontDistribution extends BaseResource {
   origins: string[];
   priceClass?: string;
   webAclId?: string;
+  /** Per-origin detail: S3 vs custom vs VPC origin (private ALB/NLB/EC2). */
+  originDetails?: Array<{
+    domainName?: string;
+    originType?: 's3' | 'custom' | 'vpc';
+    vpcOriginId?: string;
+    originAccessControlId?: string;
+  }>;
+}
+
+/** CloudFront VPC origin: lets a distribution reach a private ALB/NLB/EC2 directly. */
+export interface CloudFrontVpcOrigin extends BaseResource {
+  status?: string;
+  /** ARN of the ALB/NLB/instance inside the VPC. */
+  endpointArn?: string;
+}
+
+/** Global Accelerator (account-global; API lives in us-west-2). */
+export interface GlobalAccelerator extends BaseResource {
+  dnsName?: string;
+  status?: string;
+  enabled?: boolean;
+  ipAddressType?: string;
+  ipAddresses: string[];
+  listeners: Array<{
+    protocol?: string;
+    portRanges: Array<{ fromPort?: number; toPort?: number }>;
+    endpointGroups: Array<{
+      region?: string;
+      trafficDialPercentage?: number;
+      endpoints: Array<{
+        endpointId?: string;
+        weight?: number;
+        clientIpPreservation?: boolean;
+        healthState?: string;
+      }>;
+    }>;
+  }>;
+}
+
+/** Cloud WAN core network (account-global; routes can target its ARN). */
+export interface CoreNetwork extends BaseResource {
+  globalNetworkId?: string;
+  state?: string;
+  description?: string;
+  segments: string[];
+  edges: Array<{ location?: string; asn?: number }>;
+  attachments: Array<{
+    id: string;
+    type?: string;
+    state?: string;
+    edgeLocation?: string;
+    resourceArn?: string;
+    segmentName?: string;
+    ownerAccountId?: string;
+  }>;
 }
 
 // ---------------------------------------------------------------------------
 // Global (non-regional) resources
 // ---------------------------------------------------------------------------
+
+export interface DnsRecord {
+  name: string;
+  type: string;
+  ttl?: number;
+  values: string[];
+  /** ALIAS target DNS name (ALB/CloudFront/API GW/…), when the record is an alias. */
+  aliasTarget?: string;
+}
 
 export interface Route53HostedZone extends BaseResource {
   zoneName: string;
@@ -571,6 +1056,10 @@ export interface Route53HostedZone extends BaseResource {
   recordCount?: number;
   /** For private zones: the VPCs associated with the zone. */
   vpcAssociations: Array<{ vpcId: string; region: string }>;
+  /** A/AAAA/CNAME records (aliases included) — what stitches DNS names to resources. */
+  records?: DnsRecord[];
+  /** True when the zone exceeded the per-zone record cap and records is partial. */
+  recordsTruncated?: boolean;
 }
 
 export interface S3Bucket extends BaseResource {
@@ -624,15 +1113,23 @@ export interface RegionSnapshot {
   securityGroups: SecurityGroup[];
   networkInterfaces: NetworkInterface[];
   vpcEndpoints: VpcEndpoint[];
+  vpcEndpointServices: VpcEndpointService[];
   prefixLists: ManagedPrefixList[];
+  flowLogs: FlowLog[];
+  dhcpOptions: DhcpOptions[];
+  instanceConnectEndpoints: InstanceConnectEndpoint[];
 
   peeringConnections: VpcPeeringConnection[];
   transitGateways: TransitGateway[];
   transitGatewayAttachments: TransitGatewayAttachment[];
   transitGatewayRouteTables: TransitGatewayRouteTable[];
+  transitGatewayConnectPeers: TransitGatewayConnectPeer[];
   vpnGateways: VpnGateway[];
   customerGateways: CustomerGateway[];
   vpnConnections: VpnConnection[];
+  dxConnections: DxConnection[];
+  dxLags: DxLag[];
+  dxVirtualInterfaces: DxVirtualInterface[];
 
   loadBalancers: LoadBalancer[];
   targetGroups: TargetGroup[];
@@ -642,21 +1139,42 @@ export interface RegionSnapshot {
   lambdaFunctions: LambdaFunction[];
   rdsInstances: RdsInstance[];
   rdsClusters: RdsCluster[];
+  rdsProxies: RdsProxy[];
   ecsServices: EcsService[];
   eksClusters: EksCluster[];
   elastiCacheClusters: ElastiCacheCluster[];
+  elastiCacheReplicationGroups: ElastiCacheReplicationGroup[];
+  elastiCacheServerlessCaches: ElastiCacheServerlessCache[];
+  efsFileSystems: EfsFileSystem[];
+  openSearchDomains: OpenSearchDomain[];
+  mskClusters: MskCluster[];
+  redshiftClusters: RedshiftCluster[];
+  mqBrokers: MqBroker[];
 
   // security services (regional)
   kmsKeys: KmsKey[];
   acmCertificates: AcmCertificate[];
   secrets: SecretMetadata[];
+  wafWebAcls: WafWebAcl[];
+  wafIpSets: WafIpSet[];
+  wafRuleGroups: WafRuleGroup[];
 
   // additional network services (regional)
   resolverEndpoints: Route53ResolverEndpoint[];
   resolverRules: Route53ResolverRule[];
+  dnsFirewallRuleGroups: DnsFirewallRuleGroup[];
+  resolverQueryLogConfigs: ResolverQueryLogConfig[];
   clientVpnEndpoints: ClientVpnEndpoint[];
   networkFirewalls: NetworkFirewall[];
+  networkFirewallPolicies: NetworkFirewallPolicy[];
+  networkFirewallRuleGroups: NetworkFirewallRuleGroup[];
+  networkFirewallTlsConfigs: NetworkFirewallTlsConfig[];
   apiGateways: ApiGateway[];
+  apiGatewayVpcLinks: ApiGatewayVpcLink[];
+  apiGatewayDomainNames: ApiGatewayDomainName[];
+  latticeServiceNetworks: LatticeServiceNetwork[];
+  latticeServices: LatticeService[];
+  logGroups: LogGroup[];
 
   generic: GenericResource[];
 }
@@ -686,6 +1204,16 @@ export interface AccountSnapshot {
     iamInstanceProfiles: IamInstanceProfile[];
     /** CloudFront distributions are account-global. */
     cloudFrontDistributions: CloudFrontDistribution[];
+    /** CloudFront VPC origins (distribution → private ALB/NLB/EC2). */
+    cloudFrontVpcOrigins: CloudFrontVpcOrigin[];
+    /** Global Accelerator accelerators (API in us-west-2). */
+    globalAccelerators: GlobalAccelerator[];
+    /** Cloud WAN core networks. */
+    coreNetworks: CoreNetwork[];
+    /** WAF v2 CLOUDFRONT-scope ACLs/sets/groups (API in us-east-1). */
+    wafWebAcls: WafWebAcl[];
+    wafIpSets: WafIpSet[];
+    wafRuleGroups: WafRuleGroup[];
     errors: ScanError[];
   };
 }
@@ -714,14 +1242,22 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     securityGroups: [],
     networkInterfaces: [],
     vpcEndpoints: [],
+    vpcEndpointServices: [],
     prefixLists: [],
+    flowLogs: [],
+    dhcpOptions: [],
+    instanceConnectEndpoints: [],
     peeringConnections: [],
     transitGateways: [],
     transitGatewayAttachments: [],
     transitGatewayRouteTables: [],
+    transitGatewayConnectPeers: [],
     vpnGateways: [],
     customerGateways: [],
     vpnConnections: [],
+    dxConnections: [],
+    dxLags: [],
+    dxVirtualInterfaces: [],
     loadBalancers: [],
     targetGroups: [],
     instances: [],
@@ -729,17 +1265,38 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     lambdaFunctions: [],
     rdsInstances: [],
     rdsClusters: [],
+    rdsProxies: [],
     ecsServices: [],
     eksClusters: [],
     elastiCacheClusters: [],
+    elastiCacheReplicationGroups: [],
+    elastiCacheServerlessCaches: [],
+    efsFileSystems: [],
+    openSearchDomains: [],
+    mskClusters: [],
+    redshiftClusters: [],
+    mqBrokers: [],
     kmsKeys: [],
     acmCertificates: [],
     secrets: [],
+    wafWebAcls: [],
+    wafIpSets: [],
+    wafRuleGroups: [],
     resolverEndpoints: [],
     resolverRules: [],
+    dnsFirewallRuleGroups: [],
+    resolverQueryLogConfigs: [],
     clientVpnEndpoints: [],
     networkFirewalls: [],
+    networkFirewallPolicies: [],
+    networkFirewallRuleGroups: [],
+    networkFirewallTlsConfigs: [],
     apiGateways: [],
+    apiGatewayVpcLinks: [],
+    apiGatewayDomainNames: [],
+    latticeServiceNetworks: [],
+    latticeServices: [],
+    logGroups: [],
     generic: [],
   };
 }
@@ -756,6 +1313,12 @@ export function emptyGlobal(): AccountSnapshot['global'] {
     iamPolicies: [],
     iamInstanceProfiles: [],
     cloudFrontDistributions: [],
+    cloudFrontVpcOrigins: [],
+    globalAccelerators: [],
+    coreNetworks: [],
+    wafWebAcls: [],
+    wafIpSets: [],
+    wafRuleGroups: [],
     errors: [],
   };
 }

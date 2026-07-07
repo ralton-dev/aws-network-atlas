@@ -34,12 +34,17 @@ const TYPE_NAMES = [
   'AWS::SQS::Queue',
   'AWS::SNS::Topic',
   'AWS::ECR::Repository',
-  'AWS::Logs::LogGroup',
   'AWS::CloudFormation::Stack',
   'AWS::StepFunctions::StateMachine',
   'AWS::Athena::WorkGroup',
   'AWS::Events::EventBus',
   'AWS::ECS::Cluster',
+  // Kinesis streams / Firehose delivery streams are log + flow-log
+  // destinations; without these two an untagged stream is invisible.
+  'AWS::Kinesis::Stream',
+  'AWS::KinesisFirehose::DeliveryStream',
+  // Note: AWS::Logs::LogGroup moved to a dedicated collector (collect/logs.ts)
+  // — paginated with no cap, plus retention/KMS detail.
 ] as const;
 
 /** Per-TypeName result cap so a huge estate can't stall the scan. */

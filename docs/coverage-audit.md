@@ -1,5 +1,28 @@
 # Scanner coverage audit — what's missing
 
+> **Implementation status (2026-07-07):** everything in §1–§4 plus most of §5 is now
+> IMPLEMENTED on this branch — Network Firewall policies/rule groups/TLS configs/logging/
+> endpoint sync-states, WAF v2 (both scopes), ALB listener rules + certificates, DNS
+> Firewall + query-log configs, Client VPN routes/authz, VPC endpoint policies, VPN static
+> routes, RAM-shared prefix-list entries, DX connections/LAGs/VIFs, PrivateLink provider
+> side, Cloud WAN, Global Accelerator, API GW VPC links + custom domains, Lambda function
+> URLs, flow logs, DHCP options, VPC DNS attributes, Instance Connect endpoints, Route 53
+> record sets, TGW propagations/Connect peers, VPC Lattice, CloudWatch log groups, EFS,
+> OpenSearch, MSK, Redshift, MQ, RDS Proxy, ElastiCache replication groups + serverless,
+> classic ELB instances, CloudFront origin detail + VPC origins, and the Cloud Control
+> Kinesis/Firehose types.
+>
+> **Deliberately deferred** (rare or fiddly; still open): Outposts local gateways /
+> Wavelength carrier gateways, Verified Access, IPAM + subnet CIDR reservations, TGW
+> multicast domains & policy tables, Shield Advanced / Firewall Manager, ECS standalone
+> tasks, EKS node groups / Fargate profiles, per-bucket S3 public-access checks
+> (regional-endpoint redirects), Route 53 health checks, per-CIDR SG rule descriptions
+> (`DescribeSecurityGroupRules`), and legacy WAF Classic.
+>
+> Note: new resource kinds surface in the viewer's search/inventory/details/focus panels;
+> first-class graph rendering (e.g. drawing the firewall policy chain on the canvas)
+> remains viewer follow-up work.
+
 Audit date: 2026-07-07. Method: every collector in `packages/scanner/src/collect/` was read
 line-by-line and the exact set of AWS API calls made was compared against the AWS networking
 surface. The trigger was a real-account finding: **the Network Firewall shows up, but none of

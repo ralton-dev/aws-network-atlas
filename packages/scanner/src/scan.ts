@@ -22,6 +22,14 @@ import { collectGeneric } from './collect/generic.js';
 import { collectGlobal } from './collect/global.js';
 import { collectIam } from './collect/iam.js';
 import { collectCloudFront } from './collect/cloudfront.js';
+import { collectWaf, collectWafCloudFront } from './collect/waf.js';
+import { collectDnsFirewall } from './collect/dns-firewall.js';
+import { collectDirectConnect } from './collect/direct-connect.js';
+import { collectVpcWorkloads } from './collect/vpc-workloads.js';
+import { collectLattice } from './collect/lattice.js';
+import { collectLogs } from './collect/logs.js';
+import { collectGlobalAccelerator } from './collect/global-accelerator.js';
+import { collectCloudWan } from './collect/cloudwan.js';
 import { deriveRegion, sortErrors } from './derive.js';
 import { sortById } from './util.js';
 
@@ -71,6 +79,12 @@ export async function scanAccount(
           collectContainers(ctx, region, out),
           collectSecurity(ctx, region, out),
           collectEdgeNetwork(ctx, region, identity.accountId, out),
+          collectWaf(ctx, region, out),
+          collectDnsFirewall(ctx, region, out),
+          collectDirectConnect(ctx, region, out),
+          collectVpcWorkloads(ctx, region, out),
+          collectLattice(ctx, region, out),
+          collectLogs(ctx, region, out),
           collectGeneric(ctx, region, out),
           collectCloudControl(ctx, region, out),
         ]);
@@ -87,8 +101,17 @@ export async function scanAccount(
   );
 
   const global = emptyGlobal();
-  progress(`[${account.profile}] collecting global resources (Route 53, DX, S3, IAM, CloudFront)…`);
-  await Promise.all([collectGlobal(ctx, global), collectIam(ctx, global), collectCloudFront(ctx, global)]);
+  progress(
+    `[${account.profile}] collecting global resources (Route 53, DX, S3, IAM, CloudFront, WAF, Global Accelerator, Cloud WAN)…`,
+  );
+  await Promise.all([
+    collectGlobal(ctx, global),
+    collectIam(ctx, global),
+    collectCloudFront(ctx, global),
+    collectWafCloudFront(ctx, global),
+    collectGlobalAccelerator(ctx, global),
+    collectCloudWan(ctx, global),
+  ]);
   global.hostedZones.sort((a, b) => a.id.localeCompare(b.id));
   for (const z of global.hostedZones) {
     z.vpcAssociations.sort((a, b) => `${a.vpcId}|${a.region}`.localeCompare(`${b.vpcId}|${b.region}`));
@@ -129,7 +152,14 @@ export async function scanAccount(
   for (const d of global.cloudFrontDistributions) {
     d.aliases.sort();
     d.origins.sort();
+    d.originDetails?.sort((a, b) => (a.domainName ?? '').localeCompare(b.domainName ?? ''));
   }
+  sortById(global.cloudFrontVpcOrigins);
+  sortById(global.globalAccelerators);
+  sortById(global.coreNetworks);
+  sortById(global.wafWebAcls);
+  sortById(global.wafIpSets);
+  sortById(global.wafRuleGroups);
   sortErrors(global.errors);
 
   const keep = regionSnapshots.filter((r) => !r.empty);

@@ -3,18 +3,69 @@ import {
   paginateDescribeLoadBalancers,
   paginateDescribeTargetGroups,
   paginateDescribeListeners,
+  paginateDescribeRules,
+  paginateDescribeListenerCertificates,
   DescribeTargetHealthCommand,
   DescribeTagsCommand as DescribeTagsV2Command,
+  type Action,
+  type Rule,
+  type RuleCondition,
 } from '@aws-sdk/client-elastic-load-balancing-v2';
 import {
   ElasticLoadBalancingClient,
   paginateDescribeLoadBalancers as paginateDescribeClassicLoadBalancers,
 } from '@aws-sdk/client-elastic-load-balancing';
 import pLimit from 'p-limit';
-import type { LoadBalancer, RegionSnapshot, Tags } from '@atlas/schema';
+import type { ListenerRule, LoadBalancer, RegionSnapshot, Tags } from '@atlas/schema';
 import { AwsContext, guard } from '../aws.js';
 
 const LB_TYPES = new Set(['application', 'network', 'gateway']);
+
+/** Compact one rule condition, e.g. "host=api.example.com|www.example.com". */
+function mapCondition(c: RuleCondition): string {
+  const field = c.Field ?? '?';
+  const values =
+    c.HostHeaderConfig?.Values ??
+    c.PathPatternConfig?.Values ??
+    c.HttpRequestMethodConfig?.Values ??
+    c.SourceIpConfig?.Values ??
+    (c.HttpHeaderConfig
+      ? (c.HttpHeaderConfig.Values ?? []).map((v) => `${c.HttpHeaderConfig?.HttpHeaderName}:${v}`)
+      : undefined) ??
+    (c.QueryStringConfig
+      ? (c.QueryStringConfig.Values ?? []).map((v) => `${v.Key ?? ''}=${v.Value ?? ''}`)
+      : undefined) ??
+    c.Values ??
+    [];
+  return `${field}=${values.join('|')}`;
+}
+
+function targetGroupArnsOf(actions: Action[]): string[] {
+  const arns = new Set<string>();
+  for (const action of actions) {
+    if (action.TargetGroupArn) arns.add(action.TargetGroupArn);
+    for (const tg of action.ForwardConfig?.TargetGroups ?? []) {
+      if (tg.TargetGroupArn) arns.add(tg.TargetGroupArn);
+    }
+  }
+  return [...arns].sort();
+}
+
+function mapRule(rule: Rule): ListenerRule {
+  const actions = rule.Actions ?? [];
+  const redirect = actions.find((a) => a.Type === 'redirect')?.RedirectConfig;
+  const fixed = actions.find((a) => a.Type === 'fixed-response')?.FixedResponseConfig;
+  return {
+    priority: rule.Priority,
+    conditions: (rule.Conditions ?? []).map(mapCondition).sort(),
+    actionType: actions.map((a) => a.Type).filter(Boolean).join('+') || undefined,
+    targetGroupArns: targetGroupArnsOf(actions),
+    redirect: redirect
+      ? `${redirect.Protocol ?? '#{protocol}'}://${redirect.Host ?? '#{host}'}:${redirect.Port ?? '#{port}'}${redirect.Path ?? '#{path}'}`
+      : undefined,
+    fixedResponseCode: fixed?.StatusCode,
+  };
+}
 
 /** Collect ALB/NLB/GWLB (+ listeners, target groups, target health) and classic ELBs. */
 export async function collectElb(ctx: AwsContext, region: string, out: RegionSnapshot): Promise<void> {
@@ -77,18 +128,59 @@ export async function collectElb(ctx: AwsContext, region: string, out: RegionSna
             { LoadBalancerArn: lb.id },
           )) {
             for (const l of page.Listeners ?? []) {
-              const targetGroupArns = new Set<string>();
-              for (const action of l.DefaultActions ?? []) {
-                if (action.TargetGroupArn) targetGroupArns.add(action.TargetGroupArn);
-                for (const tg of action.ForwardConfig?.TargetGroups ?? []) {
-                  if (tg.TargetGroupArn) targetGroupArns.add(tg.TargetGroupArn);
-                }
-              }
-              lb.listeners.push({
+              const listener: LoadBalancer['listeners'][number] = {
                 port: l.Port,
                 protocol: l.Protocol,
-                targetGroupArns: [...targetGroupArns].sort(),
-              });
+                targetGroupArns: targetGroupArnsOf(l.DefaultActions ?? []),
+                certificateArns: (l.Certificates ?? [])
+                  .map((c) => c.CertificateArn)
+                  .filter((c): c is string => !!c),
+              };
+
+              // Host/path/header routing lives in listener RULES — without
+              // them most of a non-trivial ALB's target groups look orphaned.
+              if (l.ListenerArn && lb.lbType === 'application') {
+                await guard(errors, 'elbv2', `DescribeRules(${lb.name ?? lb.id})`, async () => {
+                  const rules: ListenerRule[] = [];
+                  for await (const rulePage of paginateDescribeRules(
+                    { client: elbv2 },
+                    { ListenerArn: l.ListenerArn! },
+                  )) {
+                    for (const r of rulePage.Rules ?? []) {
+                      if (r.IsDefault) continue; // default action already on the listener
+                      rules.push(mapRule(r));
+                    }
+                  }
+                  rules.sort((a, b) =>
+                    `${(a.priority ?? '').padStart(6, '0')}`.localeCompare(
+                      `${(b.priority ?? '').padStart(6, '0')}`,
+                    ),
+                  );
+                  if (rules.length > 0) listener.rules = rules;
+                });
+
+                // SNI certificates beyond the default one.
+                if ((l.Protocol === 'HTTPS' || l.Protocol === 'TLS') && listener.certificateArns) {
+                  await guard(
+                    errors,
+                    'elbv2',
+                    `DescribeListenerCertificates(${lb.name ?? lb.id})`,
+                    async () => {
+                      const certs = new Set(listener.certificateArns);
+                      for await (const certPage of paginateDescribeListenerCertificates(
+                        { client: elbv2 },
+                        { ListenerArn: l.ListenerArn! },
+                      )) {
+                        for (const c of certPage.Certificates ?? []) {
+                          if (c.CertificateArn) certs.add(c.CertificateArn);
+                        }
+                      }
+                      listener.certificateArns = [...certs].sort();
+                    },
+                  );
+                }
+              }
+              lb.listeners.push(listener);
             }
           }
         }),
@@ -160,6 +252,9 @@ export async function collectElb(ctx: AwsContext, region: string, out: RegionSna
             protocol: ld.Listener?.Protocol,
             targetGroupArns: [],
           })),
+          instanceIds: (lb.Instances ?? [])
+            .map((i) => i.InstanceId)
+            .filter((i): i is string => !!i),
         });
       }
     }

@@ -266,7 +266,16 @@ function prodEuWest1(): RegionSnapshot {
     securityGroupIds: [albSg],
     dnsName: 'prod-alb-123.eu-west-1.elb.amazonaws.com',
     state: 'active',
-    listeners: [{ port: 443, protocol: 'HTTPS', targetGroupArns: [tgArn] }],
+    listeners: [{
+      port: 443,
+      protocol: 'HTTPS',
+      targetGroupArns: [tgArn],
+      certificateArns: [`arn:aws:acm:${EU}:${ACCT.prod}:certificate/aaaa1111-2222-3333`],
+      rules: [
+        { priority: '10', conditions: ['host-header=api.acme.example', 'path-pattern=/v2/*'], actionType: 'forward', targetGroupArns: [tgArn] },
+        { priority: '20', conditions: ['path-pattern=/legacy/*'], actionType: 'redirect', targetGroupArns: [], redirect: 'https://www.acme.example:443/#{path}' },
+      ],
+    }],
   });
   r.targetGroups.push({
     id: tgArn,
@@ -352,6 +361,7 @@ function prodEuWest1(): RegionSnapshot {
     description: 'async job worker',
     roleArn: `arn:aws:iam::${ACCT.prod}:role/prod-lambda-role`,
     vpcConfig: { vpcId: vpc, subnetIds: azs.map((_, i) => `subnet-0prodapp0000${i}01`), securityGroupIds: [sg] },
+    functionUrl: { url: 'https://abcdef123.lambda-url.eu-west-1.on.aws/', authType: 'AWS_IAM' },
   });
   r.vpcEndpoints.push(
     { id: 'vpce-0prods30000001', name: 's3-gateway', tags: {}, vpcId: vpc, serviceName: `com.amazonaws.${EU}.s3`, endpointType: 'Gateway', state: 'available', subnetIds: [], routeTableIds: azs.map((_, i) => `rtb-0prodapp00000${i}01`), networkInterfaceIds: [] },
@@ -430,17 +440,106 @@ function prodEuWest1(): RegionSnapshot {
     vpcId: 'vpc-0prod00000000000a1', clientCidrBlock: '203.0.113.0/24', dnsServers: ['10.0.0.2'],
     securityGroupIds: ['sg-0prodapp000000001'], associatedSubnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
     status: 'available', splitTunnel: true,
+    routes: [
+      { destinationCidr: '10.0.0.0/16', targetSubnet: 'subnet-0prodapp0000001', origin: 'associate', status: 'active' },
+      { destinationCidr: '10.1.0.0/16', targetSubnet: 'subnet-0prodapp0000001', origin: 'add-route', status: 'active', description: 'shared services via TGW' },
+    ],
+    authorizationRules: [
+      { destinationCidr: '10.0.0.0/16', groupId: 'engineering', accessAll: false, status: 'active', description: 'engineers → prod VPC' },
+      { destinationCidr: '10.1.0.0/16', accessAll: true, status: 'active' },
+    ],
   });
   r.apiGateways.push({
     id: 'a1b2c3d4e5', arn: `arn:aws:apigateway:${EU}::/restapis/a1b2c3d4e5`,
     name: 'prod-public-api', tags: { env: 'prod' }, protocolType: 'REST', endpointType: 'REGIONAL',
     apiEndpoint: 'https://a1b2c3d4e5.execute-api.eu-west-1.amazonaws.com', stages: ['prod', 'canary'], vpcEndpointIds: [],
   });
+  const fwPolicyArn = `arn:aws:network-firewall:${EU}:${ACCT.prod}:firewall-policy/prod-policy`;
+  const fwStatelessRgArn = `arn:aws:network-firewall:${EU}:${ACCT.prod}:stateless-rulegroup/prod-stateless`;
+  const fwStatefulRgArn = `arn:aws:network-firewall:${EU}:${ACCT.prod}:stateful-rulegroup/prod-egress-domains`;
   r.networkFirewalls.push({
     id: 'prod-inspection-fw', arn: `arn:aws:network-firewall:${EU}:${ACCT.prod}:firewall/prod-inspection-fw`,
     name: 'prod-inspection-fw', tags: {}, vpcId: 'vpc-0prod00000000000a1',
-    subnetIds: ['subnet-0prodpub0000001'], firewallPolicyArn: `arn:aws:network-firewall:${EU}:${ACCT.prod}:firewall-policy/prod-policy`,
+    subnetIds: ['subnet-0prodpub0000001'], firewallPolicyArn: fwPolicyArn,
     deleteProtection: true, status: 'READY',
+    endpoints: [{ availabilityZone: `${EU}a`, subnetId: 'subnet-0prodpub0000001', endpointId: 'vpce-0prodfwep0000001' }],
+    logDestinations: [
+      { logType: 'ALERT', destinationType: 'CloudWatchLogs', destination: '/aws/network-firewall/prod-alerts' },
+      { logType: 'FLOW', destinationType: 'S3', destination: 'acme-prod-fw-logs' },
+    ],
+  });
+  r.networkFirewallPolicies.push({
+    id: 'prod-policy', arn: fwPolicyArn, name: 'prod-policy', tags: { env: 'prod' },
+    description: 'Prod egress inspection policy',
+    statelessDefaultActions: ['aws:forward_to_sfe'],
+    statelessFragmentDefaultActions: ['aws:forward_to_sfe'],
+    statelessRuleGroupRefs: [{ arn: fwStatelessRgArn, priority: 10 }],
+    statefulRuleGroupRefs: [{ arn: fwStatefulRgArn }],
+    statefulDefaultActions: ['aws:drop_established'],
+    statefulRuleOrder: 'DEFAULT_ACTION_ORDER',
+  });
+  r.networkFirewallRuleGroups.push(
+    {
+      id: 'prod-stateless', arn: fwStatelessRgArn, name: 'prod-stateless', tags: {},
+      ruleGroupType: 'STATELESS', description: 'Drop legacy plaintext protocols', capacity: 100, consumedCapacity: 12, numberOfAssociations: 1,
+      statelessRules: [
+        { priority: 1, actions: ['aws:drop'], sources: ['10.0.0.0/16'], destinations: ['0.0.0.0/0'], sourcePorts: [], destinationPorts: ['23', '21'], protocols: [6] },
+      ],
+      statefulRules: [],
+    },
+    {
+      id: 'prod-egress-domains', arn: fwStatefulRgArn, name: 'prod-egress-domains', tags: {},
+      ruleGroupType: 'STATEFUL', description: 'Allow-list of egress domains', capacity: 200, consumedCapacity: 40, numberOfAssociations: 1,
+      statelessRules: [],
+      statefulRules: [],
+      domainList: { targets: ['.acme.example', '.amazonaws.com', 'api.stripe.com'], targetTypes: ['TLS_SNI', 'HTTP_HOST'], action: 'ALLOWLIST' },
+    },
+  );
+
+  // WAF (REGIONAL) in front of the public ALB.
+  const wafAclArn = `arn:aws:wafv2:${EU}:${ACCT.prod}:regional/webacl/prod-alb-waf/0aaa-1bbb`;
+  r.wafWebAcls.push({
+    id: '0aaa-1bbb', arn: wafAclArn, name: 'prod-alb-waf', tags: { env: 'prod' }, scope: 'REGIONAL',
+    defaultAction: 'ALLOW', capacity: 320,
+    rules: [
+      { name: 'aws-common', priority: 10, action: 'use-rule-group-actions', statement: 'managedRuleGroup:AWS/AWSManagedRulesCommonRuleSet' },
+      { name: 'block-bad-ips', priority: 20, action: 'BLOCK', statement: `ipSet:arn:aws:wafv2:${EU}:${ACCT.prod}:regional/ipset/prod-blocklist/0ccc` },
+      { name: 'rate-limit', priority: 30, action: 'BLOCK', statement: 'rateBased:2000' },
+    ],
+    associatedResourceArns: [albArn],
+  });
+  r.wafIpSets.push({
+    id: '0ccc', arn: `arn:aws:wafv2:${EU}:${ACCT.prod}:regional/ipset/prod-blocklist/0ccc`, name: 'prod-blocklist',
+    tags: {}, scope: 'REGIONAL', ipAddressVersion: 'IPV4', addresses: ['192.0.2.0/24', '198.51.100.200/32'],
+  });
+
+  // DNS Firewall blocking known-bad domains for the prod VPC.
+  r.dnsFirewallRuleGroups.push({
+    id: 'rslvr-frg-0prod0000001', arn: `arn:aws:route53resolver:${EU}:${ACCT.prod}:firewall-rule-group/rslvr-frg-0prod0000001`,
+    name: 'prod-dns-firewall', tags: { env: 'prod' }, status: 'COMPLETE', ruleCount: 1, shareStatus: 'NOT_SHARED',
+    rules: [{ name: 'block-malware-domains', priority: 10, action: 'BLOCK', blockResponse: 'NXDOMAIN', firewallDomainListId: 'rslvr-fdl-0prod0000001', domainListName: 'prod-blocked-domains', domains: ['bad.example.net', 'malware.example.org'] }],
+    vpcAssociations: [{ vpcId: 'vpc-0prod00000000000a1', priority: 101, mutationProtection: 'ENABLED' }],
+  });
+
+  // VPC flow logs → CloudWatch Logs, plus the log groups themselves.
+  r.flowLogs.push({
+    id: 'fl-0prod00000000001', name: 'prod-vpc-flow', tags: { env: 'prod' },
+    resourceId: 'vpc-0prod00000000000a1', trafficType: 'ALL', logDestinationType: 'cloud-watch-logs',
+    logDestination: `arn:aws:logs:${EU}:${ACCT.prod}:log-group:/aws/vpc/prod-flow-logs`,
+    logGroupName: '/aws/vpc/prod-flow-logs', status: 'ACTIVE', maxAggregationInterval: 600,
+  });
+  r.logGroups.push(
+    { id: '/aws/vpc/prod-flow-logs', arn: `arn:aws:logs:${EU}:${ACCT.prod}:log-group:/aws/vpc/prod-flow-logs`, name: '/aws/vpc/prod-flow-logs', tags: {}, retentionDays: 90, storedBytes: 52428800 },
+    { id: '/aws/network-firewall/prod-alerts', arn: `arn:aws:logs:${EU}:${ACCT.prod}:log-group:/aws/network-firewall/prod-alerts`, name: '/aws/network-firewall/prod-alerts', tags: {}, retentionDays: 365 },
+    { id: '/aws/lambda/prod-worker', arn: `arn:aws:logs:${EU}:${ACCT.prod}:log-group:/aws/lambda/prod-worker`, name: '/aws/lambda/prod-worker', tags: {}, retentionDays: 30 },
+  );
+
+  // EFS shared filesystem mounted in the db subnets.
+  r.efsFileSystems.push({
+    id: 'fs-0prod0000000001', arn: `arn:aws:elasticfilesystem:${EU}:${ACCT.prod}:file-system/fs-0prod0000000001`,
+    name: 'prod-shared-assets', tags: { env: 'prod' }, state: 'available', encrypted: true, performanceMode: 'generalPurpose',
+    vpcId: 'vpc-0prod00000000000a1',
+    mountTargets: ['a', 'b'].map((az, i) => ({ id: `fsmt-0prod000000${i}01`, subnetId: `subnet-0proddb00000${i}01`, ipAddress: `10.0.2${i}.100`, availabilityZone: `${EU}${az}`, securityGroupIds: [dbSg] })),
   });
 
   r.generic.push(
@@ -509,7 +608,41 @@ function prodAccount(): AccountSnapshot {
     emptyRegions: ['ap-south-1', 'ap-southeast-2', 'sa-east-1', 'us-west-2'],
     global: mkGlobal({
       hostedZones: [
-        { id: 'Z0PRODPRIV0001', name: 'prod.internal.', tags: {}, zoneName: 'prod.internal.', privateZone: true, recordCount: 128, vpcAssociations: [{ vpcId: 'vpc-0prod00000000000a1', region: EU }, { vpcId: 'vpc-0proddr0000000a1', region: US }] },
+        {
+          id: 'Z0PRODPRIV0001', name: 'prod.internal.', tags: {}, zoneName: 'prod.internal.', privateZone: true, recordCount: 128,
+          vpcAssociations: [{ vpcId: 'vpc-0prod00000000000a1', region: EU }, { vpcId: 'vpc-0proddr0000000a1', region: US }],
+          records: [
+            { name: 'db.prod.internal.', type: 'CNAME', ttl: 300, values: ['prod-aurora.cluster-abc.eu-west-1.rds.amazonaws.com'] },
+            { name: 'app.prod.internal.', type: 'A', values: [], aliasTarget: 'prod-alb-123.eu-west-1.elb.amazonaws.com' },
+          ],
+        },
+        {
+          id: 'Z0PRODPUB00001', name: 'acme.example.', tags: {}, zoneName: 'acme.example.', privateZone: false, recordCount: 42,
+          vpcAssociations: [],
+          records: [
+            { name: 'www.acme.example.', type: 'A', values: [], aliasTarget: 'd111111abcdef8.cloudfront.net' },
+            { name: 'api.acme.example.', type: 'A', values: [], aliasTarget: 'prod-alb-123.eu-west-1.elb.amazonaws.com' },
+          ],
+        },
+      ],
+      globalAccelerators: [
+        {
+          id: `arn:aws:globalaccelerator::${ACCT.prod}:accelerator/0aa1-bb22`, arn: `arn:aws:globalaccelerator::${ACCT.prod}:accelerator/0aa1-bb22`,
+          name: 'prod-edge', tags: { env: 'prod' }, dnsName: 'a1234567890.awsglobalaccelerator.com', status: 'DEPLOYED', enabled: true,
+          ipAddressType: 'IPV4', ipAddresses: ['198.51.100.201', '198.51.100.202'],
+          listeners: [{
+            protocol: 'TCP', portRanges: [{ fromPort: 443, toPort: 443 }],
+            endpointGroups: [{ region: EU, trafficDialPercentage: 100, endpoints: [{ endpointId: `arn:aws:elasticloadbalancing:${EU}:${ACCT.prod}:loadbalancer/app/prod-alb/abc123`, weight: 128, clientIpPreservation: true, healthState: 'HEALTHY' }] }],
+          }],
+        },
+      ],
+      wafWebAcls: [
+        {
+          id: 'abc', arn: 'arn:aws:wafv2:us-east-1:111111111111:global/webacl/prod-waf/abc', name: 'prod-waf', tags: { env: 'prod' },
+          scope: 'CLOUDFRONT', defaultAction: 'ALLOW', capacity: 125,
+          rules: [{ name: 'aws-common', priority: 10, action: 'use-rule-group-actions', statement: 'managedRuleGroup:AWS/AWSManagedRulesCommonRuleSet' }],
+          associatedResourceArns: [],
+        },
       ],
       s3Buckets: [{ id: 'acme-prod-artifacts', name: 'acme-prod-artifacts', tags: {}, region: EU, creationDate: '2024-03-01T00:00:00.000Z' }],
       iamRoles: [
@@ -594,11 +727,25 @@ function sharedAccount(): AccountSnapshot {
       { attachmentId: ATT.dev, resourceId: 'vpc-0dev000000000000a1', resourceType: 'vpc' },
       { attachmentId: ATT.sharedVpc, resourceId: 'vpc-0shared00000000a1', resourceType: 'vpc' },
     ],
+    propagations: [
+      { attachmentId: ATT.prod, resourceId: 'vpc-0prod00000000000a1', resourceType: 'vpc', state: 'enabled' },
+      { attachmentId: ATT.dev, resourceId: 'vpc-0dev000000000000a1', resourceType: 'vpc', state: 'enabled' },
+      { attachmentId: ATT.sharedVpc, resourceId: 'vpc-0shared00000000a1', resourceType: 'vpc', state: 'enabled' },
+    ],
   });
 
   // Site-to-Site VPN + customer gateway (on-prem), TGW-attached.
   r.customerGateways.push({ id: CGW, name: 'hq-firewall', tags: {}, ipAddress: '198.51.100.7', bgpAsn: '65001', state: 'available' });
-  r.vpnConnections.push({ id: 'vpn-0onprem00000001', name: 'hq-vpn', tags: {}, transitGatewayId: TGW_EU, customerGatewayId: CGW, state: 'available', category: 'VPN', tunnels: [{ outsideIp: '203.0.113.1', status: 'UP' }, { outsideIp: '203.0.113.2', status: 'UP' }] });
+  r.vpnConnections.push({ id: 'vpn-0onprem00000001', name: 'hq-vpn', tags: {}, transitGatewayId: TGW_EU, customerGatewayId: CGW, state: 'available', category: 'VPN', tunnels: [{ outsideIp: '203.0.113.1', status: 'UP' }, { outsideIp: '203.0.113.2', status: 'UP' }], staticRoutes: ['172.16.0.0/12'], staticRoutesOnly: false, localIpv4NetworkCidr: '0.0.0.0/0', remoteIpv4NetworkCidr: '0.0.0.0/0' });
+
+  // Direct Connect: the physical circuit + the transit VIF riding it.
+  r.dxConnections.push({ id: 'dxcon-0shared00001', name: 'hq-dx-1g', tags: {}, location: 'EqLD5', bandwidth: '1Gbps', state: 'available', ownerAccount: ACCT.shared });
+  r.dxVirtualInterfaces.push({
+    id: 'dxvif-0shared00001', name: 'hq-transit-vif', tags: {}, vifType: 'transit', state: 'available', vlan: 101,
+    bgpAsn: 65001, amazonSideAsn: 64512, connectionId: 'dxcon-0shared00001', directConnectGatewayId: DXGW,
+    ownerAccount: ACCT.shared, amazonAddress: '169.254.100.1/30', customerAddress: '169.254.100.2/30',
+    routeFilterPrefixes: [], bgpPeers: [{ asn: 65001, addressFamily: 'ipv4', state: 'available', status: 'up' }],
+  });
 
   r.peeringConnections.push({
     id: 'pcx-0proddev000000001',

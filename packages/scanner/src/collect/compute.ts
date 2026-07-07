@@ -3,7 +3,12 @@ import {
   AutoScalingClient,
   paginateDescribeAutoScalingGroups,
 } from '@aws-sdk/client-auto-scaling';
-import { LambdaClient, paginateListFunctions } from '@aws-sdk/client-lambda';
+import {
+  LambdaClient,
+  paginateListFunctions,
+  paginateListFunctionUrlConfigs,
+} from '@aws-sdk/client-lambda';
+import pLimit from 'p-limit';
 import type { RegionSnapshot, Tags } from '@atlas/schema';
 import { AwsContext, guard } from '../aws.js';
 import { toTags, nameTag } from '../util.js';
@@ -71,9 +76,11 @@ export async function collectCompute(ctx: AwsContext, region: string, out: Regio
 
   await guard(errors, 'lambda', 'ListFunctions', async () => {
     const lambda = ctx.client(LambdaClient, region);
+    const limit = pLimit(8);
+    const fns: RegionSnapshot['lambdaFunctions'] = [];
     for await (const page of paginateListFunctions({ client: lambda }, {})) {
       for (const fn of page.Functions ?? []) {
-        out.lambdaFunctions.push({
+        fns.push({
           id: fn.FunctionArn ?? fn.FunctionName!,
           arn: fn.FunctionArn,
           name: fn.FunctionName,
@@ -92,5 +99,25 @@ export async function collectCompute(ctx: AwsContext, region: string, out: Regio
         });
       }
     }
+    // Function URLs are public HTTPS entry points (authType NONE = open to
+    // the internet) — a security signal worth one extra call per function.
+    await Promise.all(
+      fns.map((fn) =>
+        limit(() =>
+          guard(errors, 'lambda', `ListFunctionUrlConfigs(${fn.name ?? fn.id})`, async () => {
+            for await (const page of paginateListFunctionUrlConfigs(
+              { client: lambda },
+              { FunctionName: fn.name ?? fn.id },
+            )) {
+              const cfg = page.FunctionUrlConfigs?.[0];
+              if (cfg?.FunctionUrl) {
+                fn.functionUrl = { url: cfg.FunctionUrl, authType: cfg.AuthType };
+              }
+            }
+          }),
+        ),
+      ),
+    );
+    out.lambdaFunctions.push(...fns);
   });
 }

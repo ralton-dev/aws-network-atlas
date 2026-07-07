@@ -5,7 +5,9 @@ import {
   paginateDescribeTransitGatewayVpcAttachments,
   paginateDescribeTransitGatewayPeeringAttachments,
   paginateDescribeTransitGatewayRouteTables,
+  paginateDescribeTransitGatewayConnectPeers,
   paginateGetTransitGatewayRouteTableAssociations,
+  paginateGetTransitGatewayRouteTablePropagations,
   paginateSearchTransitGatewayRoutes,
 } from '@aws-sdk/client-ec2';
 import type { RegionSnapshot, TgwAttachmentResourceType } from '@atlas/schema';
@@ -165,6 +167,28 @@ export async function collectTgw(ctx: AwsContext, region: string, out: RegionSna
           }
         });
 
+        // Propagations explain WHY a propagated route is in the table.
+        const propagations: NonNullable<
+          RegionSnapshot['transitGatewayRouteTables'][number]['propagations']
+        > = [];
+        await guard(errors, 'ec2', `GetTransitGatewayRouteTablePropagations(${id})`, async () => {
+          for await (const propPage of paginateGetTransitGatewayRouteTablePropagations(
+            { client: ec2 },
+            { TransitGatewayRouteTableId: id },
+          )) {
+            for (const prop of propPage.TransitGatewayRouteTablePropagations ?? []) {
+              if (prop.TransitGatewayAttachmentId) {
+                propagations.push({
+                  attachmentId: prop.TransitGatewayAttachmentId,
+                  resourceId: prop.ResourceId,
+                  resourceType: prop.ResourceType,
+                  state: prop.State,
+                });
+              }
+            }
+          }
+        });
+
         out.transitGatewayRouteTables.push({
           id,
           name: nameTag(tags),
@@ -174,6 +198,29 @@ export async function collectTgw(ctx: AwsContext, region: string, out: RegionSna
           isDefaultPropagation: rt.DefaultPropagationRouteTable ?? false,
           routes,
           associations,
+          propagations,
+        });
+      }
+    }
+  });
+
+  // GRE/BGP peers on Connect attachments — the attachment alone says nothing
+  // about who is actually peered over it.
+  await guard(errors, 'ec2', 'DescribeTransitGatewayConnectPeers', async () => {
+    for await (const page of paginateDescribeTransitGatewayConnectPeers({ client: ec2 }, {})) {
+      for (const peer of page.TransitGatewayConnectPeers ?? []) {
+        const tags = toTags(peer.Tags);
+        const config = peer.ConnectPeerConfiguration;
+        out.transitGatewayConnectPeers.push({
+          id: peer.TransitGatewayConnectPeerId!,
+          name: nameTag(tags),
+          tags,
+          attachmentId: peer.TransitGatewayAttachmentId,
+          state: peer.State,
+          insideCidrBlocks: [...(config?.InsideCidrBlocks ?? [])].sort(),
+          peerAddress: config?.PeerAddress,
+          transitGatewayAddress: config?.TransitGatewayAddress,
+          bgpAsn: config?.BgpConfigurations?.[0]?.PeerAsn,
         });
       }
     }

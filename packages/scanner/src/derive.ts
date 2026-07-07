@@ -83,6 +83,12 @@ export function deriveRegion(out: RegionSnapshot): void {
     subnet.isPublic = subnet.routeTableId ? tablesWithIgwRoute.has(subnet.routeTableId) : false;
   }
 
+  // DHCP option sets know nothing about their users; VPCs carry the link.
+  const dhcpById = new Map(out.dhcpOptions.map((d) => [d.id, d]));
+  for (const vpc of out.vpcs) {
+    if (vpc.dhcpOptionsId) dhcpById.get(vpc.dhcpOptionsId)?.vpcIds.push(vpc.id);
+  }
+
   // A region is "empty" when it has nothing beyond an untouched default VPC
   // AND nothing went wrong while scanning it. Zero ENIs is the strongest
   // resource signal: any real workload creates ENIs.
@@ -96,22 +102,41 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.lambdaFunctions.length === 0 &&
     out.rdsInstances.length === 0 &&
     out.rdsClusters.length === 0 &&
+    out.rdsProxies.length === 0 &&
     out.ecsServices.length === 0 &&
     out.eksClusters.length === 0 &&
     out.elastiCacheClusters.length === 0 &&
+    out.elastiCacheReplicationGroups.length === 0 &&
+    out.elastiCacheServerlessCaches.length === 0 &&
+    out.efsFileSystems.length === 0 &&
+    out.openSearchDomains.length === 0 &&
+    out.mskClusters.length === 0 &&
+    out.redshiftClusters.length === 0 &&
+    out.mqBrokers.length === 0 &&
     out.peeringConnections.length === 0 &&
     out.transitGateways.length === 0 &&
     out.transitGatewayAttachments.length === 0 &&
     out.vpnConnections.length === 0 &&
+    out.dxConnections.length === 0 &&
+    out.dxVirtualInterfaces.length === 0 &&
     out.vpcEndpoints.length === 0 &&
+    out.vpcEndpointServices.length === 0 &&
     out.kmsKeys.length === 0 &&
     out.acmCertificates.length === 0 &&
     out.secrets.length === 0 &&
+    out.wafWebAcls.length === 0 &&
     out.resolverEndpoints.length === 0 &&
     out.resolverRules.length === 0 &&
+    out.dnsFirewallRuleGroups.length === 0 &&
     out.clientVpnEndpoints.length === 0 &&
     out.networkFirewalls.length === 0 &&
+    out.networkFirewallPolicies.length === 0 &&
+    out.networkFirewallRuleGroups.length === 0 &&
     out.apiGateways.length === 0 &&
+    out.apiGatewayVpcLinks.length === 0 &&
+    out.latticeServiceNetworks.length === 0 &&
+    out.latticeServices.length === 0 &&
+    out.logGroups.length === 0 &&
     out.vpcs.every((v) => v.isDefault);
 
   // ---- deterministic ordering, top-level and nested --------------------------
@@ -169,8 +194,26 @@ export function deriveRegion(out: RegionSnapshot): void {
     ep.networkInterfaceIds.sort();
   }
 
+  sortById(out.vpcEndpointServices);
+  for (const svc of out.vpcEndpointServices) {
+    svc.availabilityZones.sort();
+    svc.networkLoadBalancerArns.sort();
+    svc.gatewayLoadBalancerArns.sort();
+    svc.supportedIpAddressTypes.sort();
+    svc.allowedPrincipals.sort();
+    svc.connections.sort((a, b) =>
+      str(a.vpcEndpointId).localeCompare(str(b.vpcEndpointId)),
+    );
+  }
+
   sortById(out.prefixLists);
   for (const pl of out.prefixLists) pl.cidrs.sort();
+
+  sortById(out.flowLogs);
+  sortById(out.dhcpOptions);
+  for (const d of out.dhcpOptions) d.vpcIds.sort();
+  sortById(out.instanceConnectEndpoints);
+  for (const ice of out.instanceConnectEndpoints) ice.securityGroupIds.sort();
 
   sortById(out.peeringConnections);
   for (const pcx of out.peeringConnections) {
@@ -191,7 +234,10 @@ export function deriveRegion(out: RegionSnapshot): void {
     }
     rt.routes.sort((a, b) => tgwRouteKey(a).localeCompare(tgwRouteKey(b)));
     rt.associations.sort((a, b) => a.attachmentId.localeCompare(b.attachmentId));
+    rt.propagations?.sort((a, b) => a.attachmentId.localeCompare(b.attachmentId));
   }
+
+  sortById(out.transitGatewayConnectPeers);
 
   sortById(out.vpnGateways);
   for (const vgw of out.vpnGateways) vgw.vpcIds.sort();
@@ -201,7 +247,12 @@ export function deriveRegion(out: RegionSnapshot): void {
   sortById(out.vpnConnections);
   for (const vpn of out.vpnConnections) {
     vpn.tunnels.sort((a, b) => str(a.outsideIp).localeCompare(str(b.outsideIp)));
+    vpn.staticRoutes?.sort();
   }
+
+  sortById(out.dxConnections);
+  sortById(out.dxLags);
+  sortById(out.dxVirtualInterfaces);
 
   sortById(out.loadBalancers);
   for (const lb of out.loadBalancers) {
@@ -253,6 +304,12 @@ export function deriveRegion(out: RegionSnapshot): void {
     c.securityGroupIds.sort();
   }
 
+  sortById(out.rdsProxies);
+  for (const p of out.rdsProxies) {
+    p.subnetIds.sort();
+    p.securityGroupIds.sort();
+  }
+
   sortById(out.ecsServices);
   for (const s of out.ecsServices) {
     s.subnetIds.sort();
@@ -269,6 +326,32 @@ export function deriveRegion(out: RegionSnapshot): void {
   for (const c of out.elastiCacheClusters) {
     c.subnetIds.sort();
     c.securityGroupIds.sort();
+  }
+
+  sortById(out.elastiCacheReplicationGroups);
+  sortById(out.elastiCacheServerlessCaches);
+  for (const c of out.elastiCacheServerlessCaches) {
+    c.subnetIds.sort();
+    c.securityGroupIds.sort();
+  }
+
+  sortById(out.efsFileSystems);
+  sortById(out.openSearchDomains);
+  for (const d of out.openSearchDomains) {
+    d.subnetIds.sort();
+    d.securityGroupIds.sort();
+  }
+  sortById(out.mskClusters);
+  for (const c of out.mskClusters) {
+    c.subnetIds.sort();
+    c.securityGroupIds.sort();
+  }
+  sortById(out.redshiftClusters);
+  for (const c of out.redshiftClusters) c.securityGroupIds.sort();
+  sortById(out.mqBrokers);
+  for (const b of out.mqBrokers) {
+    b.subnetIds.sort();
+    b.securityGroupIds.sort();
   }
 
   sortById(out.kmsKeys);
@@ -298,11 +381,41 @@ export function deriveRegion(out: RegionSnapshot): void {
   }
   sortById(out.networkFirewalls);
   for (const f of out.networkFirewalls) f.subnetIds.sort();
+  sortById(out.networkFirewallPolicies);
+  for (const p of out.networkFirewallPolicies) {
+    p.statelessRuleGroupRefs.sort((a, b) => a.arn.localeCompare(b.arn));
+    p.statefulRuleGroupRefs.sort((a, b) => a.arn.localeCompare(b.arn));
+  }
+  sortById(out.networkFirewallRuleGroups);
+  sortById(out.networkFirewallTlsConfigs);
+  sortById(out.wafWebAcls);
+  sortById(out.wafIpSets);
+  sortById(out.wafRuleGroups);
+  sortById(out.dnsFirewallRuleGroups);
+  sortById(out.resolverQueryLogConfigs);
   sortById(out.apiGateways);
   for (const a of out.apiGateways) {
     a.stages.sort();
     a.vpcEndpointIds.sort();
   }
+  sortById(out.apiGatewayVpcLinks);
+  for (const link of out.apiGatewayVpcLinks) {
+    link.targetArns.sort();
+    link.subnetIds.sort();
+    link.securityGroupIds.sort();
+  }
+  sortById(out.apiGatewayDomainNames);
+  for (const d of out.apiGatewayDomainNames) {
+    d.certificateArns.sort();
+    d.mappings.sort((a, b) =>
+      `${str(a.apiId)}|${str(a.stage)}|${str(a.path)}`.localeCompare(
+        `${str(b.apiId)}|${str(b.stage)}|${str(b.path)}`,
+      ),
+    );
+  }
+  sortById(out.latticeServiceNetworks);
+  sortById(out.latticeServices);
+  sortById(out.logGroups);
 
   // The tagging and Cloud Control sweeps run concurrently and can both report
   // the same resource (Cloud Control dedupes against entries present at push

@@ -3,11 +3,14 @@ import {
   paginateDescribeDBInstances,
   paginateDescribeDBClusters,
   paginateDescribeDBSubnetGroups,
+  paginateDescribeDBProxies,
 } from '@aws-sdk/client-rds';
 import {
   ElastiCacheClient,
   paginateDescribeCacheClusters,
   paginateDescribeCacheSubnetGroups,
+  paginateDescribeReplicationGroups,
+  paginateDescribeServerlessCaches,
 } from '@aws-sdk/client-elasticache';
 import type { RegionSnapshot, Tags } from '@atlas/schema';
 import { AwsContext, guard } from '../aws.js';
@@ -141,6 +144,72 @@ export async function collectDataStores(
           securityGroupIds: (c.SecurityGroups ?? [])
             .map((g) => g.SecurityGroupId)
             .filter((g): g is string => !!g),
+        });
+      }
+    }
+  });
+
+  // Replication groups give the Redis topology (primary/reader endpoints)
+  // that node-level cache clusters can't show.
+  await guard(errors, 'elasticache', 'DescribeReplicationGroups', async () => {
+    for await (const page of paginateDescribeReplicationGroups({ client: elasticache }, {})) {
+      for (const rg of page.ReplicationGroups ?? []) {
+        if (!rg.ReplicationGroupId) continue;
+        const nodeGroup = rg.NodeGroups?.[0];
+        const endpoint = rg.ConfigurationEndpoint ?? nodeGroup?.PrimaryEndpoint;
+        out.elastiCacheReplicationGroups.push({
+          id: rg.ReplicationGroupId,
+          arn: rg.ARN,
+          name: rg.ReplicationGroupId,
+          tags: {},
+          description: rg.Description,
+          status: rg.Status,
+          memberClusterIds: [...(rg.MemberClusters ?? [])].sort(),
+          clusterModeEnabled: rg.ClusterEnabled,
+          automaticFailover: rg.AutomaticFailover,
+          primaryEndpoint: endpoint?.Address,
+          readerEndpoint: nodeGroup?.ReaderEndpoint?.Address,
+        });
+      }
+    }
+  });
+
+  await guard(errors, 'elasticache', 'DescribeServerlessCaches', async () => {
+    for await (const page of paginateDescribeServerlessCaches({ client: elasticache }, {})) {
+      for (const c of page.ServerlessCaches ?? []) {
+        if (!c.ServerlessCacheName) continue;
+        out.elastiCacheServerlessCaches.push({
+          id: c.ServerlessCacheName,
+          arn: c.ARN,
+          name: c.ServerlessCacheName,
+          tags: {},
+          engine: c.Engine,
+          status: c.Status,
+          endpoint: c.Endpoint?.Address,
+          subnetIds: c.SubnetIds ?? [],
+          securityGroupIds: c.SecurityGroupIds ?? [],
+        });
+      }
+    }
+  });
+
+  // RDS Proxy sits in subnets with SGs of its own — a real network hop.
+  await guard(errors, 'rds', 'DescribeDBProxies', async () => {
+    for await (const page of paginateDescribeDBProxies({ client: rds }, {})) {
+      for (const p of page.DBProxies ?? []) {
+        if (!p.DBProxyName) continue;
+        out.rdsProxies.push({
+          id: p.DBProxyName,
+          arn: p.DBProxyArn,
+          name: p.DBProxyName,
+          tags: {},
+          engineFamily: p.EngineFamily,
+          status: p.Status,
+          endpoint: p.Endpoint,
+          vpcId: p.VpcId,
+          subnetIds: p.VpcSubnetIds ?? [],
+          securityGroupIds: p.VpcSecurityGroupIds ?? [],
+          requireTls: p.RequireTLS,
         });
       }
     }

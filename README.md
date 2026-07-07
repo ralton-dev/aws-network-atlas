@@ -60,24 +60,39 @@ that are referenced but not scanned appear as dashed "ghost" nodes.
 
 All read-only. Dedicated collectors capture these regardless of tags:
 
-- **Networking** — VPCs, subnets, route tables (with per-subnet resolution + public/private),
-  internet & egress-only gateways, NAT gateways, Elastic IPs, network ACLs,
-  **security groups (full ingress/egress rules, SG-to-SG refs)**, ENIs, VPC endpoints,
-  managed prefix lists.
+- **Networking** — VPCs (incl. DNS attributes + DHCP option sets), subnets, route tables
+  (with per-subnet resolution + public/private), internet & egress-only gateways, NAT
+  gateways, Elastic IPs, network ACLs, **security groups (full ingress/egress rules,
+  SG-to-SG refs)**, ENIs, VPC endpoints (+ endpoint policies), **PrivateLink endpoint
+  services you expose** (+ allowed principals & consumer connections), managed prefix
+  lists (incl. RAM-shared entries), **VPC flow logs**, EC2 Instance Connect endpoints,
+  **VPC Lattice** service networks & services.
 - **Cross-account/-region connectivity** — VPC peering, Transit Gateways (+ attachments,
-  route tables, inter-region TGW peering), VPN (gateways/customer gateways/connections),
-  Direct Connect gateways.
-- **Edge & DNS** — **CloudFront**, **API Gateway** (REST + HTTP), **Route 53 Resolver**
-  endpoints & rules, **Client VPN**, **Network Firewall**, Route 53 hosted zones.
-- **Load balancing & workloads** — ALB/NLB/GWLB + target groups + health, classic ELB,
-  EC2 instances, Auto Scaling groups, Lambda (VPC config), RDS instances/clusters,
-  ElastiCache, ECS services, EKS clusters.
+  route tables with associations/propagations, Connect peers, inter-region TGW peering),
+  VPN (gateways/customer gateways/connections incl. static routes), **Direct Connect**
+  (gateways, physical connections, LAGs, **virtual interfaces with BGP peers**),
+  **Cloud WAN core networks**.
+- **Edge & DNS** — **CloudFront** (+ origin detail & VPC origins), **Global Accelerator**,
+  **API Gateway** (REST + HTTP, + **VPC links** and **custom domains with API mappings**),
+  **Route 53 Resolver** endpoints & rules, **DNS Firewall rule groups** (+ VPC
+  associations), resolver query-log configs, **Client VPN** (+ routes & authorization
+  rules), **Network Firewall** (firewalls with per-AZ endpoints & log destinations,
+  **policies, rule groups with the actual rules**, TLS inspection configs), Route 53
+  hosted zones (+ A/AAAA/CNAME records for stitching DNS to resources).
+- **Load balancing & workloads** — ALB/NLB/GWLB + listeners (**incl. listener rules and
+  certificates**) + target groups + health, classic ELB (+ registered instances),
+  EC2 instances, Auto Scaling groups, Lambda (VPC config + **function URLs**),
+  RDS instances/clusters/**proxies**, ElastiCache (clusters, replication groups,
+  serverless), ECS services, EKS clusters, **EFS** (+ mount targets), **OpenSearch**,
+  **MSK**, **Redshift**, **Amazon MQ**.
 - **Identity & security** — **IAM** roles/users/groups/customer-managed policies/instance
   profiles (with trust policies, attached/inline policies, MFA & access-key signals),
   **KMS** keys (+ aliases/rotation), **ACM** certificates, **Secrets Manager** (metadata
-  only — the secret value is never fetched).
-- **Everything else** — a Resource Groups Tagging API sweep catches every *tagged* resource
-  for search/inventory, and a **Cloud Control API** sweep over common types catches
+  only — the secret value is never fetched), **WAF v2** (web ACLs with rules + resource
+  associations, IP sets, rule groups; REGIONAL + CLOUDFRONT scopes).
+- **Everything else** — **CloudWatch log groups** (+ retention/KMS), a Resource Groups
+  Tagging API sweep catches every *tagged* resource for search/inventory, and a
+  **Cloud Control API** sweep over common types (incl. Kinesis/Firehose) catches
   **untagged** resources the tagging API misses. S3 buckets are listed directly.
 
 ## The viewer

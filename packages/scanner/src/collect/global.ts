@@ -1,6 +1,7 @@
 import {
   Route53Client,
   paginateListHostedZones,
+  ListResourceRecordSetsCommand,
   GetHostedZoneCommand,
 } from '@aws-sdk/client-route-53';
 import {
@@ -10,8 +11,14 @@ import {
 } from '@aws-sdk/client-direct-connect';
 import { S3Client, ListBucketsCommand } from '@aws-sdk/client-s3';
 import pLimit from 'p-limit';
-import type { AccountSnapshot } from '@atlas/schema';
+import type { AccountSnapshot, DnsRecord } from '@atlas/schema';
 import { AwsContext, guard } from '../aws.js';
+
+/** Record types worth stitching to resources; NS/SOA/TXT/MX are noise here. */
+const RECORD_TYPES = new Set(['A', 'AAAA', 'CNAME']);
+
+/** Per-zone cap on collected records — keeps giant zones diff- and size-safe. */
+const MAX_RECORDS_PER_ZONE = 2000;
 
 /**
  * Global (non-regional) resources, collected once per account:
@@ -48,6 +55,50 @@ export async function collectGlobal(ctx: AwsContext, out: AccountSnapshot['globa
                 .filter((v) => v.VPCId)
                 .map((v) => ({ vpcId: v.VPCId!, region: v.VPCRegion ?? '' }));
             }
+
+            // A/AAAA/CNAME records (aliases included) are what stitch DNS
+            // names to ALBs/CloudFront/APIs. Capped per zone; a truncated
+            // zone is flagged rather than silently partial.
+            const records: DnsRecord[] = [];
+            let recordsTruncated = false;
+            await guard(errors, 'route53', `ListResourceRecordSets(${z.name})`, async () => {
+              // No standard paginator: this API pages by (name, type, identifier).
+              let startName: string | undefined;
+              let startType: string | undefined;
+              let startIdentifier: string | undefined;
+              paging: do {
+                const page = await r53.send(
+                  new ListResourceRecordSetsCommand({
+                    HostedZoneId: z.id,
+                    StartRecordName: startName,
+                    StartRecordType: startType as never,
+                    StartRecordIdentifier: startIdentifier,
+                  }),
+                );
+                for (const rr of page.ResourceRecordSets ?? []) {
+                  if (!rr.Name || !rr.Type || !RECORD_TYPES.has(rr.Type)) continue;
+                  if (records.length >= MAX_RECORDS_PER_ZONE) {
+                    recordsTruncated = true;
+                    break paging;
+                  }
+                  records.push({
+                    name: rr.Name,
+                    type: rr.Type,
+                    ttl: rr.TTL,
+                    values: (rr.ResourceRecords ?? [])
+                      .map((v) => v.Value)
+                      .filter((v): v is string => !!v),
+                    aliasTarget: rr.AliasTarget?.DNSName,
+                  });
+                }
+                if (!page.IsTruncated) break;
+                startName = page.NextRecordName;
+                startType = page.NextRecordType;
+                startIdentifier = page.NextRecordIdentifier;
+              } while (startName);
+              records.sort((a, b) => `${a.name}|${a.type}`.localeCompare(`${b.name}|${b.type}`));
+            });
+
             out.hostedZones.push({
               id: z.id,
               name: z.name,
@@ -56,6 +107,8 @@ export async function collectGlobal(ctx: AwsContext, out: AccountSnapshot['globa
               privateZone: z.privateZone,
               recordCount: z.recordCount,
               vpcAssociations,
+              records,
+              recordsTruncated: recordsTruncated || undefined,
             });
           }),
         ),

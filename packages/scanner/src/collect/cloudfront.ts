@@ -3,6 +3,7 @@ import {
   CloudFrontClient,
   paginateListDistributions,
   ListTagsForResourceCommand,
+  ListVpcOriginsCommand,
 } from '@aws-sdk/client-cloudfront';
 import pLimit from 'p-limit';
 import type { AccountSnapshot } from '@atlas/schema';
@@ -37,6 +38,12 @@ export async function collectCloudFront(ctx: AwsContext, out: AccountSnapshot['g
             .filter((n): n is string => !!n),
           priceClass: d.PriceClass,
           webAclId: d.WebACLId || undefined,
+          originDetails: (d.Origins?.Items ?? []).map((o) => ({
+            domainName: o.DomainName,
+            originType: o.VpcOriginConfig ? ('vpc' as const) : o.S3OriginConfig ? ('s3' as const) : ('custom' as const),
+            vpcOriginId: o.VpcOriginConfig?.VpcOriginId,
+            originAccessControlId: o.OriginAccessControlId || undefined,
+          })),
         });
       }
     }
@@ -55,5 +62,27 @@ export async function collectCloudFront(ctx: AwsContext, out: AccountSnapshot['g
     );
 
     out.cloudFrontDistributions.push(...distributions);
+  });
+
+  // VPC origins let a distribution reach a private ALB/NLB/EC2 directly —
+  // a real topology edge from the CDN into the VPC interior.
+  await guard(errors, 'cloudfront', 'ListVpcOrigins', async () => {
+    const cf = ctx.client(CloudFrontClient, ctx.homeRegion);
+    let marker: string | undefined;
+    do {
+      const res = await cf.send(new ListVpcOriginsCommand({ Marker: marker }));
+      for (const vo of res.VpcOriginList?.Items ?? []) {
+        if (!vo.Id) continue;
+        out.cloudFrontVpcOrigins.push({
+          id: vo.Id,
+          arn: vo.Arn,
+          name: vo.Name,
+          tags: {},
+          status: vo.Status,
+          endpointArn: vo.OriginEndpointArn,
+        });
+      }
+      marker = res.VpcOriginList?.IsTruncated ? res.VpcOriginList.NextMarker : undefined;
+    } while (marker);
   });
 }
