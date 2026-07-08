@@ -1379,10 +1379,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">Host, KmsKeyArn, LogGroupArn, Name, Password, Tags, Username</div></td></tr>
-<tr data-svc="Batch" data-c="detailed" data-d="panel-only" data-props="ComputeEnvironmentName ComputeResources Context EksConfiguration ReplaceComputeEnvironment ServiceRole State Tags Type UnmanagedvCpus UpdatePolicy">
+<tr data-svc="Batch" data-c="detailed" data-d="node" data-props="ComputeEnvironmentName ComputeResources Context EksConfiguration ReplaceComputeEnvironment ServiceRole State Tags Type UnmanagedvCpus UpdatePolicy">
 <td class="mono">AWS::Batch::ComputeEnvironment</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>batchComputeEnvironments</code></div><div class="detail">VPC-attached: subnets + SGs, type (EC2/Fargate), vCPUs, ECS cluster</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnets + SGs) — candidate to draw on the drill-down</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down with sg-attach edges</div></td>
 <td class="pc">11<div class="props">ComputeEnvironmentName, ComputeResources, Context, EksConfiguration, ReplaceComputeEnvironment, ServiceRole, State, Tags, Type, UnmanagedvCpus, UpdatePolicy</div></td></tr>
 <tr data-svc="Batch" data-c="inv-tag" data-d="panel-only" data-props="ConsumableResourceName ResourceType Tags TotalQuantity">
 <td class="mono">AWS::Batch::ConsumableResource</td>
@@ -3034,10 +3034,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">9<div class="props">CreateAlias, Description, EnableSso, Name, Password, ShortName, Size, Tags, VpcSettings</div></td></tr>
-<tr data-svc="DocDB" data-c="detailed" data-d="panel-only" data-props="AvailabilityZones BackupRetentionPeriod CopyTagsToSnapshot DBClusterIdentifier DBClusterParameterGroupName DBSubnetGroupName DeletionProtection EnableCloudwatchLogsExports EngineVersion GlobalClusterIdentifier KmsKeyId ManageMasterUserPassword MasterUserPassword MasterUserSecretKmsKeyId MasterUsername NetworkType Port PreferredBackupWindow PreferredMaintenanceWindow RestoreToTime RestoreType RotateMasterUserPassword ServerlessV2ScalingConfiguration SnapshotIdentifier SourceDBClusterIdentifier StorageEncrypted StorageType Tags UseLatestRestorableTime VpcSecurityGroupIds">
+<tr data-svc="DocDB" data-c="detailed" data-d="node" data-props="AvailabilityZones BackupRetentionPeriod CopyTagsToSnapshot DBClusterIdentifier DBClusterParameterGroupName DBSubnetGroupName DeletionProtection EnableCloudwatchLogsExports EngineVersion GlobalClusterIdentifier KmsKeyId ManageMasterUserPassword MasterUserPassword MasterUserSecretKmsKeyId MasterUsername NetworkType Port PreferredBackupWindow PreferredMaintenanceWindow RestoreToTime RestoreType RotateMasterUserPassword ServerlessV2ScalingConfiguration SnapshotIdentifier SourceDBClusterIdentifier StorageEncrypted StorageType Tags UseLatestRestorableTime VpcSecurityGroupIds">
 <td class="mono">AWS::DocDB::DBCluster</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>docDbClusters</code></div><div class="detail">VPC-attached: subnet group→vpc/subnets, SGs, endpoints, encrypted, members</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down with sg-attach edges</div></td>
 <td class="pc">30<div class="props">AvailabilityZones, BackupRetentionPeriod, CopyTagsToSnapshot, DBClusterIdentifier, DBClusterParameterGroupName, DBSubnetGroupName, DeletionProtection, EnableCloudwatchLogsExports, EngineVersion, GlobalClusterIdentifier, KmsKeyId, ManageMasterUserPassword, MasterUserPassword, MasterUserSecretKmsKeyId, MasterUsername, NetworkType, Port, PreferredBackupWindow, PreferredMaintenanceWindow, RestoreToTime, RestoreType, RotateMasterUserPassword, ServerlessV2ScalingConfiguration, SnapshotIdentifier, SourceDBClusterIdentifier, StorageEncrypted, StorageType, Tags, UseLatestRestorableTime, VpcSecurityGroupIds</div></td></tr>
 <tr data-svc="DocDB" data-c="inv-tag" data-d="panel-only" data-props="Description Family Name Parameters Tags">
 <td class="mono">AWS::DocDB::DBClusterParameterGroup</td>
@@ -3794,10 +3794,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">8<div class="props">ClusterName, DisableSessionTags, Namespace, Policy, RoleArn, ServiceAccount, Tags, TargetRoleArn</div></td></tr>
-<tr data-svc="EMR" data-c="detailed" data-d="panel-only" data-props="AdditionalInfo Applications AutoScalingRole AutoTerminationPolicy BootstrapActions Configurations CustomAmiId EbsRootVolumeIops EbsRootVolumeSize EbsRootVolumeThroughput Instances JobFlowRole KerberosAttributes LogEncryptionKmsKeyId LogUri ManagedScalingPolicy Name OSReleaseLabel PlacementGroupConfigs ReleaseLabel ScaleDownBehavior SecurityConfiguration ServiceRole StepConcurrencyLevel Steps Tags VisibleToAllUsers">
+<tr data-svc="EMR" data-c="detailed" data-d="node" data-props="AdditionalInfo Applications AutoScalingRole AutoTerminationPolicy BootstrapActions Configurations CustomAmiId EbsRootVolumeIops EbsRootVolumeSize EbsRootVolumeThroughput Instances JobFlowRole KerberosAttributes LogEncryptionKmsKeyId LogUri ManagedScalingPolicy Name OSReleaseLabel PlacementGroupConfigs ReleaseLabel ScaleDownBehavior SecurityConfiguration ServiceRole StepConcurrencyLevel Steps Tags VisibleToAllUsers">
 <td class="mono">AWS::EMR::Cluster</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>emrClusters</code></div><div class="detail">VPC-attached: subnets + EMR-managed/service-access SGs, releaseLabel, state, instance collection type</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnets + SGs) — candidate to draw on the drill-down</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down with sg-attach edges</div></td>
 <td class="pc">27<div class="props">AdditionalInfo, Applications, AutoScalingRole, AutoTerminationPolicy, BootstrapActions, Configurations, CustomAmiId, EbsRootVolumeIops, EbsRootVolumeSize, EbsRootVolumeThroughput, Instances, JobFlowRole, KerberosAttributes, LogEncryptionKmsKeyId, LogUri, ManagedScalingPolicy, Name, OSReleaseLabel, PlacementGroupConfigs, ReleaseLabel, ScaleDownBehavior, SecurityConfiguration, ServiceRole, StepConcurrencyLevel, Steps, Tags, VisibleToAllUsers</div></td></tr>
 <tr data-svc="EMR" data-c="none" data-d="none" data-props="ClusterId InstanceFleetType InstanceTypeConfigs LaunchSpecifications Name ResizeSpecifications TargetOnDemandCapacity TargetSpotCapacity">
 <td class="mono">AWS::EMR::InstanceFleetConfig</td>
@@ -3909,10 +3909,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">Engine, Tags, UserGroupId, UserIds</div></td></tr>
-<tr data-svc="ElasticBeanstalk" data-c="detailed" data-d="panel-only" data-props="ApplicationName Description ResourceLifecycleConfig">
+<tr data-svc="ElasticBeanstalk" data-c="detailed" data-d="node" data-props="ApplicationName Description ResourceLifecycleConfig">
 <td class="mono">AWS::ElasticBeanstalk::Application</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>beanstalkEnvironments</code></div><div class="detail">captured as beanstalkEnvironments.applicationName</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC config parsed from Beanstalk OptionSettings (vpc/subnets/SGs) — candidate to draw</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down with sg-attach edges</div></td>
 <td class="pc">3<div class="props">ApplicationName, Description, ResourceLifecycleConfig</div></td></tr>
 <tr data-svc="ElasticBeanstalk" data-c="none" data-d="none" data-props="ApplicationName Description SourceBundle">
 <td class="mono">AWS::ElasticBeanstalk::ApplicationVersion</td>
@@ -3924,10 +3924,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">7<div class="props">ApplicationName, Description, EnvironmentId, OptionSettings, PlatformArn, SolutionStackName, SourceConfiguration</div></td></tr>
-<tr data-svc="ElasticBeanstalk" data-c="detailed" data-d="panel-only" data-props="ApplicationName CNAMEPrefix Description EnvironmentName OperationsRole OptionSettings PlatformArn SolutionStackName Tags TemplateName Tier VersionLabel">
+<tr data-svc="ElasticBeanstalk" data-c="detailed" data-d="node" data-props="ApplicationName CNAMEPrefix Description EnvironmentName OperationsRole OptionSettings PlatformArn SolutionStackName Tags TemplateName Tier VersionLabel">
 <td class="mono">AWS::ElasticBeanstalk::Environment</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>beanstalkEnvironments</code></div><div class="detail">app, status, health, tier, solution stack; VPC config (vpc/subnets/SGs/scheme) parsed from OptionSettings</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC config parsed from Beanstalk OptionSettings (vpc/subnets/SGs) — candidate to draw</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down with sg-attach edges</div></td>
 <td class="pc">12<div class="props">ApplicationName, CNAMEPrefix, Description, EnvironmentName, OperationsRole, OptionSettings, PlatformArn, SolutionStackName, Tags, TemplateName, Tier, VersionLabel</div></td></tr>
 <tr data-svc="ElasticLoadBalancing" data-c="detailed" data-d="node" data-props="AccessLoggingPolicy AppCookieStickinessPolicy AvailabilityZones ConnectionDrainingPolicy ConnectionSettings CrossZone HealthCheck Instances LBCookieStickinessPolicy Listeners LoadBalancerName Policies Scheme SecurityGroups Subnets Tags">
 <td class="mono">AWS::ElasticLoadBalancing::LoadBalancer</td>
@@ -5964,10 +5964,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">3<div class="props">ACLName, Tags, UserNames</div></td></tr>
-<tr data-svc="MemoryDB" data-c="detailed" data-d="panel-only" data-props="ACLName AutoMinorVersionUpgrade ClusterEndpoint ClusterName DataTiering Description Engine EngineVersion FinalSnapshotName IpDiscovery KmsKeyId MaintenanceWindow MultiRegionClusterName NetworkType NodeType NumReplicasPerShard NumShards ParameterGroupName Port SecurityGroupIds SnapshotArns SnapshotName SnapshotRetentionLimit SnapshotWindow SnsTopicArn SnsTopicStatus SubnetGroupName TLSEnabled Tags">
+<tr data-svc="MemoryDB" data-c="detailed" data-d="node" data-props="ACLName AutoMinorVersionUpgrade ClusterEndpoint ClusterName DataTiering Description Engine EngineVersion FinalSnapshotName IpDiscovery KmsKeyId MaintenanceWindow MultiRegionClusterName NetworkType NodeType NumReplicasPerShard NumShards ParameterGroupName Port SecurityGroupIds SnapshotArns SnapshotName SnapshotRetentionLimit SnapshotWindow SnsTopicArn SnsTopicStatus SubnetGroupName TLSEnabled Tags">
 <td class="mono">AWS::MemoryDB::Cluster</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>memoryDbClusters</code></div><div class="detail">VPC-attached: subnet group→vpc/subnets, SGs, nodeType, shards, TLS, KMS, endpoint</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down with sg-attach edges</div></td>
 <td class="pc">29<div class="props">ACLName, AutoMinorVersionUpgrade, ClusterEndpoint, ClusterName, DataTiering, Description, Engine, EngineVersion, FinalSnapshotName, IpDiscovery, KmsKeyId, MaintenanceWindow, MultiRegionClusterName, NetworkType, NodeType, NumReplicasPerShard, NumShards, ParameterGroupName, Port, SecurityGroupIds, SnapshotArns, SnapshotName, SnapshotRetentionLimit, SnapshotWindow, SnsTopicArn, SnsTopicStatus, SubnetGroupName, TLSEnabled, Tags</div></td></tr>
 <tr data-svc="MemoryDB" data-c="inv-tag" data-d="panel-only" data-props="Description Engine EngineVersion MultiRegionClusterNameSuffix MultiRegionParameterGroupName NodeType NumShards TLSEnabled Tags UpdateStrategy">
 <td class="mono">AWS::MemoryDB::MultiRegionCluster</td>
@@ -5979,20 +5979,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">Description, Family, ParameterGroupName, Parameters, Tags</div></td></tr>
-<tr data-svc="MemoryDB" data-c="detailed" data-d="panel-only" data-props="Description SubnetGroupName SubnetIds Tags">
+<tr data-svc="MemoryDB" data-c="detailed" data-d="node" data-props="Description SubnetGroupName SubnetIds Tags">
 <td class="mono">AWS::MemoryDB::SubnetGroup</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>memoryDbClusters</code></div><div class="detail">captured as memoryDbClusters vpcId/subnetIds</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down with sg-attach edges</div></td>
 <td class="pc">4<div class="props">Description, SubnetGroupName, SubnetIds, Tags</div></td></tr>
 <tr data-svc="MemoryDB" data-c="inv-tag" data-d="panel-only" data-props="AccessString AuthenticationMode Tags UserName">
 <td class="mono">AWS::MemoryDB::User</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">AccessString, AuthenticationMode, Tags, UserName</div></td></tr>
-<tr data-svc="Neptune" data-c="detailed" data-d="panel-only" data-props="AssociatedRoles AvailabilityZones BackupRetentionPeriod CopyTagsToSnapshot DBClusterIdentifier DBClusterParameterGroupName DBInstanceParameterGroupName DBPort DBSubnetGroupName DeletionProtection EnableCloudwatchLogsExports EngineVersion GlobalClusterIdentifier IamAuthEnabled KmsKeyId NetworkType PreferredBackupWindow PreferredMaintenanceWindow RestoreToTime RestoreType ServerlessScalingConfiguration SnapshotIdentifier SourceDBClusterIdentifier StorageEncrypted Tags UseLatestRestorableTime VpcSecurityGroupIds">
+<tr data-svc="Neptune" data-c="detailed" data-d="node" data-props="AssociatedRoles AvailabilityZones BackupRetentionPeriod CopyTagsToSnapshot DBClusterIdentifier DBClusterParameterGroupName DBInstanceParameterGroupName DBPort DBSubnetGroupName DeletionProtection EnableCloudwatchLogsExports EngineVersion GlobalClusterIdentifier IamAuthEnabled KmsKeyId NetworkType PreferredBackupWindow PreferredMaintenanceWindow RestoreToTime RestoreType ServerlessScalingConfiguration SnapshotIdentifier SourceDBClusterIdentifier StorageEncrypted Tags UseLatestRestorableTime VpcSecurityGroupIds">
 <td class="mono">AWS::Neptune::DBCluster</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>neptuneClusters</code></div><div class="detail">VPC-attached: subnet group→vpc/subnets, SGs, endpoints, encrypted, members</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down with sg-attach edges</div></td>
 <td class="pc">27<div class="props">AssociatedRoles, AvailabilityZones, BackupRetentionPeriod, CopyTagsToSnapshot, DBClusterIdentifier, DBClusterParameterGroupName, DBInstanceParameterGroupName, DBPort, DBSubnetGroupName, DeletionProtection, EnableCloudwatchLogsExports, EngineVersion, GlobalClusterIdentifier, IamAuthEnabled, KmsKeyId, NetworkType, PreferredBackupWindow, PreferredMaintenanceWindow, RestoreToTime, RestoreType, ServerlessScalingConfiguration, SnapshotIdentifier, SourceDBClusterIdentifier, StorageEncrypted, Tags, UseLatestRestorableTime, VpcSecurityGroupIds</div></td></tr>
 <tr data-svc="Neptune" data-c="inv-tag" data-d="panel-only" data-props="Description Family Name Parameters Tags">
 <td class="mono">AWS::Neptune::DBClusterParameterGroup</td>
@@ -8339,10 +8339,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">As2Id, CertificateIds, ProfileType, Tags</div></td></tr>
-<tr data-svc="Transfer" data-c="detailed" data-d="panel-only" data-props="Certificate Domain EndpointDetails EndpointType IdentityProviderDetails IdentityProviderType IpAddressType LoggingRole PostAuthenticationLoginBanner PreAuthenticationLoginBanner ProtocolDetails Protocols S3StorageOptions SecurityPolicyName StructuredLogDestinations Tags WorkflowDetails">
+<tr data-svc="Transfer" data-c="detailed" data-d="node" data-props="Certificate Domain EndpointDetails EndpointType IdentityProviderDetails IdentityProviderType IpAddressType LoggingRole PostAuthenticationLoginBanner PreAuthenticationLoginBanner ProtocolDetails Protocols S3StorageOptions SecurityPolicyName StructuredLogDestinations Tags WorkflowDetails">
 <td class="mono">AWS::Transfer::Server</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>transferServers</code></div><div class="detail">protocols (SFTP/FTPS), endpointType, identity provider; VPC-attached (vpc/subnets/SGs) when EndpointType=VPC</div></td>
-<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED when EndpointType=VPC (subnets + SGs) — candidate to draw</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down with sg-attach edges</div></td>
 <td class="pc">17<div class="props">Certificate, Domain, EndpointDetails, EndpointType, IdentityProviderDetails, IdentityProviderType, IpAddressType, LoggingRole, PostAuthenticationLoginBanner, PreAuthenticationLoginBanner, ProtocolDetails, Protocols, S3StorageOptions, SecurityPolicyName, StructuredLogDestinations, Tags, WorkflowDetails</div></td></tr>
 <tr data-svc="Transfer" data-c="inv-tag" data-d="panel-only" data-props="HomeDirectory HomeDirectoryMappings HomeDirectoryType Policy PosixProfile Role ServerId SshPublicKeys Tags UserName">
 <td class="mono">AWS::Transfer::User</td>

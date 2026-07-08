@@ -65,6 +65,13 @@ import Glue from 'aws-icons/icons/architecture-service/AWSGlue.svg?react';
 import Dms from 'aws-icons/icons/architecture-service/AWSDatabaseMigrationService.svg?react';
 import DataSyncAgent from 'aws-icons/icons/resource/AWSDatasyncAgent.svg?react';
 import Firehose from 'aws-icons/icons/architecture-service/AmazonDataFirehose.svg?react';
+import Emr from 'aws-icons/icons/architecture-service/AmazonEMR.svg?react';
+import Batch from 'aws-icons/icons/architecture-service/AWSBatch.svg?react';
+import Neptune from 'aws-icons/icons/architecture-service/AmazonNeptune.svg?react';
+import DocumentDb from 'aws-icons/icons/architecture-service/AmazonDocumentDB.svg?react';
+import MemoryDb from 'aws-icons/icons/architecture-service/AmazonMemoryDB.svg?react';
+import TransferFamily from 'aws-icons/icons/architecture-service/AWSTransferFamily.svg?react';
+import Beanstalk from 'aws-icons/icons/architecture-service/AWSElasticBeanstalk.svg?react';
 // security groups, internet, on-prem DNS targets
 import Shield from 'aws-icons/icons/resource/Shield.svg?react';
 import Internet from 'aws-icons/icons/resource/Internetalt1.svg?react';
@@ -168,6 +175,13 @@ export const ICONS: Record<string, IconComponent> = {
   'dms-instance': Dms,
   'datasync-agent': DataSyncAgent,
   firehose: Firehose,
+  'emr-cluster': Emr,
+  'batch-compute-environment': Batch,
+  'neptune-cluster': Neptune,
+  'docdb-cluster': DocumentDb,
+  'memorydb-cluster': MemoryDb,
+  'transfer-server': TransferFamily,
+  'beanstalk-environment': Beanstalk,
   // security groups, internet, DNS targets
   sg: Shield,
   internet: Internet,

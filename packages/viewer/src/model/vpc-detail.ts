@@ -294,6 +294,64 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
       fh.name ?? fh.id, 'Firehose → OpenSearch', fh.id,
     ));
   }
+  for (const emr of region.emrClusters) {
+    const parent = subnetNode(emr.subnetIds.find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${emr.id}`, leaf(
+      `res:${emr.id}`, parent, 'emr-cluster',
+      emr.name ?? emr.id, emr.releaseLabel ?? 'EMR', emr.id,
+    ));
+  }
+  for (const ce of region.batchComputeEnvironments) {
+    const parent = subnetNode(ce.subnetIds.find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${ce.id}`, leaf(
+      `res:${ce.id}`, parent, 'batch-compute-environment',
+      ce.name ?? ce.id, ce.computeType ?? 'Batch', ce.id,
+    ));
+  }
+  for (const np of region.neptuneClusters) {
+    const parent = subnetNode(np.subnetIds.find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${np.id}`, leaf(
+      `res:${np.id}`, parent, 'neptune-cluster',
+      np.name ?? np.id, 'Neptune', np.id,
+    ));
+  }
+  for (const dd of region.docDbClusters) {
+    const parent = subnetNode(dd.subnetIds.find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${dd.id}`, leaf(
+      `res:${dd.id}`, parent, 'docdb-cluster',
+      dd.name ?? dd.id, 'DocumentDB', dd.id,
+    ));
+  }
+  for (const mdb of region.memoryDbClusters) {
+    const parent = subnetNode(mdb.subnetIds.find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${mdb.id}`, leaf(
+      `res:${mdb.id}`, parent, 'memorydb-cluster',
+      mdb.name ?? mdb.id, mdb.nodeType ?? 'MemoryDB', mdb.id,
+    ));
+  }
+  for (const ts of region.transferServers) {
+    if (ts.subnetIds.length === 0) continue; // only VPC-endpoint servers are drawn
+    const parent = subnetNode(ts.subnetIds.find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${ts.id}`, leaf(
+      `res:${ts.id}`, parent, 'transfer-server',
+      ts.name ?? ts.id, ts.protocols.length > 0 ? ts.protocols.join('/') : 'Transfer', ts.id,
+    ));
+  }
+  for (const eb of region.beanstalkEnvironments) {
+    if (eb.subnetIds.length === 0) continue; // only environments with parsed VPC config are drawn
+    const parent = subnetNode(eb.subnetIds.find((s) => subnets.some((x) => x.id === s)));
+    if (!parent) continue;
+    leaves.set(`res:${eb.id}`, leaf(
+      `res:${eb.id}`, parent, 'beanstalk-environment',
+      eb.name ?? eb.id, eb.tier ?? 'Beanstalk', eb.id,
+    ));
+  }
 
   // --- external connectivity nodes + route-derived edges ---------------------
   const ensureExt = (id: string, kind: string, label: string, subtitle?: string, refId?: string): string => {
@@ -566,6 +624,13 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     ...region.dmsReplicationInstances.map((d) => ({ nodeId: `res:${d.id}`, sgIds: d.securityGroupIds })),
     ...region.dataSyncAgents.map((a) => ({ nodeId: `res:${a.id}`, sgIds: a.securityGroupArns.map(arnResourceId) })),
     ...region.firehoseDeliveryStreams.map((f) => ({ nodeId: `res:${f.id}`, sgIds: f.securityGroupIds })),
+    ...region.emrClusters.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.batchComputeEnvironments.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.neptuneClusters.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.docDbClusters.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.memoryDbClusters.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.transferServers.map((t) => ({ nodeId: `res:${t.id}`, sgIds: t.securityGroupIds })),
+    ...region.beanstalkEnvironments.map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
   ];
   for (const { nodeId, sgIds } of sgAttachSources) {
     if (!leaves.has(nodeId)) continue;

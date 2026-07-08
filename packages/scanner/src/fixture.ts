@@ -617,6 +617,136 @@ function prodEuWest1(): RegionSnapshot {
     securityGroupIds: [sg],
   });
 
+  // EMR cluster idling in the private app subnets.
+  r.emrClusters.push({
+    id: 'acme-prod-emr',
+    arn: `arn:aws:elasticmapreduce:${EU}:${ACCT.prod}:cluster/acme-prod-emr`,
+    name: 'acme-prod-emr',
+    tags: {},
+    state: 'WAITING',
+    releaseLabel: 'emr-6.15.0',
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    securityGroupIds: [sg],
+    availabilityZone: `${EU}a`,
+    instanceCollectionType: 'INSTANCE_GROUP',
+  });
+
+  // Batch: a managed Fargate compute environment + the queue feeding it.
+  r.batchComputeEnvironments.push({
+    id: 'acme-prod-batch',
+    arn: `arn:aws:batch:${EU}:${ACCT.prod}:compute-environment/acme-prod-batch`,
+    name: 'acme-prod-batch',
+    tags: {},
+    type: 'MANAGED',
+    state: 'ENABLED',
+    status: 'VALID',
+    computeType: 'FARGATE',
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    securityGroupIds: [sg],
+    maxvCpus: 64,
+  });
+  r.batchJobQueues.push({
+    id: 'acme-prod-batch-q',
+    arn: `arn:aws:batch:${EU}:${ACCT.prod}:job-queue/acme-prod-batch-q`,
+    name: 'acme-prod-batch-q',
+    tags: {},
+    state: 'ENABLED',
+    priority: 1,
+    computeEnvironmentArns: [`arn:aws:batch:${EU}:${ACCT.prod}:compute-environment/acme-prod-batch`],
+  });
+
+  // Neptune graph cluster in the private app subnets.
+  r.neptuneClusters.push({
+    id: 'acme-prod-neptune',
+    arn: `arn:aws:rds:${EU}:${ACCT.prod}:cluster:acme-prod-neptune`,
+    name: 'acme-prod-neptune',
+    tags: {},
+    status: 'available',
+    engineVersion: '1.3',
+    endpoint: `acme-prod-neptune.cluster-xxxx.${EU}.neptune.amazonaws.com`,
+    port: 8182,
+    subnetGroupName: 'prod-db-subnets',
+    vpcId: vpc,
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    securityGroupIds: [sg],
+    storageEncrypted: true,
+    multiAz: true,
+    memberInstanceIds: ['acme-prod-neptune-1'],
+  });
+
+  // DocumentDB cluster alongside it.
+  r.docDbClusters.push({
+    id: 'acme-prod-docdb',
+    arn: `arn:aws:rds:${EU}:${ACCT.prod}:cluster:acme-prod-docdb`,
+    name: 'acme-prod-docdb',
+    tags: {},
+    status: 'available',
+    engineVersion: '5.0.0',
+    endpoint: `acme-prod-docdb.cluster-xxxx.${EU}.docdb.amazonaws.com`,
+    port: 27017,
+    subnetGroupName: 'prod-db-subnets',
+    vpcId: vpc,
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    securityGroupIds: [sg],
+    storageEncrypted: true,
+    multiAz: true,
+    memberInstanceIds: ['acme-prod-docdb-1'],
+  });
+
+  // MemoryDB sharded Redis-compatible cluster.
+  r.memoryDbClusters.push({
+    id: 'acme-prod-memorydb',
+    arn: `arn:aws:memorydb:${EU}:${ACCT.prod}:cluster/acme-prod-memorydb`,
+    name: 'acme-prod-memorydb',
+    tags: {},
+    status: 'available',
+    nodeType: 'db.r6g.large',
+    engineVersion: '7.1',
+    numberOfShards: 2,
+    tlsEnabled: true,
+    endpoint: `clustercfg.acme-prod-memorydb.xxxx.memorydb.${EU}.amazonaws.com`,
+    port: 6379,
+    subnetGroupName: 'prod-db-subnets',
+    vpcId: vpc,
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    securityGroupIds: [sg],
+  });
+
+  // Transfer Family SFTP server with a VPC endpoint type.
+  r.transferServers.push({
+    id: 'acme-prod-sftp',
+    arn: `arn:aws:transfer:${EU}:${ACCT.prod}:server/acme-prod-sftp`,
+    name: 'acme-prod-sftp',
+    tags: {},
+    state: 'ONLINE',
+    endpointType: 'VPC',
+    protocols: ['SFTP'],
+    identityProviderType: 'SERVICE_MANAGED',
+    domain: 'S3',
+    vpcId: vpc,
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    securityGroupIds: [sg],
+    userCount: 3,
+  });
+
+  // Elastic Beanstalk web tier fronting the prod app subnets.
+  r.beanstalkEnvironments.push({
+    id: 'acme-prod-eb',
+    arn: `arn:aws:elasticbeanstalk:${EU}:${ACCT.prod}:environment/acme-web/acme-prod-eb`,
+    name: 'acme-prod-eb',
+    tags: {},
+    applicationName: 'acme-web',
+    status: 'Ready',
+    health: 'Green',
+    tier: 'WebServer',
+    cname: `acme-web.${EU}.elasticbeanstalk.com`,
+    solutionStackName: '64bit Amazon Linux 2023 v6 running Node.js 20',
+    vpcId: vpc,
+    subnetIds: ['subnet-0prodapp0000001', 'subnet-0prodapp0000101'],
+    securityGroupIds: [sg],
+    elbScheme: 'public',
+  });
+
   r.generic.push(
     { arn: `arn:aws:dynamodb:${EU}:${ACCT.prod}:table/prod-sessions`, service: 'dynamodb', resourceType: 'table', name: 'prod-sessions', tags: { env: 'prod' }, source: 'tagging' },
     { arn: `arn:aws:sqs:${EU}:${ACCT.prod}:prod-jobs`, service: 'sqs', resourceType: '', name: 'prod-jobs', tags: { env: 'prod' }, source: 'tagging' },
