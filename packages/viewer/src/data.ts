@@ -141,6 +141,9 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   // Batch
   add('batch-compute-environment', region.batchComputeEnvironments as unknown as Array<Record<string, unknown>>);
   add('batch-job-queue', region.batchJobQueues as unknown as Array<Record<string, unknown>>);
+  // Neptune + DocumentDB
+  add('neptune-cluster', region.neptuneClusters as unknown as Array<Record<string, unknown>>);
+  add('docdb-cluster', region.docDbClusters as unknown as Array<Record<string, unknown>>);
   // Glue
   add('glue-connection', region.glueConnections as unknown as Array<Record<string, unknown>>);
   add('glue-dev-endpoint', region.glueDevEndpoints as unknown as Array<Record<string, unknown>>);

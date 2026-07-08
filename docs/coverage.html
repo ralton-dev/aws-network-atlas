@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-08 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">200</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">932</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">202</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">930</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">490</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -214,8 +214,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Location</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">6</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Neptune</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">0</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Neptune</td><td>7</td><td class="c-detailed">1</td><td class="c-inv">6</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:14%"></span></div><span class="pct">14%</span></td></tr>
 <tr><td class="mono">Notifications</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">6</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">OpsWorks</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">5</td>
@@ -232,8 +232,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:17%"></span></div><span class="pct">17%</span></td></tr>
 <tr><td class="mono">DataBrew</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">6</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">DocDB</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">DocDB</td><td>6</td><td class="c-detailed">1</td><td class="c-inv">4</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:17%"></span></div><span class="pct">17%</span></td></tr>
 <tr><td class="mono">FSx</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">MediaTailor</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">1</td>
@@ -3034,10 +3034,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">9<div class="props">CreateAlias, Description, EnableSso, Name, Password, ShortName, Size, Tags, VpcSettings</div></td></tr>
-<tr data-svc="DocDB" data-c="inv-tag" data-d="panel-only" data-props="AvailabilityZones BackupRetentionPeriod CopyTagsToSnapshot DBClusterIdentifier DBClusterParameterGroupName DBSubnetGroupName DeletionProtection EnableCloudwatchLogsExports EngineVersion GlobalClusterIdentifier KmsKeyId ManageMasterUserPassword MasterUserPassword MasterUserSecretKmsKeyId MasterUsername NetworkType Port PreferredBackupWindow PreferredMaintenanceWindow RestoreToTime RestoreType RotateMasterUserPassword ServerlessV2ScalingConfiguration SnapshotIdentifier SourceDBClusterIdentifier StorageEncrypted StorageType Tags UseLatestRestorableTime VpcSecurityGroupIds">
+<tr data-svc="DocDB" data-c="detailed" data-d="panel-only" data-props="AvailabilityZones BackupRetentionPeriod CopyTagsToSnapshot DBClusterIdentifier DBClusterParameterGroupName DBSubnetGroupName DeletionProtection EnableCloudwatchLogsExports EngineVersion GlobalClusterIdentifier KmsKeyId ManageMasterUserPassword MasterUserPassword MasterUserSecretKmsKeyId MasterUsername NetworkType Port PreferredBackupWindow PreferredMaintenanceWindow RestoreToTime RestoreType RotateMasterUserPassword ServerlessV2ScalingConfiguration SnapshotIdentifier SourceDBClusterIdentifier StorageEncrypted StorageType Tags UseLatestRestorableTime VpcSecurityGroupIds">
 <td class="mono">AWS::DocDB::DBCluster</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>docDbClusters</code></div><div class="detail">VPC-attached: subnet group→vpc/subnets, SGs, endpoints, encrypted, members</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down</div></td>
 <td class="pc">30<div class="props">AvailabilityZones, BackupRetentionPeriod, CopyTagsToSnapshot, DBClusterIdentifier, DBClusterParameterGroupName, DBSubnetGroupName, DeletionProtection, EnableCloudwatchLogsExports, EngineVersion, GlobalClusterIdentifier, KmsKeyId, ManageMasterUserPassword, MasterUserPassword, MasterUserSecretKmsKeyId, MasterUsername, NetworkType, Port, PreferredBackupWindow, PreferredMaintenanceWindow, RestoreToTime, RestoreType, RotateMasterUserPassword, ServerlessV2ScalingConfiguration, SnapshotIdentifier, SourceDBClusterIdentifier, StorageEncrypted, StorageType, Tags, UseLatestRestorableTime, VpcSecurityGroupIds</div></td></tr>
 <tr data-svc="DocDB" data-c="inv-tag" data-d="panel-only" data-props="Description Family Name Parameters Tags">
 <td class="mono">AWS::DocDB::DBClusterParameterGroup</td>
@@ -5989,10 +5989,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">AccessString, AuthenticationMode, Tags, UserName</div></td></tr>
-<tr data-svc="Neptune" data-c="inv-tag" data-d="panel-only" data-props="AssociatedRoles AvailabilityZones BackupRetentionPeriod CopyTagsToSnapshot DBClusterIdentifier DBClusterParameterGroupName DBInstanceParameterGroupName DBPort DBSubnetGroupName DeletionProtection EnableCloudwatchLogsExports EngineVersion GlobalClusterIdentifier IamAuthEnabled KmsKeyId NetworkType PreferredBackupWindow PreferredMaintenanceWindow RestoreToTime RestoreType ServerlessScalingConfiguration SnapshotIdentifier SourceDBClusterIdentifier StorageEncrypted Tags UseLatestRestorableTime VpcSecurityGroupIds">
+<tr data-svc="Neptune" data-c="detailed" data-d="panel-only" data-props="AssociatedRoles AvailabilityZones BackupRetentionPeriod CopyTagsToSnapshot DBClusterIdentifier DBClusterParameterGroupName DBInstanceParameterGroupName DBPort DBSubnetGroupName DeletionProtection EnableCloudwatchLogsExports EngineVersion GlobalClusterIdentifier IamAuthEnabled KmsKeyId NetworkType PreferredBackupWindow PreferredMaintenanceWindow RestoreToTime RestoreType ServerlessScalingConfiguration SnapshotIdentifier SourceDBClusterIdentifier StorageEncrypted Tags UseLatestRestorableTime VpcSecurityGroupIds">
 <td class="mono">AWS::Neptune::DBCluster</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>neptuneClusters</code></div><div class="detail">VPC-attached: subnet group→vpc/subnets, SGs, endpoints, encrypted, members</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down</div></td>
 <td class="pc">27<div class="props">AssociatedRoles, AvailabilityZones, BackupRetentionPeriod, CopyTagsToSnapshot, DBClusterIdentifier, DBClusterParameterGroupName, DBInstanceParameterGroupName, DBPort, DBSubnetGroupName, DeletionProtection, EnableCloudwatchLogsExports, EngineVersion, GlobalClusterIdentifier, IamAuthEnabled, KmsKeyId, NetworkType, PreferredBackupWindow, PreferredMaintenanceWindow, RestoreToTime, RestoreType, ServerlessScalingConfiguration, SnapshotIdentifier, SourceDBClusterIdentifier, StorageEncrypted, Tags, UseLatestRestorableTime, VpcSecurityGroupIds</div></td></tr>
 <tr data-svc="Neptune" data-c="inv-tag" data-d="panel-only" data-props="Description Family Name Parameters Tags">
 <td class="mono">AWS::Neptune::DBClusterParameterGroup</td>

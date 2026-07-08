@@ -756,6 +756,50 @@ export interface BatchJobQueue extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Neptune + DocumentDB (regional): RDS-style clusters
+// ---------------------------------------------------------------------------
+
+/** Neptune cluster — VPC-ATTACHED via its subnet group (vpc/subnets) + VPC SGs. */
+export interface NeptuneCluster extends BaseResource {
+  status?: string;
+  engineVersion?: string;
+  endpoint?: string;
+  readerEndpoint?: string;
+  port?: number;
+  subnetGroupName?: string;
+  /** From the DescribeDBSubnetGroups join. */
+  vpcId?: string;
+  subnetIds: string[];
+  /** VpcSecurityGroups[].VpcSecurityGroupId. */
+  securityGroupIds: string[];
+  storageEncrypted?: boolean;
+  kmsKeyId?: string;
+  multiAz?: boolean;
+  /** DBClusterMembers[].DBInstanceIdentifier. */
+  memberInstanceIds: string[];
+}
+
+/** DocumentDB cluster — VPC-ATTACHED via its subnet group (vpc/subnets) + VPC SGs. */
+export interface DocDbCluster extends BaseResource {
+  status?: string;
+  engineVersion?: string;
+  endpoint?: string;
+  readerEndpoint?: string;
+  port?: number;
+  subnetGroupName?: string;
+  /** From the DescribeDBSubnetGroups join. */
+  vpcId?: string;
+  subnetIds: string[];
+  /** VpcSecurityGroups[].VpcSecurityGroupId. */
+  securityGroupIds: string[];
+  storageEncrypted?: boolean;
+  kmsKeyId?: string;
+  multiAz?: boolean;
+  /** DBClusterMembers[].DBInstanceIdentifier. */
+  memberInstanceIds: string[];
+}
+
+// ---------------------------------------------------------------------------
 // Glue (regional): connections, dev endpoints, jobs, crawlers, catalog databases
 // ---------------------------------------------------------------------------
 
@@ -1794,6 +1838,10 @@ export interface RegionSnapshot {
   batchComputeEnvironments: BatchComputeEnvironment[];
   batchJobQueues: BatchJobQueue[];
 
+  // Neptune + DocumentDB (regional)
+  neptuneClusters: NeptuneCluster[];
+  docDbClusters: DocDbCluster[];
+
   // Glue (regional)
   glueConnections: GlueConnection[];
   glueDevEndpoints: GlueDevEndpoint[];
@@ -1971,6 +2019,8 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     emrClusters: [],
     batchComputeEnvironments: [],
     batchJobQueues: [],
+    neptuneClusters: [],
+    docDbClusters: [],
     glueConnections: [],
     glueDevEndpoints: [],
     glueJobs: [],
