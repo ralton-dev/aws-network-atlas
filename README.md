@@ -18,7 +18,7 @@ viewer itself are all reviewable in a diff and committable to git.
 
 - Node.js ≥ 20
 - AWS CLI v2 installed and configured (`~/.aws/config` profiles; SSO profiles supported)
-- Read-only credentials (e.g. the `ReadOnlyAccess` managed policy, or `SecurityAudit`)
+- Read-only credentials — either the bundled least-privilege [`iam-policy.json`](iam-policy.json) (exactly the actions the scanner calls; see [Least-privilege IAM policy](#least-privilege-iam-policy)) or a broad AWS-managed policy such as `ReadOnlyAccess` or `SecurityAudit`.
 
 ## Try it without an AWS account
 
@@ -223,6 +223,47 @@ The scanner only ever calls `Describe*`, `List*`, `Get*`, and `Search*` APIs
 snapshot (`errors[]`) and the scan continues, so a partial-access role still produces a
 useful diagram. The `ReadOnlyAccess` (or `SecurityAudit` + read) managed policy covers
 everything here.
+
+## Least-privilege IAM policy
+
+If you'd rather not hand the scanner the broad AWS-managed `ReadOnlyAccess`
+policy, [`iam-policy.json`](iam-policy.json) grants **exactly** the read actions
+this tool calls — nothing more. It's derived directly from the scanner's AWS SDK
+command set (every collector under `packages/scanner/src/collect/`, plus preflight
+and region discovery), grouped by service into per-service read-verb wildcards
+(`Describe*` / `Get*` / `List*`, plus `ec2:Search*` and `inspector2:BatchGet*`), so
+it stays strictly read-only and doesn't need editing every time a collector adds
+another `Describe` call.
+
+- **Coverage** — 62 IAM service prefixes. The scanner's 63 `@aws-sdk/client-*`
+  packages collapse to 59 prefixes (DocumentDB and Neptune both authorize their
+  control-plane `Describe*` calls via `rds:`; API Gateway v1/v2 share `apigateway:`;
+  ELB v1/v2 share `elasticloadbalancing:`), plus `cloudformation`, `athena`, and
+  `kinesis`. Those last three aren't called directly: the Cloud Control sweep
+  (`cloudcontrol:ListResources`) proxies them, and Cloud Control needs the
+  underlying service's own read permission to enumerate its resources.
+- **No data-plane reads** — deliberately excludes `s3:GetObject`, `dynamodb:GetItem`,
+  `kinesis:GetRecords`, and `secretsmanager:GetSecretValue`. S3 is scoped to
+  bucket-configuration reads (`s3:GetBucket*`, `s3:GetEncryptionConfiguration`,
+  `s3:ListAllMyBuckets`) and Secrets Manager to `secretsmanager:ListSecrets`.
+- **Size** — a single document, ~4.4 KB pretty-printed (~2.9 KB minified), well
+  under IAM's 6,144-character managed-policy limit, so it doesn't need splitting.
+
+**Trade-off:** `ReadOnlyAccess` is one click and never goes stale, but it grants
+thousands of actions across every AWS service. `iam-policy.json` is tighter and
+auditable, at the cost of a manual update if the scanner ever starts calling a
+brand-new service. Both are strictly read-only.
+
+Attach it as a customer-managed policy and grant it to the role or user the
+scanner runs as:
+
+```bash
+aws iam create-policy --policy-name AwsNetworkAtlasScan \
+  --policy-document file://iam-policy.json
+# then attach the returned policy ARN to your scanning principal, e.g.:
+aws iam attach-role-policy --role-name <your-scanning-role> \
+  --policy-arn arn:aws:iam::<account-id>:policy/AwsNetworkAtlasScan
+```
 
 ## Architecture
 

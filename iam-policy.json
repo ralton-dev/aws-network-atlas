@@ -1,0 +1,189 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PreflightAndIdentity",
+      "Effect": "Allow",
+      "Action": [
+        "sts:GetCallerIdentity",
+        "iam:GetAccountAuthorizationDetails",
+        "iam:GetLoginProfile",
+        "iam:ListAccountAliases",
+        "iam:ListAccessKeys",
+        "iam:ListMFADevices"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ResourceInventorySweep",
+      "Effect": "Allow",
+      "Action": [
+        "tag:GetResources",
+        "cloudcontrol:ListResources",
+        "cloudformation:Describe*",
+        "cloudformation:List*",
+        "cloudformation:Get*",
+        "athena:GetWorkGroup",
+        "athena:ListWorkGroups",
+        "athena:ListTagsForResource",
+        "kinesis:Describe*",
+        "kinesis:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Ec2AndVpcNetworking",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:Describe*",
+        "ec2:Get*",
+        "ec2:Search*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "HybridAndAdvancedNetworking",
+      "Effect": "Allow",
+      "Action": [
+        "directconnect:Describe*",
+        "networkmanager:Get*",
+        "networkmanager:List*",
+        "network-firewall:Describe*",
+        "network-firewall:List*",
+        "route53resolver:List*",
+        "vpc-lattice:List*",
+        "globalaccelerator:List*",
+        "elasticloadbalancing:Describe*",
+        "autoscaling:Describe*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DnsCdnEdgeAndWaf",
+      "Effect": "Allow",
+      "Action": [
+        "route53:Get*",
+        "route53:List*",
+        "cloudfront:List*",
+        "wafv2:Get*",
+        "wafv2:List*",
+        "acm:Describe*",
+        "acm:List*",
+        "apigateway:GET"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ComputeAndContainers",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:List*",
+        "ecs:Describe*",
+        "ecs:List*",
+        "eks:Describe*",
+        "eks:List*",
+        "ecr:Describe*",
+        "ecr:Get*",
+        "batch:Describe*",
+        "elasticbeanstalk:Describe*",
+        "elasticmapreduce:Describe*",
+        "elasticmapreduce:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DataStoresAndStorage",
+      "Effect": "Allow",
+      "Action": [
+        "rds:Describe*",
+        "dynamodb:Describe*",
+        "dynamodb:List*",
+        "elasticache:Describe*",
+        "memorydb:Describe*",
+        "redshift:Describe*",
+        "es:Describe*",
+        "es:List*",
+        "kafka:List*",
+        "elasticfilesystem:Describe*",
+        "glue:Get*",
+        "logs:Describe*",
+        "s3:GetBucket*",
+        "s3:GetEncryptionConfiguration",
+        "s3:ListAllMyBuckets"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "MessagingAndIntegration",
+      "Effect": "Allow",
+      "Action": [
+        "sns:Get*",
+        "sns:List*",
+        "sqs:Get*",
+        "sqs:List*",
+        "events:Describe*",
+        "events:List*",
+        "pipes:Describe*",
+        "pipes:List*",
+        "scheduler:Get*",
+        "scheduler:List*",
+        "firehose:Describe*",
+        "firehose:List*",
+        "states:Describe*",
+        "states:List*",
+        "mq:Describe*",
+        "mq:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecurityAndGovernance",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Describe*",
+        "kms:Get*",
+        "kms:List*",
+        "secretsmanager:ListSecrets",
+        "guardduty:Get*",
+        "guardduty:List*",
+        "securityhub:Describe*",
+        "securityhub:Get*",
+        "access-analyzer:List*",
+        "inspector2:BatchGet*",
+        "macie2:Get*",
+        "config:Describe*",
+        "cloudtrail:Describe*",
+        "cloudtrail:Get*",
+        "cloudtrail:List*",
+        "backup:Get*",
+        "backup:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "MigrationAndTransfer",
+      "Effect": "Allow",
+      "Action": [
+        "dms:Describe*",
+        "datasync:Describe*",
+        "datasync:List*",
+        "transfer:Describe*",
+        "transfer:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IdentityDirectory",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:Describe*",
+        "cognito-idp:Get*",
+        "cognito-idp:List*",
+        "cognito-identity:Describe*",
+        "cognito-identity:Get*",
+        "cognito-identity:List*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
