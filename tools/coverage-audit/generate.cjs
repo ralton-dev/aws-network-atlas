@@ -185,6 +185,8 @@ const DETAILED = {
   'AWS::Scheduler::ScheduleGroup': { field: 'eventBridgeSchedules', attrs: 'captured as eventBridgeSchedules.groupName' },
   'AWS::StepFunctions::StateMachine': { field: 'sfnStateMachines', attrs: 'type (STANDARD/EXPRESS), roleArn, logging, tracing, KMS, integration ARNs parsed from ASL definition' },
   'AWS::EMR::Cluster': { field: 'emrClusters', attrs: 'VPC-attached: subnets + EMR-managed/service-access SGs, releaseLabel, state, instance collection type' },
+  'AWS::Batch::ComputeEnvironment': { field: 'batchComputeEnvironments', attrs: 'VPC-attached: subnets + SGs, type (EC2/Fargate), vCPUs, ECS cluster' },
+  'AWS::Batch::JobQueue': { field: 'batchJobQueues', attrs: 'state, priority, compute environment ARNs' },
   'AWS::Glue::Connection': { field: 'glueConnections', attrs: 'connectionType, VPC-attached: subnetId + securityGroupIds + AZ' },
   'AWS::Glue::DevEndpoint': { field: 'glueDevEndpoints', attrs: 'VPC-attached: vpcId/subnetId/securityGroupIds, status' },
   'AWS::Glue::Job': { field: 'glueJobs', attrs: 'glueVersion, workerType, connection refs' },

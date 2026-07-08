@@ -138,6 +138,9 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('sfn-state-machine', region.sfnStateMachines as unknown as Array<Record<string, unknown>>);
   // EMR
   add('emr-cluster', region.emrClusters as unknown as Array<Record<string, unknown>>);
+  // Batch
+  add('batch-compute-environment', region.batchComputeEnvironments as unknown as Array<Record<string, unknown>>);
+  add('batch-job-queue', region.batchJobQueues as unknown as Array<Record<string, unknown>>);
   // Glue
   add('glue-connection', region.glueConnections as unknown as Array<Record<string, unknown>>);
   add('glue-dev-endpoint', region.glueDevEndpoints as unknown as Array<Record<string, unknown>>);

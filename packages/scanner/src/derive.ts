@@ -161,6 +161,8 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.eventBridgeSchedules.length === 0 &&
     out.sfnStateMachines.length === 0 &&
     out.emrClusters.length === 0 &&
+    out.batchComputeEnvironments.length === 0 &&
+    out.batchJobQueues.length === 0 &&
     out.glueConnections.length === 0 &&
     out.glueDevEndpoints.length === 0 &&
     out.glueJobs.length === 0 &&
@@ -516,6 +518,13 @@ export function deriveRegion(out: RegionSnapshot): void {
     c.subnetIds.sort();
     c.securityGroupIds.sort();
   }
+  sortById(out.batchComputeEnvironments);
+  for (const ce of out.batchComputeEnvironments) {
+    ce.subnetIds.sort();
+    ce.securityGroupIds.sort();
+  }
+  sortById(out.batchJobQueues);
+  for (const q of out.batchJobQueues) q.computeEnvironmentArns.sort();
   sortById(out.glueConnections);
   for (const c of out.glueConnections) c.securityGroupIds.sort();
   sortById(out.glueDevEndpoints);

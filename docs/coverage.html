@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-08 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">198</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">934</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">200</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">932</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">490</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -198,8 +198,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">AppMesh</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Batch</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">0</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Batch</td><td>7</td><td class="c-detailed">2</td><td class="c-inv">5</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:29%"></span></div><span class="pct">29%</span></td></tr>
 <tr><td class="mono">DirectConnect</td><td>7</td><td class="c-detailed">7</td><td class="c-inv">0</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">ElasticLoadBalancingV2</td><td>7</td><td class="c-detailed">5</td><td class="c-inv">1</td><td class="c-none">1</td>
@@ -1379,10 +1379,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">Host, KmsKeyArn, LogGroupArn, Name, Password, Tags, Username</div></td></tr>
-<tr data-svc="Batch" data-c="inv-tag" data-d="panel-only" data-props="ComputeEnvironmentName ComputeResources Context EksConfiguration ReplaceComputeEnvironment ServiceRole State Tags Type UnmanagedvCpus UpdatePolicy">
+<tr data-svc="Batch" data-c="detailed" data-d="panel-only" data-props="ComputeEnvironmentName ComputeResources Context EksConfiguration ReplaceComputeEnvironment ServiceRole State Tags Type UnmanagedvCpus UpdatePolicy">
 <td class="mono">AWS::Batch::ComputeEnvironment</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>batchComputeEnvironments</code></div><div class="detail">VPC-attached: subnets + SGs, type (EC2/Fargate), vCPUs, ECS cluster</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnets + SGs) — candidate to draw on the drill-down</div></td>
 <td class="pc">11<div class="props">ComputeEnvironmentName, ComputeResources, Context, EksConfiguration, ReplaceComputeEnvironment, ServiceRole, State, Tags, Type, UnmanagedvCpus, UpdatePolicy</div></td></tr>
 <tr data-svc="Batch" data-c="inv-tag" data-d="panel-only" data-props="ConsumableResourceName ResourceType Tags TotalQuantity">
 <td class="mono">AWS::Batch::ConsumableResource</td>
@@ -1394,10 +1394,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">15<div class="props">ConsumableResourceProperties, ContainerProperties, EcsProperties, EksProperties, JobDefinitionName, NodeProperties, Parameters, PlatformCapabilities, PropagateTags, ResourceRetentionPolicy, RetryStrategy, SchedulingPriority, Tags, Timeout, Type</div></td></tr>
-<tr data-svc="Batch" data-c="inv-tag" data-d="panel-only" data-props="ComputeEnvironmentOrder JobQueueName JobQueueType JobStateTimeLimitActions Priority SchedulingPolicyArn ServiceEnvironmentOrder State Tags">
+<tr data-svc="Batch" data-c="detailed" data-d="panel-only" data-props="ComputeEnvironmentOrder JobQueueName JobQueueType JobStateTimeLimitActions Priority SchedulingPolicyArn ServiceEnvironmentOrder State Tags">
 <td class="mono">AWS::Batch::JobQueue</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>batchJobQueues</code></div><div class="detail">state, priority, compute environment ARNs</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">job queues → compute environment ARNs</div></td>
 <td class="pc">9<div class="props">ComputeEnvironmentOrder, JobQueueName, JobQueueType, JobStateTimeLimitActions, Priority, SchedulingPolicyArn, ServiceEnvironmentOrder, State, Tags</div></td></tr>
 <tr data-svc="Batch" data-c="inv-tag" data-d="panel-only" data-props="CapacityLimits JobQueue PreemptionConfiguration QuotaShareName ResourceSharingConfiguration State Tags">
 <td class="mono">AWS::Batch::QuotaShare</td>

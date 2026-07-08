@@ -726,6 +726,36 @@ export interface EmrCluster extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Batch (regional): compute environments, job queues
+// ---------------------------------------------------------------------------
+
+/** Batch compute environment — VPC-ATTACHED via computeResources (subnets + SGs). */
+export interface BatchComputeEnvironment extends BaseResource {
+  /** MANAGED | UNMANAGED. */
+  type?: string;
+  /** ENABLED | DISABLED. */
+  state?: string;
+  status?: string;
+  /** computeResources.type: EC2 | SPOT | FARGATE | FARGATE_SPOT. */
+  computeType?: string;
+  /** computeResources.subnets. */
+  subnetIds: string[];
+  /** computeResources.securityGroupIds. */
+  securityGroupIds: string[];
+  minvCpus?: number;
+  maxvCpus?: number;
+  ecsClusterArn?: string;
+}
+
+export interface BatchJobQueue extends BaseResource {
+  /** ENABLED | DISABLED. */
+  state?: string;
+  priority?: number;
+  /** computeEnvironmentOrder[].computeEnvironment. */
+  computeEnvironmentArns: string[];
+}
+
+// ---------------------------------------------------------------------------
 // Glue (regional): connections, dev endpoints, jobs, crawlers, catalog databases
 // ---------------------------------------------------------------------------
 
@@ -1760,6 +1790,10 @@ export interface RegionSnapshot {
   // EMR (regional)
   emrClusters: EmrCluster[];
 
+  // Batch (regional)
+  batchComputeEnvironments: BatchComputeEnvironment[];
+  batchJobQueues: BatchJobQueue[];
+
   // Glue (regional)
   glueConnections: GlueConnection[];
   glueDevEndpoints: GlueDevEndpoint[];
@@ -1935,6 +1969,8 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     eventBridgeSchedules: [],
     sfnStateMachines: [],
     emrClusters: [],
+    batchComputeEnvironments: [],
+    batchJobQueues: [],
     glueConnections: [],
     glueDevEndpoints: [],
     glueJobs: [],
