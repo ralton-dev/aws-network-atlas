@@ -83,6 +83,7 @@
 "docDbClusters":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down"},
 "memoryDbClusters":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down"},
 "transferServers":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC-ATTACHED when EndpointType=VPC (subnets + SGs) — candidate to draw"},
+"beanstalkEnvironments":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC config parsed from Beanstalk OptionSettings (vpc/subnets/SGs) — candidate to draw"},
 "glueConnections":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn in the drill-down (placed in its subnet) with sg-attach edges"},
 "glueDevEndpoints":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn in the drill-down (placed in its subnet) with sg-attach edges"},
 "glueJobs":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"ETL jobs; connection refs to VPC-attached Glue connections"},

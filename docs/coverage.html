@@ -59,9 +59,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-08 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">205</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">927</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">490</div><div class="l">Not collected at all</div></div>
+<div class="kpi det"><div class="n">207</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">926</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">489</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -302,8 +302,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">DevOpsAgent</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">ElasticBeanstalk</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">3</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">ElasticBeanstalk</td><td>4</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">2</td>
+<td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
 <tr><td class="mono">EventSchemas</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">GlobalAccelerator</td><td>4</td><td class="c-detailed">3</td><td class="c-inv">1</td><td class="c-none">0</td>
@@ -3909,10 +3909,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">Engine, Tags, UserGroupId, UserIds</div></td></tr>
-<tr data-svc="ElasticBeanstalk" data-c="none" data-d="none" data-props="ApplicationName Description ResourceLifecycleConfig">
+<tr data-svc="ElasticBeanstalk" data-c="detailed" data-d="panel-only" data-props="ApplicationName Description ResourceLifecycleConfig">
 <td class="mono">AWS::ElasticBeanstalk::Application</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>beanstalkEnvironments</code></div><div class="detail">captured as beanstalkEnvironments.applicationName</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC config parsed from Beanstalk OptionSettings (vpc/subnets/SGs) — candidate to draw</div></td>
 <td class="pc">3<div class="props">ApplicationName, Description, ResourceLifecycleConfig</div></td></tr>
 <tr data-svc="ElasticBeanstalk" data-c="none" data-d="none" data-props="ApplicationName Description SourceBundle">
 <td class="mono">AWS::ElasticBeanstalk::ApplicationVersion</td>
@@ -3924,10 +3924,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">7<div class="props">ApplicationName, Description, EnvironmentId, OptionSettings, PlatformArn, SolutionStackName, SourceConfiguration</div></td></tr>
-<tr data-svc="ElasticBeanstalk" data-c="inv-tag" data-d="panel-only" data-props="ApplicationName CNAMEPrefix Description EnvironmentName OperationsRole OptionSettings PlatformArn SolutionStackName Tags TemplateName Tier VersionLabel">
+<tr data-svc="ElasticBeanstalk" data-c="detailed" data-d="panel-only" data-props="ApplicationName CNAMEPrefix Description EnvironmentName OperationsRole OptionSettings PlatformArn SolutionStackName Tags TemplateName Tier VersionLabel">
 <td class="mono">AWS::ElasticBeanstalk::Environment</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>beanstalkEnvironments</code></div><div class="detail">app, status, health, tier, solution stack; VPC config (vpc/subnets/SGs/scheme) parsed from OptionSettings</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC config parsed from Beanstalk OptionSettings (vpc/subnets/SGs) — candidate to draw</div></td>
 <td class="pc">12<div class="props">ApplicationName, CNAMEPrefix, Description, EnvironmentName, OperationsRole, OptionSettings, PlatformArn, SolutionStackName, Tags, TemplateName, Tier, VersionLabel</div></td></tr>
 <tr data-svc="ElasticLoadBalancing" data-c="detailed" data-d="node" data-props="AccessLoggingPolicy AppCookieStickinessPolicy AvailabilityZones ConnectionDrainingPolicy ConnectionSettings CrossZone HealthCheck Instances LBCookieStickinessPolicy Listeners LoadBalancerName Policies Scheme SecurityGroups Subnets Tags">
 <td class="mono">AWS::ElasticLoadBalancing::LoadBalancer</td>

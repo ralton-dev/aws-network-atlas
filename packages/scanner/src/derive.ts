@@ -167,6 +167,7 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.docDbClusters.length === 0 &&
     out.memoryDbClusters.length === 0 &&
     out.transferServers.length === 0 &&
+    out.beanstalkEnvironments.length === 0 &&
     out.glueConnections.length === 0 &&
     out.glueDevEndpoints.length === 0 &&
     out.glueJobs.length === 0 &&
@@ -551,6 +552,11 @@ export function deriveRegion(out: RegionSnapshot): void {
     s.protocols.sort();
     s.subnetIds.sort();
     s.securityGroupIds.sort();
+  }
+  sortById(out.beanstalkEnvironments);
+  for (const e of out.beanstalkEnvironments) {
+    e.subnetIds.sort();
+    e.securityGroupIds.sort();
   }
   sortById(out.glueConnections);
   for (const c of out.glueConnections) c.securityGroupIds.sort();

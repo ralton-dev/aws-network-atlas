@@ -851,6 +851,29 @@ export interface TransferServer extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Elastic Beanstalk (regional): environments
+// ---------------------------------------------------------------------------
+
+/** Elastic Beanstalk environment — VPC config parsed from OptionSettings (aws:ec2:vpc etc.). */
+export interface BeanstalkEnvironment extends BaseResource {
+  applicationName?: string;
+  status?: string;
+  health?: string;
+  /** WebServer | Worker. */
+  tier?: string;
+  cname?: string;
+  solutionStackName?: string;
+  /** OptionSettings aws:ec2:vpc VPCId. */
+  vpcId?: string;
+  /** OptionSettings aws:ec2:vpc Subnets + ELBSubnets (comma-separated), deduped. */
+  subnetIds: string[];
+  /** OptionSettings aws:autoscaling:launchconfiguration + aws:elbv2/elb:loadbalancer SecurityGroups, deduped. */
+  securityGroupIds: string[];
+  /** OptionSettings aws:ec2:vpc ELBScheme (public/internal). */
+  elbScheme?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Glue (regional): connections, dev endpoints, jobs, crawlers, catalog databases
 // ---------------------------------------------------------------------------
 
@@ -1899,6 +1922,9 @@ export interface RegionSnapshot {
   // Transfer Family (regional)
   transferServers: TransferServer[];
 
+  // Elastic Beanstalk (regional)
+  beanstalkEnvironments: BeanstalkEnvironment[];
+
   // Glue (regional)
   glueConnections: GlueConnection[];
   glueDevEndpoints: GlueDevEndpoint[];
@@ -2080,6 +2106,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     docDbClusters: [],
     memoryDbClusters: [],
     transferServers: [],
+    beanstalkEnvironments: [],
     glueConnections: [],
     glueDevEndpoints: [],
     glueJobs: [],

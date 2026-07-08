@@ -192,6 +192,8 @@ const DETAILED = {
   'AWS::MemoryDB::Cluster': { field: 'memoryDbClusters', attrs: 'VPC-attached: subnet group→vpc/subnets, SGs, nodeType, shards, TLS, KMS, endpoint' },
   'AWS::MemoryDB::SubnetGroup': { field: 'memoryDbClusters', attrs: 'captured as memoryDbClusters vpcId/subnetIds' },
   'AWS::Transfer::Server': { field: 'transferServers', attrs: 'protocols (SFTP/FTPS), endpointType, identity provider; VPC-attached (vpc/subnets/SGs) when EndpointType=VPC' },
+  'AWS::ElasticBeanstalk::Environment': { field: 'beanstalkEnvironments', attrs: 'app, status, health, tier, solution stack; VPC config (vpc/subnets/SGs/scheme) parsed from OptionSettings' },
+  'AWS::ElasticBeanstalk::Application': { field: 'beanstalkEnvironments', attrs: 'captured as beanstalkEnvironments.applicationName' },
   'AWS::Glue::Connection': { field: 'glueConnections', attrs: 'connectionType, VPC-attached: subnetId + securityGroupIds + AZ' },
   'AWS::Glue::DevEndpoint': { field: 'glueDevEndpoints', attrs: 'VPC-attached: vpcId/subnetId/securityGroupIds, status' },
   'AWS::Glue::Job': { field: 'glueJobs', attrs: 'glueVersion, workerType, connection refs' },
