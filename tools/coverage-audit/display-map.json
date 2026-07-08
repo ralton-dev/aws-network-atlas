@@ -81,6 +81,7 @@
 "batchJobQueues":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"job queues → compute environment ARNs"},
 "neptuneClusters":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down"},
 "docDbClusters":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down"},
+"memoryDbClusters":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC-ATTACHED (subnet group + SGs) — candidate to draw on the drill-down"},
 "glueConnections":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn in the drill-down (placed in its subnet) with sg-attach edges"},
 "glueDevEndpoints":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn in the drill-down (placed in its subnet) with sg-attach edges"},
 "glueJobs":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"ETL jobs; connection refs to VPC-attached Glue connections"},

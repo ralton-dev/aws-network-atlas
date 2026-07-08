@@ -800,6 +800,32 @@ export interface DocDbCluster extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// MemoryDB (regional): Redis-compatible clusters
+// ---------------------------------------------------------------------------
+
+/**
+ * MemoryDB cluster — VPC-ONLY (private by design; no PubliclyAccessible
+ * field), attached via its subnet group (vpc/subnets) + VPC SGs.
+ */
+export interface MemoryDbCluster extends BaseResource {
+  status?: string;
+  nodeType?: string;
+  engineVersion?: string;
+  numberOfShards?: number;
+  tlsEnabled?: boolean;
+  kmsKeyId?: string;
+  /** ClusterEndpoint.Address. */
+  endpoint?: string;
+  port?: number;
+  subnetGroupName?: string;
+  /** From the DescribeSubnetGroups join. */
+  vpcId?: string;
+  subnetIds: string[];
+  /** SecurityGroups[].SecurityGroupId. */
+  securityGroupIds: string[];
+}
+
+// ---------------------------------------------------------------------------
 // Glue (regional): connections, dev endpoints, jobs, crawlers, catalog databases
 // ---------------------------------------------------------------------------
 
@@ -1842,6 +1868,9 @@ export interface RegionSnapshot {
   neptuneClusters: NeptuneCluster[];
   docDbClusters: DocDbCluster[];
 
+  // MemoryDB (regional)
+  memoryDbClusters: MemoryDbCluster[];
+
   // Glue (regional)
   glueConnections: GlueConnection[];
   glueDevEndpoints: GlueDevEndpoint[];
@@ -2021,6 +2050,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     batchJobQueues: [],
     neptuneClusters: [],
     docDbClusters: [],
+    memoryDbClusters: [],
     glueConnections: [],
     glueDevEndpoints: [],
     glueJobs: [],

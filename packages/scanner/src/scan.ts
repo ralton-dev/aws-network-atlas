@@ -37,6 +37,7 @@ import { collectStepFunctions } from './collect/stepfunctions.js';
 import { collectEmr } from './collect/emr.js';
 import { collectBatch } from './collect/batch.js';
 import { collectNeptune, collectDocDb } from './collect/graph-doc-db.js';
+import { collectMemoryDb } from './collect/memorydb.js';
 import { collectGlue } from './collect/glue.js';
 import { collectDms } from './collect/dms.js';
 import { collectDataSync } from './collect/datasync.js';
@@ -121,6 +122,7 @@ export async function scanAccount(
           collectBatch(ctx, region, out),
           collectNeptune(ctx, region, out),
           collectDocDb(ctx, region, out),
+          collectMemoryDb(ctx, region, out),
           collectGlue(ctx, region, out),
           collectDms(ctx, region, out),
           collectDataSync(ctx, region, out),

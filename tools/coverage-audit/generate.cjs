@@ -189,6 +189,8 @@ const DETAILED = {
   'AWS::Batch::JobQueue': { field: 'batchJobQueues', attrs: 'state, priority, compute environment ARNs' },
   'AWS::Neptune::DBCluster': { field: 'neptuneClusters', attrs: 'VPC-attached: subnet group→vpc/subnets, SGs, endpoints, encrypted, members' },
   'AWS::DocDB::DBCluster': { field: 'docDbClusters', attrs: 'VPC-attached: subnet group→vpc/subnets, SGs, endpoints, encrypted, members' },
+  'AWS::MemoryDB::Cluster': { field: 'memoryDbClusters', attrs: 'VPC-attached: subnet group→vpc/subnets, SGs, nodeType, shards, TLS, KMS, endpoint' },
+  'AWS::MemoryDB::SubnetGroup': { field: 'memoryDbClusters', attrs: 'captured as memoryDbClusters vpcId/subnetIds' },
   'AWS::Glue::Connection': { field: 'glueConnections', attrs: 'connectionType, VPC-attached: subnetId + securityGroupIds + AZ' },
   'AWS::Glue::DevEndpoint': { field: 'glueDevEndpoints', attrs: 'VPC-attached: vpcId/subnetId/securityGroupIds, status' },
   'AWS::Glue::Job': { field: 'glueJobs', attrs: 'glueVersion, workerType, connection refs' },
