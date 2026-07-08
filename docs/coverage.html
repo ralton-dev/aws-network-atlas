@@ -56,11 +56,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <div class="wrap">
 <h1>AWS Full-Estate Coverage Audit</h1>
 <p class="lede">Every AWS resource type that can be created &mdash; the CloudFormation resource registry, the authoritative &ldquo;what exists&rdquo; spine &mdash; measured against what this tool <b>collects</b> and what it <b>draws on the diagram</b>. Measured against the <i>whole</i> registry, not a self-selected subset, so nothing hides.</p>
-<p class="meta">Generated 2026-07-07 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
+<p class="meta">Generated 2026-07-08 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">197</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">935</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">198</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">934</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">490</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -186,8 +186,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">EKS</td><td>8</td><td class="c-detailed">1</td><td class="c-inv">7</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:13%"></span></div><span class="pct">13%</span></td></tr>
-<tr><td class="mono">EMR</td><td>8</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">5</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">EMR</td><td>8</td><td class="c-detailed">1</td><td class="c-inv">2</td><td class="c-none">5</td>
+<td><div class="bar"><span style="width:13%"></span></div><span class="pct">13%</span></td></tr>
 <tr><td class="mono">MSK</td><td>8</td><td class="c-detailed">1</td><td class="c-inv">3</td><td class="c-none">4</td>
 <td><div class="bar"><span style="width:13%"></span></div><span class="pct">13%</span></td></tr>
 <tr><td class="mono">Omics</td><td>8</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">0</td>
@@ -3794,10 +3794,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">8<div class="props">ClusterName, DisableSessionTags, Namespace, Policy, RoleArn, ServiceAccount, Tags, TargetRoleArn</div></td></tr>
-<tr data-svc="EMR" data-c="inv-tag" data-d="panel-only" data-props="AdditionalInfo Applications AutoScalingRole AutoTerminationPolicy BootstrapActions Configurations CustomAmiId EbsRootVolumeIops EbsRootVolumeSize EbsRootVolumeThroughput Instances JobFlowRole KerberosAttributes LogEncryptionKmsKeyId LogUri ManagedScalingPolicy Name OSReleaseLabel PlacementGroupConfigs ReleaseLabel ScaleDownBehavior SecurityConfiguration ServiceRole StepConcurrencyLevel Steps Tags VisibleToAllUsers">
+<tr data-svc="EMR" data-c="detailed" data-d="panel-only" data-props="AdditionalInfo Applications AutoScalingRole AutoTerminationPolicy BootstrapActions Configurations CustomAmiId EbsRootVolumeIops EbsRootVolumeSize EbsRootVolumeThroughput Instances JobFlowRole KerberosAttributes LogEncryptionKmsKeyId LogUri ManagedScalingPolicy Name OSReleaseLabel PlacementGroupConfigs ReleaseLabel ScaleDownBehavior SecurityConfiguration ServiceRole StepConcurrencyLevel Steps Tags VisibleToAllUsers">
 <td class="mono">AWS::EMR::Cluster</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>emrClusters</code></div><div class="detail">VPC-attached: subnets + EMR-managed/service-access SGs, releaseLabel, state, instance collection type</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED (subnets + SGs) — candidate to draw on the drill-down</div></td>
 <td class="pc">27<div class="props">AdditionalInfo, Applications, AutoScalingRole, AutoTerminationPolicy, BootstrapActions, Configurations, CustomAmiId, EbsRootVolumeIops, EbsRootVolumeSize, EbsRootVolumeThroughput, Instances, JobFlowRole, KerberosAttributes, LogEncryptionKmsKeyId, LogUri, ManagedScalingPolicy, Name, OSReleaseLabel, PlacementGroupConfigs, ReleaseLabel, ScaleDownBehavior, SecurityConfiguration, ServiceRole, StepConcurrencyLevel, Steps, Tags, VisibleToAllUsers</div></td></tr>
 <tr data-svc="EMR" data-c="none" data-d="none" data-props="ClusterId InstanceFleetType InstanceTypeConfigs LaunchSpecifications Name ResizeSpecifications TargetOnDemandCapacity TargetSpotCapacity">
 <td class="mono">AWS::EMR::InstanceFleetConfig</td>

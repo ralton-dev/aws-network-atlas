@@ -160,6 +160,7 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.eventBridgePipes.length === 0 &&
     out.eventBridgeSchedules.length === 0 &&
     out.sfnStateMachines.length === 0 &&
+    out.emrClusters.length === 0 &&
     out.glueConnections.length === 0 &&
     out.glueDevEndpoints.length === 0 &&
     out.glueJobs.length === 0 &&
@@ -510,6 +511,11 @@ export function deriveRegion(out: RegionSnapshot): void {
   sortById(out.eventBridgeSchedules);
   sortById(out.sfnStateMachines);
   for (const sm of out.sfnStateMachines) sm.integrationResourceArns.sort();
+  sortById(out.emrClusters);
+  for (const c of out.emrClusters) {
+    c.subnetIds.sort();
+    c.securityGroupIds.sort();
+  }
   sortById(out.glueConnections);
   for (const c of out.glueConnections) c.securityGroupIds.sort();
   sortById(out.glueDevEndpoints);

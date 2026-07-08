@@ -707,6 +707,25 @@ export interface SfnStateMachine extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// EMR (regional): clusters
+// ---------------------------------------------------------------------------
+
+/** EMR cluster — VPC-ATTACHED via Ec2InstanceAttributes (subnets + SGs). */
+export interface EmrCluster extends BaseResource {
+  state?: string;
+  releaseLabel?: string;
+  /** Ec2SubnetId + RequestedEc2SubnetIds[]. */
+  subnetIds: string[];
+  /** EMR-managed master/slave + service-access + additional master/slave SGs. */
+  securityGroupIds: string[];
+  availabilityZone?: string;
+  /** INSTANCE_GROUP | INSTANCE_FLEET. */
+  instanceCollectionType?: string;
+  masterPublicDnsName?: string;
+  logUri?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Glue (regional): connections, dev endpoints, jobs, crawlers, catalog databases
 // ---------------------------------------------------------------------------
 
@@ -1738,6 +1757,9 @@ export interface RegionSnapshot {
   // orchestration (regional)
   sfnStateMachines: SfnStateMachine[];
 
+  // EMR (regional)
+  emrClusters: EmrCluster[];
+
   // Glue (regional)
   glueConnections: GlueConnection[];
   glueDevEndpoints: GlueDevEndpoint[];
@@ -1912,6 +1934,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     eventBridgePipes: [],
     eventBridgeSchedules: [],
     sfnStateMachines: [],
+    emrClusters: [],
     glueConnections: [],
     glueDevEndpoints: [],
     glueJobs: [],

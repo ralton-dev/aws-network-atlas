@@ -76,6 +76,7 @@
 "eventBridgePipes":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"source→enrichment→target ARNs; self-managed-Kafka VPC config could later be drawn"},
 "eventBridgeSchedules":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"schedule → target ARN (cross-account); not yet drawn"},
 "sfnStateMachines":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"role, logging/tracing/KMS, and downstream integration ARNs parsed from the state-machine definition; integrations could later be edges"},
+"emrClusters":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"VPC-ATTACHED (subnets + SGs) — candidate to draw on the drill-down"},
 "glueConnections":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn in the drill-down (placed in its subnet) with sg-attach edges"},
 "glueDevEndpoints":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn in the drill-down (placed in its subnet) with sg-attach edges"},
 "glueJobs":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"ETL jobs; connection refs to VPC-attached Glue connections"},

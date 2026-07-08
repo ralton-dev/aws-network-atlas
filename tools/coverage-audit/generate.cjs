@@ -184,6 +184,7 @@ const DETAILED = {
   'AWS::Scheduler::Schedule': { field: 'eventBridgeSchedules', attrs: 'schedule expression, target ARN (cross-account), KMS' },
   'AWS::Scheduler::ScheduleGroup': { field: 'eventBridgeSchedules', attrs: 'captured as eventBridgeSchedules.groupName' },
   'AWS::StepFunctions::StateMachine': { field: 'sfnStateMachines', attrs: 'type (STANDARD/EXPRESS), roleArn, logging, tracing, KMS, integration ARNs parsed from ASL definition' },
+  'AWS::EMR::Cluster': { field: 'emrClusters', attrs: 'VPC-attached: subnets + EMR-managed/service-access SGs, releaseLabel, state, instance collection type' },
   'AWS::Glue::Connection': { field: 'glueConnections', attrs: 'connectionType, VPC-attached: subnetId + securityGroupIds + AZ' },
   'AWS::Glue::DevEndpoint': { field: 'glueDevEndpoints', attrs: 'VPC-attached: vpcId/subnetId/securityGroupIds, status' },
   'AWS::Glue::Job': { field: 'glueJobs', attrs: 'glueVersion, workerType, connection refs' },

@@ -34,6 +34,7 @@ import { collectDynamoDb } from './collect/dynamodb.js';
 import { collectSns, collectSqs } from './collect/messaging.js';
 import { collectEventBridge, collectPipes, collectScheduler } from './collect/eventbridge.js';
 import { collectStepFunctions } from './collect/stepfunctions.js';
+import { collectEmr } from './collect/emr.js';
 import { collectGlue } from './collect/glue.js';
 import { collectDms } from './collect/dms.js';
 import { collectDataSync } from './collect/datasync.js';
@@ -114,6 +115,7 @@ export async function scanAccount(
           collectPipes(ctx, region, out),
           collectScheduler(ctx, region, out),
           collectStepFunctions(ctx, region, out),
+          collectEmr(ctx, region, out),
           collectGlue(ctx, region, out),
           collectDms(ctx, region, out),
           collectDataSync(ctx, region, out),
