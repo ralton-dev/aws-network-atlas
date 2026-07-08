@@ -38,6 +38,10 @@ const overview = {
   wafRegional: await page.locator('.resource-node', { hasText: 'prod-alb-waf' }).count(),
   dxConnection: await page.locator('.resource-node', { hasText: 'hq-dx-1g' }).count(),
   dxVifEdge: await page.locator('.edge-label', { hasText: 'transit VIF' }).count(),
+  // partial-permission scan surfaced as warning badges on containers
+  scanWarningBadges: await page.locator('.badge-warning').count(),
+  accountIncompleteBadge: await page.locator('.badge-warning', { hasText: 'scan incomplete' }).count(),
+  regionErrorBadge: await page.locator('.badge-warning', { hasText: 'scan error' }).count(),
 };
 console.log('overview:', JSON.stringify(overview));
 if (overview.securityLanes === 0) problems.push('overview: no Identity & security lane');
@@ -49,7 +53,21 @@ if (overview.wafCloudFront === 0) problems.push('overview: CloudFront-scope WAF 
 if (overview.wafRegional === 0) problems.push('overview: regional WAF ACL missing');
 if (overview.dxConnection === 0) problems.push('overview: DX connection missing');
 if (overview.dxVifEdge === 0) problems.push('overview: DX VIF edge missing');
+if (overview.accountIncompleteBadge === 0) problems.push('overview: account scan-incomplete warning badge missing');
+if (overview.regionErrorBadge === 0) problems.push('overview: region scan-error warning badge missing');
 await page.screenshot({ path: '/tmp/atlas-everything-overview.png', fullPage: false });
+
+// Click the region's warning badge → details panel lists the denied API calls.
+await page.locator('.badge-warning', { hasText: 'scan error' }).first().click();
+await page.waitForTimeout(400);
+const scanErrors = {
+  panelErrors: await page.locator('.details-panel .scan-errors li').count(),
+  guardduty: await page.locator('.details-panel .scan-errors li code', { hasText: 'guardduty' }).count(),
+};
+console.log('scan-errors:', JSON.stringify(scanErrors));
+if (scanErrors.panelErrors === 0) problems.push('overview: container scan-error details list missing');
+if (scanErrors.guardduty === 0) problems.push('overview: guardduty error not listed in the details panel');
+await page.locator('.details-panel .close-btn').click();
 
 // Drill into the prod VPC (dispatch dblclick directly — edge labels can
 // overlap the node's hitbox in the small fixture graph).
@@ -108,7 +126,7 @@ if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connect
 // The expected numbers come from running the builders directly over the
 // same fixture (npx tsx graph-check.mts, which also asserts every edge
 // endpoint resolves to a node). Update both together on fixture changes.
-const EXPECTED_EDGES = { overview: 29, prodVpc: 60 };
+const EXPECTED_EDGES = { overview: 30, prodVpc: 72 };
 if (overview.edges !== EXPECTED_EDGES.overview)
   problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
 if (detail.edges !== EXPECTED_EDGES.prodVpc)

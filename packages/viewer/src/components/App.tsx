@@ -168,6 +168,11 @@ export function App(): React.ReactElement {
     (node: AtlasNode) => {
       const ref = node.data.refId ? index.byKey.get(node.data.refId) : undefined;
       if (ref) setSelection({ type: 'resource', ref });
+      // Account/region containers carry no resource ref, but a partial scan
+      // attaches its errors — surface them so the user sees which calls failed.
+      else if (node.data.errors && node.data.errors.length > 0) {
+        setSelection({ type: 'container', id: node.id, label: node.data.label, errors: node.data.errors });
+      }
     },
     [index],
   );
@@ -285,7 +290,9 @@ export function App(): React.ReactElement {
               selectedId={
                 selection?.type === 'resource'
                   ? selection.ref.id
-                  : undefined
+                  : selection?.type === 'container'
+                    ? selection.id
+                    : undefined
               }
               selectedEdgeId={selection?.type === 'edge' ? selection.id : undefined}
               hidden={hidden}

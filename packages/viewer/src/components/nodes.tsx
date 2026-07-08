@@ -56,6 +56,13 @@ export function ContainerNode({ data, selected }: NodeProps<AtlasNode>): React.R
         {Icon && <Icon width={22} height={22} />}
         <span className="container-label">{data.label}</span>
         {data.subtitle && <span className="container-subtitle">{data.subtitle}</span>}
+        {data.badges && data.badges.length > 0 && (
+          <div className="container-badges">
+            {data.badges.map((badge) => (
+              <span key={badge} className="badge badge-warning">{badge}</span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

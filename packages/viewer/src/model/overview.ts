@@ -754,6 +754,13 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
   // --- scanned accounts, regions, VPCs, TGWs -------------------------------
   for (const account of index.snapshot.accounts) {
     const acctId = `acct:${account.accountId}`;
+    // Roll up partial-scan failures: this account's own account-global errors
+    // plus every region's errors. Drives the "scan incomplete" warning badge
+    // and the details-panel error list.
+    const accountErrors = [
+      ...account.global.errors,
+      ...account.regions.flatMap((r) => r.errors),
+    ];
     b.accounts.set(acctId, {
       id: acctId,
       type: 'container',
@@ -764,6 +771,10 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
         kind: 'group-account',
         isContainer: true,
         containerStyle: 'account',
+        badges: accountErrors.length > 0
+          ? [`⚠ scan incomplete — ${accountErrors.length} error${accountErrors.length === 1 ? '' : 's'}`]
+          : undefined,
+        errors: accountErrors.length > 0 ? accountErrors : undefined,
       },
     });
 
@@ -780,6 +791,12 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
           kind: 'group-region',
           isContainer: true,
           containerStyle: region.empty ? 'ghost' : 'region',
+          // A region whose scan hit permission (or other) errors is only
+          // partially populated — flag it so the incomplete data is obvious.
+          badges: region.errors.length > 0
+            ? [`⚠ ${region.errors.length} scan error${region.errors.length === 1 ? '' : 's'}`]
+            : undefined,
+          errors: region.errors.length > 0 ? region.errors : undefined,
         },
       });
 

@@ -1,4 +1,5 @@
 import type { Node, Edge } from '@xyflow/react';
+import type { ScanError } from '@atlas/schema';
 
 export type ContainerStyle =
   | 'account'
@@ -23,6 +24,11 @@ export type AtlasNodeData = {
   /** Key into AtlasIndex.byKey for the details panel. */
   refId?: string;
   badges?: string[];
+  /**
+   * Scan errors carried onto account/region containers (partial-permission
+   * scans). Drives the warning badge and the details-panel error list.
+   */
+  errors?: ScanError[];
   /** Overview VPC nodes: double-click opens this VPC's detail view. */
   drillVpcId?: string;
   /** Ghost = referenced by an edge but not scanned. */

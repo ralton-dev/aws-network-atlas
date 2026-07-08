@@ -1,12 +1,14 @@
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { ScanError } from '@atlas/schema';
 import type { AtlasIndex, ResourceRef } from '../data.js';
 import type { AtlasEdgeData } from '../model/graph-types.js';
 import { iconFor } from '../icons.js';
 
 export type Selection =
   | { type: 'resource'; ref: ResourceRef }
-  | { type: 'edge'; id: string; data: AtlasEdgeData };
+  | { type: 'edge'; id: string; data: AtlasEdgeData }
+  | { type: 'container'; id: string; label: string; errors: ScanError[] };
 
 const HIDDEN_KEYS = new Set(['id', 'arn', 'name', 'tags', 'raw']);
 
@@ -58,6 +60,34 @@ export interface DetailsPanelProps {
 }
 
 export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, onSelectRef, onHide }: DetailsPanelProps): React.ReactElement {
+  if (selection.type === 'container') {
+    const { label, errors } = selection;
+    return (
+      <aside className="details-panel">
+        <header>
+          <h2>{label}</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </header>
+        <div className="details-meta">
+          <span className="badge badge-warning">⚠ scan had errors</span>
+        </div>
+        <p className="scan-error-note muted">
+          This scan hit {errors.length} error{errors.length === 1 ? '' : 's'}, so the
+          data shown here may be incomplete. Grant the read permission for each API
+          call below and re-scan to fill the gaps.
+        </p>
+        <h3>Scan errors ({errors.length})</h3>
+        <ul className="scan-errors">
+          {errors.map((e, i) => (
+            <li key={i}>
+              <code>{e.service} · {e.operation}</code>
+              <p>{e.message}</p>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    );
+  }
   if (selection.type === 'edge') {
     const { data } = selection;
     const underlying = data.refId ? index.byKey.get(data.refId) : undefined;

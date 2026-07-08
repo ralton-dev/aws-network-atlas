@@ -799,6 +799,14 @@ function prodUsEast1(): RegionSnapshot {
     { id: ATT.peer, name: 'eu-us-tgw-peering', tags: {}, transitGatewayId: TGW_US, transitGatewayOwnerId: ACCT.shared, resourceOwnerId: ACCT.shared, resourceType: 'tgw-peering', state: 'available', subnetIds: [], peer: { transitGatewayId: TGW_EU, accountId: ACCT.shared, region: EU } },
   );
   r.generic.push({ arn: `arn:aws:s3:::acme-prod-dr-backups`, service: 's3', resourceType: '', name: 'acme-prod-dr-backups', tags: { role: 'dr' } });
+  // Partial-permission scan: the read-only role lacks GuardDuty in this region.
+  // Surfaces as a warning badge on the region (and rolls up to the account).
+  r.errors.push({
+    service: 'guardduty',
+    operation: 'ListDetectors',
+    message:
+      'AccessDeniedException: User: arn:aws:sts::111111111111:assumed-role/atlas-readonly/atlas is not authorized to perform: guardduty:ListDetectors because no identity-based policy allows the action',
+  });
   return r;
 }
 
@@ -812,6 +820,16 @@ function prodAccount(): AccountSnapshot {
     regions: [prodEuWest1(), prodUsEast1()],
     emptyRegions: ['ap-south-1', 'ap-southeast-2', 'sa-east-1', 'us-west-2'],
     global: mkGlobal({
+      // Account-global partial-permission scan: the read-only role can't list
+      // Cloud WAN core networks. Rolls up into the account's warning badge.
+      errors: [
+        {
+          service: 'networkmanager',
+          operation: 'ListCoreNetworks',
+          message:
+            'AccessDeniedException: User: arn:aws:sts::111111111111:assumed-role/atlas-readonly/atlas is not authorized to perform: networkmanager:ListCoreNetworks',
+        },
+      ],
       hostedZones: [
         {
           id: 'Z0PRODPRIV0001', name: 'prod.internal.', tags: {}, zoneName: 'prod.internal.', privateZone: true, recordCount: 128,
