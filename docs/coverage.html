@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-08 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">204</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">928</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">205</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">927</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">490</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -194,8 +194,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">QBusiness</td><td>8</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Transfer</td><td>8</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">0</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Transfer</td><td>8</td><td class="c-detailed">1</td><td class="c-inv">7</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:13%"></span></div><span class="pct">13%</span></td></tr>
 <tr><td class="mono">AppMesh</td><td>7</td><td class="c-detailed">0</td><td class="c-inv">7</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Batch</td><td>7</td><td class="c-detailed">2</td><td class="c-inv">5</td><td class="c-none">0</td>
@@ -8339,10 +8339,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">As2Id, CertificateIds, ProfileType, Tags</div></td></tr>
-<tr data-svc="Transfer" data-c="inv-tag" data-d="panel-only" data-props="Certificate Domain EndpointDetails EndpointType IdentityProviderDetails IdentityProviderType IpAddressType LoggingRole PostAuthenticationLoginBanner PreAuthenticationLoginBanner ProtocolDetails Protocols S3StorageOptions SecurityPolicyName StructuredLogDestinations Tags WorkflowDetails">
+<tr data-svc="Transfer" data-c="detailed" data-d="panel-only" data-props="Certificate Domain EndpointDetails EndpointType IdentityProviderDetails IdentityProviderType IpAddressType LoggingRole PostAuthenticationLoginBanner PreAuthenticationLoginBanner ProtocolDetails Protocols S3StorageOptions SecurityPolicyName StructuredLogDestinations Tags WorkflowDetails">
 <td class="mono">AWS::Transfer::Server</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>transferServers</code></div><div class="detail">protocols (SFTP/FTPS), endpointType, identity provider; VPC-attached (vpc/subnets/SGs) when EndpointType=VPC</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">VPC-ATTACHED when EndpointType=VPC (subnets + SGs) — candidate to draw</div></td>
 <td class="pc">17<div class="props">Certificate, Domain, EndpointDetails, EndpointType, IdentityProviderDetails, IdentityProviderType, IpAddressType, LoggingRole, PostAuthenticationLoginBanner, PreAuthenticationLoginBanner, ProtocolDetails, Protocols, S3StorageOptions, SecurityPolicyName, StructuredLogDestinations, Tags, WorkflowDetails</div></td></tr>
 <tr data-svc="Transfer" data-c="inv-tag" data-d="panel-only" data-props="HomeDirectory HomeDirectoryMappings HomeDirectoryType Policy PosixProfile Role ServerId SshPublicKeys Tags UserName">
 <td class="mono">AWS::Transfer::User</td>

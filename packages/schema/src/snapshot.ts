@@ -826,6 +826,31 @@ export interface MemoryDbCluster extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Transfer Family (regional): SFTP/FTPS/FTP/AS2 servers
+// ---------------------------------------------------------------------------
+
+/** Transfer Family server — VPC-ATTACHED (subnets + SGs) when EndpointType=VPC. */
+export interface TransferServer extends BaseResource {
+  state?: string;
+  /** PUBLIC | VPC | VPC_ENDPOINT. */
+  endpointType?: string;
+  /** SFTP | FTP | FTPS | AS2. */
+  protocols: string[];
+  identityProviderType?: string;
+  /** Backing storage: S3 | EFS. */
+  domain?: string;
+  /** EndpointDetails.VpcId. */
+  vpcId?: string;
+  /** EndpointDetails.SubnetIds. */
+  subnetIds: string[];
+  /** EndpointDetails.SecurityGroupIds. */
+  securityGroupIds: string[];
+  /** EndpointDetails.VpcEndpointId. */
+  vpcEndpointId?: string;
+  userCount?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Glue (regional): connections, dev endpoints, jobs, crawlers, catalog databases
 // ---------------------------------------------------------------------------
 
@@ -1871,6 +1896,9 @@ export interface RegionSnapshot {
   // MemoryDB (regional)
   memoryDbClusters: MemoryDbCluster[];
 
+  // Transfer Family (regional)
+  transferServers: TransferServer[];
+
   // Glue (regional)
   glueConnections: GlueConnection[];
   glueDevEndpoints: GlueDevEndpoint[];
@@ -2051,6 +2079,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     neptuneClusters: [],
     docDbClusters: [],
     memoryDbClusters: [],
+    transferServers: [],
     glueConnections: [],
     glueDevEndpoints: [],
     glueJobs: [],

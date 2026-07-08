@@ -146,6 +146,8 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('docdb-cluster', region.docDbClusters as unknown as Array<Record<string, unknown>>);
   // MemoryDB
   add('memorydb-cluster', region.memoryDbClusters as unknown as Array<Record<string, unknown>>);
+  // Transfer Family
+  add('transfer-server', region.transferServers as unknown as Array<Record<string, unknown>>);
   // Glue
   add('glue-connection', region.glueConnections as unknown as Array<Record<string, unknown>>);
   add('glue-dev-endpoint', region.glueDevEndpoints as unknown as Array<Record<string, unknown>>);
