@@ -228,6 +228,11 @@ html, body, #root { margin: 0; height: 100%; }
   background: none; border: none; font-size: 20px; cursor: pointer;
   color: var(--muted); line-height: 1; padding: 2px 6px;
 }
+.console-link {
+  display: flex; flex-shrink: 0; border-radius: 4px; overflow: hidden;
+  opacity: 0.8;
+}
+.console-link:hover { opacity: 1; }
 .details-meta { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
 .link-btn {
   display: block; background: #f0f6ff; color: var(--accent);

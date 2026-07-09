@@ -83,8 +83,12 @@ import PrivateSubnet from 'aws-icons/icons/architecture-group/Privatesubnet.svg?
 import AwsAccount from 'aws-icons/icons/architecture-group/AWSAccount.svg?react';
 import RegionGroup from 'aws-icons/icons/architecture-group/Region.svg?react';
 import DataCenter from 'aws-icons/icons/architecture-group/Corporatedatacenter.svg?react';
+import AwsLogo from 'aws-icons/icons/architecture-group/AWSCloudlogo.svg?react';
 
 export type IconComponent = FC<SVGProps<SVGSVGElement>>;
+
+/** The AWS "smile" logo tile — used for open-in-console links. */
+export { AwsLogo };
 
 /** Icon per resource/container kind used in graph nodes and panels. */
 export const ICONS: Record<string, IconComponent> = {

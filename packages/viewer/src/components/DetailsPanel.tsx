@@ -3,7 +3,8 @@ import remarkGfm from 'remark-gfm';
 import type { ScanError } from '@atlas/schema';
 import type { AtlasIndex, ResourceRef } from '../data.js';
 import type { AtlasEdgeData } from '../model/graph-types.js';
-import { iconFor } from '../icons.js';
+import { AwsLogo, iconFor } from '../icons.js';
+import { consoleUrl } from '../console-link.js';
 import { TerraformMark } from './nodes.js';
 
 export type Selection =
@@ -145,6 +146,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
 
   const { ref } = selection;
   const Icon = iconFor(ref.kind);
+  const consoleHref = consoleUrl(ref);
   const annotation = index.annotationFor(ref);
   const tfBindings = index.terraformFor(ref);
   const tags = (ref.raw['tags'] ?? {}) as Record<string, string>;
@@ -157,6 +159,17 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
       <header>
         {Icon && <Icon width={28} height={28} />}
         <h2>{ref.name ?? ref.id}</h2>
+        {consoleHref && (
+          <a
+            className="console-link"
+            href={consoleHref}
+            target="_blank"
+            rel="noreferrer"
+            title="Open in the AWS console (requires a signed-in session for this account)"
+          >
+            <AwsLogo width={20} height={20} />
+          </a>
+        )}
         <button className="close-btn" onClick={onClose}>×</button>
       </header>
       <div className="details-meta">
