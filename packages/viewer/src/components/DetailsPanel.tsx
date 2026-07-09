@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { ScanError } from '@atlas/schema';
@@ -13,6 +14,62 @@ export type Selection =
   | { type: 'container'; id: string; label: string; errors: ScanError[] };
 
 const HIDDEN_KEYS = new Set(['id', 'arn', 'name', 'tags', 'raw']);
+
+const PANEL_WIDTH_KEY = 'atlas.details-width';
+const DEFAULT_PANEL_WIDTH = 460;
+const MIN_PANEL_WIDTH = 320;
+
+function clampPanelWidth(w: number): number {
+  return Math.min(Math.max(w, MIN_PANEL_WIDTH), Math.round(window.innerWidth * 0.7));
+}
+
+function savedPanelWidth(): number {
+  // try/catch: localStorage can throw when the bundle runs from file://.
+  try {
+    const saved = Number(localStorage.getItem(PANEL_WIDTH_KEY));
+    if (Number.isFinite(saved) && saved > 0) return clampPanelWidth(saved);
+  } catch { /* fall through */ }
+  return DEFAULT_PANEL_WIDTH;
+}
+
+/** The details sidebar chrome: drag the left edge to resize (double-click resets). */
+function PanelShell({ children }: { children: React.ReactNode }): React.ReactElement {
+  const [width, setWidth] = useState(savedPanelWidth);
+  const drag = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const persist = (w: number): void => {
+    try { localStorage.setItem(PANEL_WIDTH_KEY, String(w)); } catch { /* file:// */ }
+  };
+
+  return (
+    <aside className="details-panel" style={{ width }}>
+      <div
+        className="panel-resizer"
+        title="Drag to resize · double-click to reset"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          drag.current = { startX: e.clientX, startWidth: width };
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          if (!drag.current) return;
+          setWidth(clampPanelWidth(drag.current.startWidth + drag.current.startX - e.clientX));
+        }}
+        onPointerUp={(e) => {
+          if (!drag.current) return;
+          drag.current = null;
+          e.currentTarget.releasePointerCapture(e.pointerId);
+          persist(width);
+        }}
+        onDoubleClick={() => {
+          setWidth(DEFAULT_PANEL_WIDTH);
+          persist(DEFAULT_PANEL_WIDTH);
+        }}
+      />
+      <div className="panel-scroll">{children}</div>
+    </aside>
+  );
+}
 
 function PropertyValue({ value }: { value: unknown }): React.ReactElement {
   if (value === null || value === undefined) return <em>—</em>;
@@ -76,7 +133,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
   if (selection.type === 'container') {
     const { label, errors } = selection;
     return (
-      <aside className="details-panel">
+      <PanelShell>
         <header>
           <h2>{label}</h2>
           <button className="close-btn" onClick={onClose}>×</button>
@@ -98,14 +155,14 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
             </li>
           ))}
         </ul>
-      </aside>
+      </PanelShell>
     );
   }
   if (selection.type === 'edge') {
     const { data } = selection;
     const underlying = data.refId ? index.byKey.get(data.refId) : undefined;
     return (
-      <aside className="details-panel">
+      <PanelShell>
         <header>
           <h2>{data.title ?? 'Connection'}</h2>
           <button className="close-btn" onClick={onClose}>×</button>
@@ -140,7 +197,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
         ) : (
           <p className="muted">No route details recorded for this connection.</p>
         )}
-      </aside>
+      </PanelShell>
     );
   }
 
@@ -155,7 +212,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
   );
 
   return (
-    <aside className="details-panel">
+    <PanelShell>
       <header>
         {Icon && <Icon width={28} height={28} />}
         <h2>{ref.name ?? ref.id}</h2>
@@ -308,6 +365,6 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
           <p className="muted">then run <code>npm run bundle</code> (or any scan).</p>
         </section>
       )}
-    </aside>
+    </PanelShell>
   );
 }
