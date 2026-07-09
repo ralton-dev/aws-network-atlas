@@ -120,5 +120,9 @@
 "cloudFrontDistributions":{"render":"node","label":"node · overview + VPC-detail + focus","note":"off-diagram: status, priceClass, originDetails, aliases (edge label only)"},
 "cloudFrontVpcOrigins":{"render":"panel-only","label":"panel-only — never on graph","note":"status, endpointArn only in panel"},
 "globalAccelerators":{"render":"node","label":"node · overview + focus","note":"off-diagram: ipAddresses, ipAddressType, status, listeners[] (ports, endpoint groups, weights, health)"},
-"coreNetworks":{"render":"node","label":"node · overview + focus","note":"off-diagram: globalNetworkId, state, edges[] (asn/location), attachments[] detail, segment names"}
+"coreNetworks":{"render":"node","label":"node · overview + focus","note":"off-diagram: globalNetworkId, state, edges[] (asn/location), attachments[] detail, segment names"},
+"organizations":{"render":"panel-only","label":"panel-only — never on graph","note":"the org entity: featureSet, management account, roots + policy-type enablement, trusted service principals, delegated admins + services, resource policy; drawing the org tree is a follow-up"},
+"organizationalUnits":{"render":"panel-only","label":"panel-only — never on graph","note":"OU name + parentId (org-tree edge) + tags; org-tree rendering is a follow-up"},
+"organizationAccounts":{"render":"panel-only","label":"panel-only — never on graph","note":"org membership records (distinct from scanned accounts): email, status, joinedMethod/Timestamp, parent root/OU, tags"},
+"organizationPolicies":{"render":"panel-only","label":"panel-only — never on graph","note":"SCP/RCP/tag/backup/… policies: content JSON, awsManaged, attachment targets (root/OU/account); a governance overlay on the graph is a follow-up"}
 }

@@ -51,6 +51,10 @@ import CloudFront from 'aws-icons/icons/architecture-service/AmazonCloudFront.sv
 import Waf from 'aws-icons/icons/architecture-service/AWSWAF.svg?react';
 import GlobalAccelerator from 'aws-icons/icons/architecture-service/AWSGlobalAccelerator.svg?react';
 import CloudWan from 'aws-icons/icons/architecture-service/AWSCloudWAN.svg?react';
+// AWS Organizations (panel-only)
+import Organizations from 'aws-icons/icons/architecture-service/AWSOrganizations.svg?react';
+import OrganizationsAccount from 'aws-icons/icons/resource/AWSOrganizationsAccount.svg?react';
+import OrganizationsOu from 'aws-icons/icons/resource/AWSOrganizationsOrganizationalUnit.svg?react';
 import VpcLattice from 'aws-icons/icons/architecture-service/AmazonVPCLattice.svg?react';
 import FlowLogs from 'aws-icons/icons/resource/AmazonVPCFlowLogs.svg?react';
 import CloudWatchLogs from 'aws-icons/icons/resource/AmazonCloudWatchLogs.svg?react';
@@ -154,6 +158,11 @@ export const ICONS: Record<string, IconComponent> = {
   'waf-rule-group': Waf,
   'global-accelerator': GlobalAccelerator,
   'core-network': CloudWan,
+  // AWS Organizations (panel-only kinds; never drawn on the graph)
+  org: Organizations,
+  'org-ou': OrganizationsOu,
+  'org-account': OrganizationsAccount,
+  'org-policy': Organizations,
   'lattice-service-network': VpcLattice,
   'lattice-service': VpcLattice,
   'flow-log': FlowLogs,

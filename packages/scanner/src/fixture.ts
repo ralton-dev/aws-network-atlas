@@ -994,6 +994,83 @@ function sharedAccount(): AccountSnapshot {
       directConnectGateways: [
         { id: DXGW, name: 'corp-dxgw', tags: {}, ownerAccount: ACCT.shared, amazonSideAsn: 64512, state: 'available', associations: [{ associatedGatewayId: TGW_EU, associatedGatewayType: 'transitGateway', associatedGatewayOwnerAccount: ACCT.shared, associatedGatewayRegion: EU, state: 'associated' }] },
       ],
+      // acme-shared is the org management account, so it alone sees the
+      // organization: roots, the OU tree, member accounts, and SCPs.
+      organizations: [
+        {
+          id: 'o-acmecorp01ab',
+          arn: `arn:aws:organizations::${ACCT.shared}:organization/o-acmecorp01ab`,
+          featureSet: 'ALL',
+          masterAccountId: ACCT.shared,
+          masterAccountEmail: 'aws-mgmt@acme.example',
+          masterAccountArn: `arn:aws:organizations::${ACCT.shared}:account/o-acmecorp01ab/${ACCT.shared}`,
+          availablePolicyTypes: [{ type: 'SERVICE_CONTROL_POLICY', status: 'ENABLED' }],
+          roots: [
+            {
+              id: 'r-ac1e',
+              arn: `arn:aws:organizations::${ACCT.shared}:root/o-acmecorp01ab/r-ac1e`,
+              name: 'Root',
+              policyTypes: [
+                { type: 'SERVICE_CONTROL_POLICY', status: 'ENABLED' },
+                { type: 'TAG_POLICY', status: 'ENABLED' },
+              ],
+            },
+          ],
+          trustedServices: [
+            'cloudtrail.amazonaws.com',
+            'config.amazonaws.com',
+            'guardduty.amazonaws.com',
+            'sso.amazonaws.com',
+          ],
+          delegatedAdministrators: [
+            {
+              id: ACCT.prod,
+              arn: `arn:aws:organizations::${ACCT.shared}:account/o-acmecorp01ab/${ACCT.prod}`,
+              email: 'aws-prod@acme.example',
+              name: 'acme-prod',
+              status: 'ACTIVE',
+              services: ['guardduty.amazonaws.com'],
+            },
+          ],
+        },
+      ],
+      organizationalUnits: [
+        { id: 'ou-ac1e-workload1', arn: `arn:aws:organizations::${ACCT.shared}:ou/o-acmecorp01ab/ou-ac1e-workload1`, name: 'Workloads', tags: { 'managed-by': 'terraform' }, parentId: 'r-ac1e' },
+        { id: 'ou-ac1e-prodenv01', arn: `arn:aws:organizations::${ACCT.shared}:ou/o-acmecorp01ab/ou-ac1e-prodenv01`, name: 'Production', tags: { env: 'prod' }, parentId: 'ou-ac1e-workload1' },
+        { id: 'ou-ac1e-sandbox01', arn: `arn:aws:organizations::${ACCT.shared}:ou/o-acmecorp01ab/ou-ac1e-sandbox01`, name: 'Sandbox', tags: {}, parentId: 'r-ac1e' },
+      ],
+      organizationAccounts: [
+        { id: ACCT.prod, arn: `arn:aws:organizations::${ACCT.shared}:account/o-acmecorp01ab/${ACCT.prod}`, name: 'acme-prod', tags: { env: 'prod' }, email: 'aws-prod@acme.example', status: 'ACTIVE', joinedMethod: 'CREATED', joinedTimestamp: '2021-03-12T10:00:00.000Z', parentId: 'ou-ac1e-prodenv01' },
+        { id: ACCT.shared, arn: `arn:aws:organizations::${ACCT.shared}:account/o-acmecorp01ab/${ACCT.shared}`, name: 'acme-shared', tags: { team: 'network' }, email: 'aws-mgmt@acme.example', status: 'ACTIVE', joinedMethod: 'INVITED', joinedTimestamp: '2021-03-01T09:00:00.000Z', parentId: 'r-ac1e' },
+        { id: ACCT.dev, arn: `arn:aws:organizations::${ACCT.shared}:account/o-acmecorp01ab/${ACCT.dev}`, name: 'acme-dev', tags: { env: 'dev' }, email: 'aws-dev@acme.example', status: 'ACTIVE', joinedMethod: 'CREATED', joinedTimestamp: '2021-04-02T14:30:00.000Z', parentId: 'ou-ac1e-sandbox01' },
+        { id: ACCT.legacy, arn: `arn:aws:organizations::${ACCT.shared}:account/o-acmecorp01ab/${ACCT.legacy}`, name: 'acme-legacy', tags: {}, email: 'aws-legacy@acme.example', status: 'ACTIVE', joinedMethod: 'INVITED', joinedTimestamp: '2021-03-05T11:15:00.000Z', parentId: 'ou-ac1e-workload1' },
+      ],
+      organizationPolicies: [
+        {
+          id: 'p-guardrails1',
+          arn: `arn:aws:organizations::${ACCT.shared}:policy/o-acmecorp01ab/service_control_policy/p-guardrails1`,
+          name: 'acme-core-guardrails',
+          tags: { 'managed-by': 'terraform' },
+          type: 'SERVICE_CONTROL_POLICY',
+          description: 'Org-wide guardrails: nobody leaves the org or disables CloudTrail',
+          awsManaged: false,
+          content:
+            '{"Version":"2012-10-17","Statement":[{"Sid":"DenyLeaveOrg","Effect":"Deny","Action":"organizations:LeaveOrganization","Resource":"*"},{"Sid":"ProtectCloudTrail","Effect":"Deny","Action":["cloudtrail:StopLogging","cloudtrail:DeleteTrail"],"Resource":"*"}]}',
+          targets: [{ targetId: 'r-ac1e', type: 'ROOT', name: 'Root', arn: `arn:aws:organizations::${ACCT.shared}:root/o-acmecorp01ab/r-ac1e` }],
+        },
+        {
+          id: 'p-sandboxlim1',
+          arn: `arn:aws:organizations::${ACCT.shared}:policy/o-acmecorp01ab/service_control_policy/p-sandboxlim1`,
+          name: 'sandbox-region-limit',
+          tags: {},
+          type: 'SERVICE_CONTROL_POLICY',
+          description: 'Sandbox accounts may only operate in eu-west-1',
+          awsManaged: false,
+          content:
+            '{"Version":"2012-10-17","Statement":[{"Sid":"DenyOutsideEuWest1","Effect":"Deny","NotAction":["iam:*","organizations:*","sts:*","support:*"],"Resource":"*","Condition":{"StringNotEquals":{"aws:RequestedRegion":"eu-west-1"}}}]}',
+          targets: [{ targetId: 'ou-ac1e-sandbox01', type: 'ORGANIZATIONAL_UNIT', name: 'Sandbox', arn: `arn:aws:organizations::${ACCT.shared}:ou/o-acmecorp01ab/ou-ac1e-sandbox01` }],
+        },
+      ],
       iamRoles: [
         { id: 'shared-network-admin', arn: `arn:aws:iam::${ACCT.shared}:role/shared-network-admin`, name: 'shared-network-admin', tags: { team: 'network' }, path: '/', assumeRolePolicyDocument: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::111111111111:root"},"Action":"sts:AssumeRole","Condition":{"Bool":{"aws:MultiFactorAuthPresent":"true"}}}]}', attachedManagedPolicyArns: ['arn:aws:iam::aws:policy/job-function/NetworkAdministrator'], inlinePolicyNames: [], description: 'Cross-account network administration' },
       ],

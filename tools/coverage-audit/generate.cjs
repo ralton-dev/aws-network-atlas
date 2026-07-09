@@ -240,6 +240,10 @@ const DETAILED = {
   'AWS::CloudFront::VpcOrigin': { field: 'cloudFrontVpcOrigins', attrs: 'status, endpointArn (private ALB/NLB/EC2)' },
   'AWS::GlobalAccelerator::Accelerator': { field: 'globalAccelerators', attrs: 'dnsName, ipAddresses, listeners+endpointGroups+endpoints' },
   'AWS::NetworkManager::CoreNetwork': { field: 'coreNetworks', attrs: 'globalNetworkId, segments, edges, attachments' },
+  'AWS::Organizations::Organization': { field: 'organizations', attrs: 'featureSet, management-account id/email/arn, roots+policyTypes, trustedServices, delegatedAdministrators+services, resourcePolicy' },
+  'AWS::Organizations::OrganizationalUnit': { field: 'organizationalUnits', attrs: 'parentId (org-tree edge), tags' },
+  'AWS::Organizations::Account': { field: 'organizationAccounts', attrs: 'email, status, joinedMethod, joinedTimestamp, parentId (org-tree edge), tags' },
+  'AWS::Organizations::Policy': { field: 'organizationPolicies', attrs: 'type (SCP/RCP/tag/backup/…), content JSON, awsManaged, targets[] (root/OU/account attachments), tags' },
   // Sub-resources whose data we capture on the parent collection (nested).
   'AWS::EC2::ClientVpnAuthorizationRule': { field: 'clientVpnEndpoints', attrs: 'captured as clientVpnEndpoints.authorizationRules' },
   'AWS::EC2::ClientVpnRoute': { field: 'clientVpnEndpoints', attrs: 'captured as clientVpnEndpoints.routes' },
@@ -269,6 +273,7 @@ const DETAILED = {
   'AWS::ElasticLoadBalancingV2::ListenerCertificate': { field: 'loadBalancers', attrs: 'captured as loadBalancers.listeners[].certificateArns' },
   'AWS::GlobalAccelerator::Listener': { field: 'globalAccelerators', attrs: 'captured inside globalAccelerators.listeners[]' },
   'AWS::GlobalAccelerator::EndpointGroup': { field: 'globalAccelerators', attrs: 'captured inside globalAccelerators.listeners[].endpointGroups' },
+  'AWS::Organizations::ResourcePolicy': { field: 'organizations', attrs: 'captured as organizations.resourcePolicy' },
   'AWS::Events::EventBusPolicy': { field: 'eventBuses', attrs: 'captured as eventBuses.policy' },
   'AWS::WAFv2::WebACLAssociation': { field: 'wafWebAcls', attrs: 'captured as wafWebAcls.associatedResourceArns' },
   'AWS::NetworkFirewall::LoggingConfiguration': { field: 'networkFirewalls', attrs: 'captured as networkFirewalls.logDestinations' },

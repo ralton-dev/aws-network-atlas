@@ -56,6 +56,7 @@ import {
 } from './collect/security-posture.js';
 import { collectGlobalAccelerator } from './collect/global-accelerator.js';
 import { collectCloudWan } from './collect/cloudwan.js';
+import { collectOrganizations } from './collect/organizations.js';
 import { deriveRegion, sortErrors } from './derive.js';
 import { sortById } from './util.js';
 
@@ -156,7 +157,7 @@ export async function scanAccount(
 
   const global = emptyGlobal();
   progress(
-    `[${account.profile}] collecting global resources (Route 53, DX, S3, IAM, CloudFront, WAF, Global Accelerator, Cloud WAN)…`,
+    `[${account.profile}] collecting global resources (Route 53, DX, S3, IAM, CloudFront, WAF, Global Accelerator, Cloud WAN, Organizations)…`,
   );
   await Promise.all([
     collectGlobal(ctx, global),
@@ -165,6 +166,7 @@ export async function scanAccount(
     collectWafCloudFront(ctx, global),
     collectGlobalAccelerator(ctx, global),
     collectCloudWan(ctx, global),
+    collectOrganizations(ctx, global),
   ]);
   global.hostedZones.sort((a, b) => a.id.localeCompare(b.id));
   for (const z of global.hostedZones) {
@@ -211,6 +213,21 @@ export async function scanAccount(
   sortById(global.cloudFrontVpcOrigins);
   sortById(global.globalAccelerators);
   sortById(global.coreNetworks);
+  sortById(global.organizations);
+  for (const o of global.organizations) {
+    o.roots.sort((a, b) => a.id.localeCompare(b.id));
+    for (const r of o.roots) r.policyTypes.sort((a, b) => a.type.localeCompare(b.type));
+    o.availablePolicyTypes?.sort((a, b) => a.type.localeCompare(b.type));
+    o.trustedServices.sort();
+    o.delegatedAdministrators.sort((a, b) => a.id.localeCompare(b.id));
+    for (const d of o.delegatedAdministrators) d.services?.sort();
+  }
+  sortById(global.organizationalUnits);
+  sortById(global.organizationAccounts);
+  sortById(global.organizationPolicies);
+  for (const p of global.organizationPolicies) {
+    p.targets.sort((a, b) => a.targetId.localeCompare(b.targetId));
+  }
   sortById(global.wafWebAcls);
   sortById(global.wafIpSets);
   sortById(global.wafRuleGroups);

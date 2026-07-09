@@ -161,6 +161,15 @@
       "Resource": "*"
     },
     {
+      "Sid": "OrganizationsGovernance",
+      "Effect": "Allow",
+      "Action": [
+        "organizations:Describe*",
+        "organizations:List*"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "MigrationAndTransfer",
       "Effect": "Allow",
       "Action": [

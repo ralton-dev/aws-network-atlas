@@ -1727,6 +1727,95 @@ export interface CoreNetwork extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// AWS Organizations (account-global; only visible from the management account
+// or a delegated administrator — everywhere else these collections stay [])
+// ---------------------------------------------------------------------------
+
+/** Enablement of one policy type (SERVICE_CONTROL_POLICY, TAG_POLICY, …). */
+export interface OrgPolicyTypeStatus {
+  type: string;
+  /** ENABLED | PENDING_ENABLE | PENDING_DISABLE. */
+  status?: string;
+}
+
+/** The policy types the scanner enumerates (ListPolicies filter values). */
+export type OrganizationPolicyKind =
+  | 'SERVICE_CONTROL_POLICY'
+  | 'RESOURCE_CONTROL_POLICY'
+  | 'TAG_POLICY'
+  | 'BACKUP_POLICY'
+  | 'AISERVICES_OPT_OUT_POLICY'
+  | 'DECLARATIVE_POLICY_EC2'
+  | 'CHATBOT_POLICY';
+
+/**
+ * The AWS Organization itself — 0-or-1 per scanned account. Carries the
+ * org-wide governance surface that hangs off the org entity rather than a
+ * root/OU/account: trusted service principals, delegated admins, and the
+ * organization resource policy (AWS::Organizations::ResourcePolicy).
+ */
+export interface Organization {
+  /** Organization id (o-…). */
+  id: string;
+  arn?: string;
+  /** ALL | CONSOLIDATED_BILLING. */
+  featureSet?: string;
+  /** The management account (AWS still calls it "master" in the API). */
+  masterAccountId?: string;
+  masterAccountEmail?: string;
+  masterAccountArn?: string;
+  /** Org-level policy-type availability (per-root enablement is on roots[]). */
+  availablePolicyTypes?: OrgPolicyTypeStatus[];
+  roots: Array<{ id: string; arn?: string; name?: string; policyTypes: OrgPolicyTypeStatus[] }>;
+  /** Service principals with trusted access enabled for the org. */
+  trustedServices: string[];
+  delegatedAdministrators: Array<{
+    id: string;
+    arn?: string;
+    email?: string;
+    name?: string;
+    status?: string;
+    /** Service principals this account administers on the org's behalf. */
+    services?: string[];
+  }>;
+  /** Organization resource policy JSON (delegating org read access etc.). */
+  resourcePolicy?: string;
+}
+
+export interface OrganizationalUnit extends BaseResource {
+  /** Parent root (r-…) or OU (ou-…) id — the org-tree edge. */
+  parentId?: string;
+}
+
+/**
+ * An org MEMBERSHIP record for an account (from ListAccounts in the
+ * management account) — distinct from the scanned AccountSnapshot.
+ */
+export interface OrganizationAccount extends BaseResource {
+  email?: string;
+  /** ACTIVE | SUSPENDED | PENDING_CLOSURE. */
+  status?: string;
+  /** INVITED | CREATED. */
+  joinedMethod?: string;
+  joinedTimestamp?: string;
+  /** Parent root (r-…) or OU (ou-…) id — the org-tree edge. */
+  parentId?: string;
+}
+
+/** An Organizations policy (SCP/RCP/tag/backup/…) plus where it is attached. */
+export interface OrganizationPolicy extends BaseResource {
+  name: string;
+  type: OrganizationPolicyKind;
+  description?: string;
+  /** True for AWS-managed policies (e.g. p-FullAWSAccess). */
+  awsManaged?: boolean;
+  /** The policy document JSON (DescribePolicy .Content). */
+  content?: string;
+  /** Roots/OUs/accounts the policy is attached to (what it governs). */
+  targets: Array<{ targetId: string; type?: string; name?: string; arn?: string }>;
+}
+
+// ---------------------------------------------------------------------------
 // Global (non-regional) resources
 // ---------------------------------------------------------------------------
 
@@ -2001,6 +2090,14 @@ export interface AccountSnapshot {
     globalAccelerators: GlobalAccelerator[];
     /** Cloud WAN core networks. */
     coreNetworks: CoreNetwork[];
+    /**
+     * AWS Organizations governance — populated only when the scanned account
+     * is the org management account or a delegated administrator.
+     */
+    organizations: Organization[];
+    organizationalUnits: OrganizationalUnit[];
+    organizationAccounts: OrganizationAccount[];
+    organizationPolicies: OrganizationPolicy[];
     /** WAF v2 CLOUDFRONT-scope ACLs/sets/groups (API in us-east-1). */
     wafWebAcls: WafWebAcl[];
     wafIpSets: WafIpSet[];
@@ -2150,6 +2247,10 @@ export function emptyGlobal(): AccountSnapshot['global'] {
     cloudFrontVpcOrigins: [],
     globalAccelerators: [],
     coreNetworks: [],
+    organizations: [],
+    organizationalUnits: [],
+    organizationAccounts: [],
+    organizationPolicies: [],
     wafWebAcls: [],
     wafIpSets: [],
     wafRuleGroups: [],

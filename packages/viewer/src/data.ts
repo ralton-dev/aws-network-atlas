@@ -258,6 +258,12 @@ export function buildIndex(): AtlasIndex {
       ['cloudfront-vpc-origin', account.global.cloudFrontVpcOrigins],
       ['global-accelerator', account.global.globalAccelerators],
       ['core-network', account.global.coreNetworks],
+      // AWS Organizations governance (panel-only; populated only in the
+      // management / delegated-admin account's snapshot).
+      ['org', account.global.organizations],
+      ['org-ou', account.global.organizationalUnits],
+      ['org-account', account.global.organizationAccounts],
+      ['org-policy', account.global.organizationPolicies],
       ['waf-web-acl', account.global.wafWebAcls],
       ['waf-ip-set', account.global.wafIpSets],
       ['waf-rule-group', account.global.wafRuleGroups],
