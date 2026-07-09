@@ -42,8 +42,17 @@ const overview = {
   scanWarningBadges: await page.locator('.badge-warning').count(),
   accountIncompleteBadge: await page.locator('.badge-warning', { hasText: 'scan incomplete' }).count(),
   regionErrorBadge: await page.locator('.badge-warning', { hasText: 'scan error' }).count(),
+  // AWS Organizations governance tree (drawn under the management account)
+  orgLane: await page.locator('.container-node.style-org', { hasText: 'Organization' }).count(),
+  orgContainers: await page.locator('.container-node.style-org').count(),
+  orgSandboxOu: await page.locator('.container-node.style-org', { hasText: 'Sandbox' }).count(),
+  governsEdges: await page.locator('.edge-label-governs').count(),
 };
 console.log('overview:', JSON.stringify(overview));
+if (overview.orgLane === 0) problems.push('overview: Organization container not drawn');
+if (overview.orgContainers < 4) problems.push('overview: org root/OU/policy containers missing (tree not drawn)');
+if (overview.orgSandboxOu === 0) problems.push('overview: Sandbox OU container missing');
+if (overview.governsEdges === 0) problems.push('overview: no SCP `governs` attachment edges drawn');
 if (overview.securityLanes === 0) problems.push('overview: no Identity & security lane');
 if (overview.internetNode === 0) problems.push('overview: no Internet node');
 if (overview.cloudfront === 0) problems.push('overview: CloudFront distribution missing');
@@ -126,7 +135,7 @@ if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connect
 // The expected numbers come from running the builders directly over the
 // same fixture (npx tsx graph-check.mts, which also asserts every edge
 // endpoint resolves to a node). Update both together on fixture changes.
-const EXPECTED_EDGES = { overview: 30, prodVpc: 72 };
+const EXPECTED_EDGES = { overview: 32, prodVpc: 72 };
 if (overview.edges !== EXPECTED_EDGES.overview)
   problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
 if (detail.edges !== EXPECTED_EDGES.prodVpc)

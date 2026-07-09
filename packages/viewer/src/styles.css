@@ -183,6 +183,8 @@ html, body, #root { margin: 0; height: 100%; }
 .style-external > .container-header { color: #545b64; }
 .style-security { border-color: var(--danger); border-style: dashed; background: rgba(221, 52, 76, 0.03); }
 .style-security > .container-header { color: #b02a3d; }
+.style-org { border-color: #c2277a; background: rgba(194, 39, 122, 0.04); }
+.style-org > .container-header { color: #a51f66; }
 .style-ghost { border-color: #b8c0c8; border-style: dashed; opacity: 0.8; }
 .style-ghost > .container-header { color: #8b95a0; }
 

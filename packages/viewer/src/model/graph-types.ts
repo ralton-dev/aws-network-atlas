@@ -10,6 +10,7 @@ export type ContainerStyle =
   | 'subnet-private'
   | 'external'
   | 'security'
+  | 'org'
   | 'ghost';
 
 // NOTE: these must stay `type` aliases (not interfaces) — React Flow v12's
@@ -74,6 +75,8 @@ export type EdgeKind =
   | 'edge-service'
   /** DNS resolution paths: resolver rules, private hosted zone associations. */
   | 'dns'
+  /** AWS Organizations policy (SCP/RCP/…) attached to a root / OU / account. */
+  | 'governs'
   /** Focus view: where a resource lives (instance → subnet, subnet → VPC…). */
   | 'placement';
 

@@ -72,6 +72,7 @@ const EDGE_KIND_LABELS: Record<EdgeKind, string> = {
   trust: 'IAM trust',
   'edge-service': 'Edge traffic',
   dns: 'DNS',
+  governs: 'SCP / policy attachments',
   placement: 'Placement',
 };
 

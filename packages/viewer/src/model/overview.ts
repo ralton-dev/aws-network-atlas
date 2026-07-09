@@ -1,5 +1,6 @@
 import type {
   AccountSnapshot,
+  OrganizationAccount,
   RegionSnapshot,
   TransitGatewayAttachment,
   VpcPeeringConnection,
@@ -22,6 +23,10 @@ const EXT_CONTAINER = 'ext:onprem';
 /** Per-kind display caps: real estates have hundreds of roles/keys/buckets. */
 const CAP_IDENTITY = 8;
 const CAP_SERVICES = 6;
+/** Org governance caps: real orgs run to thousands of accounts. */
+const CAP_ORG_ACCOUNTS = 12;
+const CAP_ORG_POLICIES = 20;
+const CAP_ORG_POLICY_TARGETS = 30;
 
 interface Builder {
   accounts: Map<string, AtlasNode>;
@@ -432,6 +437,158 @@ function addAccountGlobal(
 }
 
 /**
+ * AWS Organizations governance tree, drawn under the management /
+ * delegated-admin account (the only snapshot that carries org data). Renders
+ * the Organization → root → OU hierarchy as nested containers, places each
+ * member account inside its parent OU/root, and draws every SCP/RCP policy as a
+ * node with `governs` edges to the roots/OUs/accounts it is attached to — so
+ * the diagram shows which policy actually governs which slice of the estate.
+ *
+ * Containers are inserted parent-before-child (roots, then OUs ordered by
+ * depth): the overview emits all containers before leaves, and React Flow
+ * requires a parent node to precede its children.
+ */
+function addOrganization(b: Builder, account: AccountSnapshot): void {
+  const g = account.global;
+  const org = (g.organizations ?? [])[0];
+  if (!org) return;
+
+  const A = account.accountId;
+  const acctId = `acct:${A}`;
+  const orgLaneId = `org:${A}:${org.id}`;
+  const rootContainerId = (rootId: string): string => `orgroot:${A}:${rootId}`;
+  const ouContainerId = (ouId: string): string => `orgou:${A}:${ouId}`;
+  const acctLeafId = (id: string): string => `orgacct:${A}:${id}`;
+  const polLeafId = (id: string): string => `orgpol:${A}:${id}`;
+
+  // --- Organization lane (outer container) ---
+  ensureLane(b, orgLaneId, acctId, `Organization ${org.id}`, 'org', 'org');
+  const orgLane = b.regions.get(orgLaneId);
+  if (orgLane) {
+    orgLane.data.subtitle =
+      org.featureSet === 'ALL' ? 'all features'
+      : org.featureSet === 'CONSOLIDATED_BILLING' ? 'consolidated billing'
+      : undefined;
+    orgLane.data.refId = org.arn ?? org.id;
+  }
+
+  // --- roots ---
+  const roots = org.roots ?? [];
+  const rootIds = new Set(roots.map((r) => r.id));
+  for (const root of roots) {
+    b.regions.set(rootContainerId(root.id), {
+      id: rootContainerId(root.id),
+      type: 'container',
+      position: { x: 0, y: 0 },
+      parentId: orgLaneId,
+      data: {
+        label: root.name ?? 'Root',
+        subtitle: root.id,
+        kind: 'org',
+        isContainer: true,
+        containerStyle: 'org',
+        refId: root.arn ?? root.id,
+      },
+    });
+  }
+  const firstRoot = roots[0];
+  const defaultParent = firstRoot ? rootContainerId(firstRoot.id) : orgLaneId;
+
+  // --- OU tree: resolve a parent id to its container, insert shallow-first ---
+  const ous = g.organizationalUnits ?? [];
+  const ouById = new Map(ous.map((o) => [o.id, o]));
+  const containerForParent = (parentId: string | undefined): string => {
+    if (parentId && rootIds.has(parentId)) return rootContainerId(parentId);
+    if (parentId && ouById.has(parentId)) return ouContainerId(parentId);
+    return defaultParent;
+  };
+  const depthOf = (ouId: string): number => {
+    let depth = 0;
+    let cur = ouById.get(ouId);
+    const seen = new Set<string>();
+    while (cur?.parentId && ouById.has(cur.parentId) && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      depth++;
+      cur = ouById.get(cur.parentId);
+    }
+    return depth;
+  };
+  for (const ou of [...ous].sort((x, y) => depthOf(x.id) - depthOf(y.id))) {
+    b.regions.set(ouContainerId(ou.id), {
+      id: ouContainerId(ou.id),
+      type: 'container',
+      position: { x: 0, y: 0 },
+      parentId: containerForParent(ou.parentId),
+      data: {
+        label: ou.name ?? ou.id,
+        subtitle: 'OU',
+        kind: 'org-ou',
+        isContainer: true,
+        containerStyle: 'org',
+        refId: ou.arn ?? ou.id,
+      },
+    });
+  }
+
+  // --- member accounts, grouped into their parent container, capped per parent ---
+  const accounts = g.organizationAccounts ?? [];
+  const byParent = new Map<string, OrganizationAccount[]>();
+  for (const a of accounts) {
+    const c = containerForParent(a.parentId);
+    const list = byParent.get(c);
+    if (list) list.push(a);
+    else byParent.set(c, [a]);
+  }
+  for (const [container, list] of byParent) {
+    addCapped(b, list, CAP_ORG_ACCOUNTS, container, `note:orgacct:${container}`, 'member accounts', (a) => {
+      const badges: string[] = [];
+      if (a.id === org.masterAccountId) badges.push('management');
+      if (a.status && a.status !== 'ACTIVE') badges.push(a.status.toLowerCase().replace(/_/g, ' '));
+      leafNode(b, acctLeafId(a.id), container, 'org-account', a.name ?? a.id, a.id, a.arn ?? a.id, badges);
+    });
+  }
+
+  // --- policies (SCP/RCP/…): a sub-lane of nodes with `governs` edges to targets ---
+  const policies = g.organizationPolicies ?? [];
+  if (policies.length > 0) {
+    const polLaneId = `orgpol-lane:${A}`;
+    ensureLane(b, polLaneId, orgLaneId, 'Policies', 'org-policy', 'org');
+    const acctIds = new Set(accounts.map((a) => a.id));
+    const targetNodeId = (targetId: string): string | undefined =>
+      rootIds.has(targetId) ? rootContainerId(targetId)
+      : ouById.has(targetId) ? ouContainerId(targetId)
+      : acctIds.has(targetId) ? acctLeafId(targetId)
+      : undefined;
+    addCapped(b, policies, CAP_ORG_POLICIES, polLaneId, `note:orgpol:${A}`, 'policies', (p) => {
+      const kindLabel = p.type.replace(/_POLICY$/, '').replace(/_/g, ' ').toLowerCase();
+      const badges = [
+        ...(p.awsManaged ? ['AWS-managed'] : []),
+        `${p.targets.length} target${p.targets.length === 1 ? '' : 's'}`,
+      ];
+      leafNode(b, polLeafId(p.id), polLaneId, 'org-policy', p.name, kindLabel, p.arn ?? p.id, badges);
+      for (const t of p.targets.slice(0, CAP_ORG_POLICY_TARGETS)) {
+        const target = targetNodeId(t.targetId);
+        if (!target) continue;
+        const key = `governs:${A}:${p.id}:${t.targetId}`;
+        b.edges.set(key, {
+          id: `edge:${key}`,
+          source: polLeafId(p.id),
+          target,
+          type: 'annotated',
+          markerEnd: { type: MarkerType.ArrowClosed },
+          data: {
+            edgeKind: 'governs',
+            label: kindLabel,
+            title: `${p.name} → ${t.name ?? t.targetId}`,
+            refId: p.arn ?? p.id,
+          },
+        });
+      }
+    });
+  }
+}
+
+/**
  * Regional security & edge services: KMS keys, secrets, ACM certs, API
  * gateways, Client VPN endpoints, and resolver-rule DNS forwarding paths.
  */
@@ -831,6 +988,7 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
     }
 
     addAccountGlobal(b, index, account, lbByDns);
+    addOrganization(b, account);
 
     if (account.emptyRegions.length > 0) {
       const shown = account.emptyRegions.slice(0, 6);
