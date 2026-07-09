@@ -314,6 +314,18 @@ function hasTags(def) {
   return ['Tags', 'TagList', 'TagSet'].some((k) => Object.prototype.hasOwnProperty.call(p, k));
 }
 
+// Services whose resources the Resource Groups Tagging API does NOT return —
+// even when the resource carries a tag. A `Tags` property in the CFN schema
+// therefore does NOT imply the tagging-API sweep would catch them, and
+// hasTags() must not be trusted to promote them to the "Inventory — if tagged"
+// tier. These are management-plane / org-namespace resources that live outside
+// the per-region, per-account tag index: chiefly AWS Organizations (accounts,
+// OUs, and SCPs/RCPs live in the management account's organization namespace and
+// are reachable only through the Organizations API, never tag:GetResources).
+// Without this list they get a false "if tagged" badge that hides a real gap —
+// a dedicated collector is the only way to actually see them.
+const RGT_BLIND_SERVICES = new Set(['Organizations']);
+
 // ---------------------------------------------------------------------------
 // Drift checks — fail loudly if the audit inputs no longer match the code.
 // ---------------------------------------------------------------------------
@@ -348,8 +360,14 @@ function classify(spec, ccTypes) {
     let tier, field = '', detail = '';
     if (DETAILED[type]) { tier = 'detailed'; field = DETAILED[type].field; detail = DETAILED[type].attrs; nDetailed++; }
     else if (ccTypes.has(type)) { tier = 'cloudcontrol'; detail = 'ARN + name + tags (untagged-catch sweep)'; nCloudControl++; }
-    else if (hasTags(def)) { tier = 'taggable'; detail = 'ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)'; nTaggable++; }
-    else { tier = 'none'; detail = 'not collected (no dedicated collector; not taggable)'; nNone++; }
+    else if (hasTags(def) && !RGT_BLIND_SERVICES.has(service)) { tier = 'taggable'; detail = 'ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)'; nTaggable++; }
+    else {
+      tier = 'none';
+      detail = RGT_BLIND_SERVICES.has(service)
+        ? 'NOT collected — management-plane/global service the Resource Groups Tagging API does not index even when tagged; needs a dedicated collector'
+        : 'not collected (no dedicated collector; not taggable)';
+      nNone++;
+    }
     rows.push({ type, service, tier, field, detail, propCount: props.length, props });
   }
   return { rows, summary: { specVersion: spec.ResourceSpecificationVersion, total: rows.length,

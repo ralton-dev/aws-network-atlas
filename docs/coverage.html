@@ -56,12 +56,12 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <div class="wrap">
 <h1>AWS Full-Estate Coverage Audit</h1>
 <p class="lede">Every AWS resource type that can be created &mdash; the CloudFormation resource registry, the authoritative &ldquo;what exists&rdquo; spine &mdash; measured against what this tool <b>collects</b> and what it <b>draws on the diagram</b>. Measured against the <i>whole</i> registry, not a self-selected subset, so nothing hides.</p>
-<p class="meta">Generated 2026-07-08 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
+<p class="meta">Generated 2026-07-09 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
 <div class="kpi det"><div class="n">207</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">926</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">489</div><div class="l">Not collected at all</div></div>
+<div class="kpi inv"><div class="n">922</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">493</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -276,7 +276,7 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">ODB</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Organizations</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">1</td>
+<tr><td class="mono">Organizations</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">5</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">PCAConnectorAD</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
@@ -6394,30 +6394,30 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">Ec2VolumeId, MountPoint, Name, StackId</div></td></tr>
-<tr data-svc="Organizations" data-c="inv-tag" data-d="panel-only" data-props="AccountName Email ParentIds RoleName Tags">
+<tr data-svc="Organizations" data-c="none" data-d="none" data-props="AccountName Email ParentIds RoleName Tags">
 <td class="mono">AWS::Organizations::Account</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge none">Not collected</span><div class="detail">NOT collected — management-plane/global service the Resource Groups Tagging API does not index even when tagged; needs a dedicated collector</div></td>
+<td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">5<div class="props">AccountName, Email, ParentIds, RoleName, Tags</div></td></tr>
 <tr data-svc="Organizations" data-c="none" data-d="none" data-props="FeatureSet">
 <td class="mono">AWS::Organizations::Organization</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
+<td><span class="badge none">Not collected</span><div class="detail">NOT collected — management-plane/global service the Resource Groups Tagging API does not index even when tagged; needs a dedicated collector</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">1<div class="props">FeatureSet</div></td></tr>
-<tr data-svc="Organizations" data-c="inv-tag" data-d="panel-only" data-props="Name ParentId Tags">
+<tr data-svc="Organizations" data-c="none" data-d="none" data-props="Name ParentId Tags">
 <td class="mono">AWS::Organizations::OrganizationalUnit</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge none">Not collected</span><div class="detail">NOT collected — management-plane/global service the Resource Groups Tagging API does not index even when tagged; needs a dedicated collector</div></td>
+<td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">3<div class="props">Name, ParentId, Tags</div></td></tr>
-<tr data-svc="Organizations" data-c="inv-tag" data-d="panel-only" data-props="Content Description Name Tags TargetIds Type">
+<tr data-svc="Organizations" data-c="none" data-d="none" data-props="Content Description Name Tags TargetIds Type">
 <td class="mono">AWS::Organizations::Policy</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge none">Not collected</span><div class="detail">NOT collected — management-plane/global service the Resource Groups Tagging API does not index even when tagged; needs a dedicated collector</div></td>
+<td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">6<div class="props">Content, Description, Name, Tags, TargetIds, Type</div></td></tr>
-<tr data-svc="Organizations" data-c="inv-tag" data-d="panel-only" data-props="Content Tags">
+<tr data-svc="Organizations" data-c="none" data-d="none" data-props="Content Tags">
 <td class="mono">AWS::Organizations::ResourcePolicy</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge none">Not collected</span><div class="detail">NOT collected — management-plane/global service the Resource Groups Tagging API does not index even when tagged; needs a dedicated collector</div></td>
+<td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">2<div class="props">Content, Tags</div></td></tr>
 <tr data-svc="Outposts" data-c="inv-tag" data-d="panel-only" data-props="Description Name Notes OperatingAddress RackPhysicalProperties ShippingAddress Tags">
 <td class="mono">AWS::Outposts::Site</td>
