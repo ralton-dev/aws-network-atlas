@@ -60,8 +60,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
 <div class="kpi det"><div class="n">212</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">899</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">511</div><div class="l">Not collected at all</div></div>
+<div class="kpi inv"><div class="n">900</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">510</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -572,7 +572,7 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">FinSpace</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Grafana</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">1</td>
+<tr><td class="mono">Grafana</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">HealthImaging</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
@@ -649,9 +649,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">7<div class="props">ApiPassthrough, CertificateAuthorityArn, CertificateSigningRequest, SigningAlgorithm, TemplateArn, Validity, ValidityNotBefore</div></td></tr>
-<tr data-svc="ACMPCA" data-c="inv-tag" data-d="panel-only" data-props="CsrExtensions KeyAlgorithm KeyStorageSecurityStandard RevocationConfiguration SigningAlgorithm Subject Tags Type UsageMode">
+<tr data-svc="ACMPCA" data-c="inv" data-d="panel-only" data-props="CsrExtensions KeyAlgorithm KeyStorageSecurityStandard RevocationConfiguration SigningAlgorithm Subject Tags Type UsageMode">
 <td class="mono">AWS::ACMPCA::CertificateAuthority</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">9<div class="props">CsrExtensions, KeyAlgorithm, KeyStorageSecurityStandard, RevocationConfiguration, SigningAlgorithm, Subject, Tags, Type, UsageMode</div></td></tr>
 <tr data-svc="ACMPCA" data-c="none" data-d="none" data-props="Certificate CertificateAuthorityArn CertificateChain Status">
@@ -734,9 +734,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">2<div class="props">Broker, Configuration</div></td></tr>
-<tr data-svc="Amplify" data-c="inv-tag" data-d="panel-only" data-props="AccessToken AutoBranchCreationConfig BasicAuthConfig BuildSpec CacheConfig ComputeRoleArn CustomHeaders CustomRules Description EnableBranchAutoDeletion EnvironmentVariables IAMServiceRole JobConfig Name OauthToken Platform Repository Tags">
+<tr data-svc="Amplify" data-c="inv" data-d="panel-only" data-props="AccessToken AutoBranchCreationConfig BasicAuthConfig BuildSpec CacheConfig ComputeRoleArn CustomHeaders CustomRules Description EnableBranchAutoDeletion EnvironmentVariables IAMServiceRole JobConfig Name OauthToken Platform Repository Tags">
 <td class="mono">AWS::Amplify::App</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">18<div class="props">AccessToken, AutoBranchCreationConfig, BasicAuthConfig, BuildSpec, CacheConfig, ComputeRoleArn, CustomHeaders, CustomRules, Description, EnableBranchAutoDeletion, EnvironmentVariables, IAMServiceRole, JobConfig, Name, OauthToken, Platform, Repository, Tags</div></td></tr>
 <tr data-svc="Amplify" data-c="inv-tag" data-d="panel-only" data-props="AppId Backend BasicAuthConfig BranchName BuildSpec ComputeRoleArn Description EnableAutoBuild EnablePerformanceMode EnablePullRequestPreview EnableSkewProtection EnvironmentVariables Framework PullRequestEnvironmentName Stage Tags">
@@ -994,9 +994,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">6<div class="props">ConnectionMode, ConnectorLabel, ConnectorProfileConfig, ConnectorProfileName, ConnectorType, KMSArn</div></td></tr>
-<tr data-svc="AppFlow" data-c="inv-tag" data-d="panel-only" data-props="Description DestinationFlowConfigList FlowName FlowStatus KMSArn MetadataCatalogConfig SourceFlowConfig Tags Tasks TriggerConfig">
+<tr data-svc="AppFlow" data-c="inv" data-d="panel-only" data-props="Description DestinationFlowConfigList FlowName FlowStatus KMSArn MetadataCatalogConfig SourceFlowConfig Tags Tasks TriggerConfig">
 <td class="mono">AWS::AppFlow::Flow</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">Description, DestinationFlowConfigList, FlowName, FlowStatus, KMSArn, MetadataCatalogConfig, SourceFlowConfig, Tags, Tasks, TriggerConfig</div></td></tr>
 <tr data-svc="AppIntegrations" data-c="inv-tag" data-d="panel-only" data-props="ApplicationConfig ApplicationSourceConfig ApplicationType Description IframeConfig InitializationTimeout IsService Name Namespace Permissions Tags">
@@ -1059,9 +1059,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">3<div class="props">ObservabilityConfigurationName, Tags, TraceConfiguration</div></td></tr>
-<tr data-svc="AppRunner" data-c="inv-tag" data-d="panel-only" data-props="AutoScalingConfigurationArn EncryptionConfiguration HealthCheckConfiguration InstanceConfiguration NetworkConfiguration ObservabilityConfiguration ServiceName SourceConfiguration Tags">
+<tr data-svc="AppRunner" data-c="inv" data-d="panel-only" data-props="AutoScalingConfigurationArn EncryptionConfiguration HealthCheckConfiguration InstanceConfiguration NetworkConfiguration ObservabilityConfiguration ServiceName SourceConfiguration Tags">
 <td class="mono">AWS::AppRunner::Service</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">9<div class="props">AutoScalingConfigurationArn, EncryptionConfiguration, HealthCheckConfiguration, InstanceConfiguration, NetworkConfiguration, ObservabilityConfiguration, ServiceName, SourceConfiguration, Tags</div></td></tr>
 <tr data-svc="AppRunner" data-c="inv-tag" data-d="panel-only" data-props="SecurityGroups Subnets Tags VpcConnectorName">
@@ -1179,9 +1179,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">14<div class="props">ApiId, Code, CodeS3Location, DataSourceName, Description, FunctionVersion, MaxBatchSize, Name, RequestMappingTemplate, RequestMappingTemplateS3Location, ResponseMappingTemplate, ResponseMappingTemplateS3Location, Runtime, SyncConfig</div></td></tr>
-<tr data-svc="AppSync" data-c="inv-tag" data-d="panel-only" data-props="AdditionalAuthenticationProviders ApiType AuthenticationType EnhancedMetricsConfig EnvironmentVariables IntrospectionConfig LambdaAuthorizerConfig LogConfig MergedApiExecutionRoleArn Name OpenIDConnectConfig OwnerContact QueryDepthLimit ResolverCountLimit Tags UserPoolConfig Visibility XrayEnabled">
+<tr data-svc="AppSync" data-c="inv" data-d="panel-only" data-props="AdditionalAuthenticationProviders ApiType AuthenticationType EnhancedMetricsConfig EnvironmentVariables IntrospectionConfig LambdaAuthorizerConfig LogConfig MergedApiExecutionRoleArn Name OpenIDConnectConfig OwnerContact QueryDepthLimit ResolverCountLimit Tags UserPoolConfig Visibility XrayEnabled">
 <td class="mono">AWS::AppSync::GraphQLApi</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">18<div class="props">AdditionalAuthenticationProviders, ApiType, AuthenticationType, EnhancedMetricsConfig, EnvironmentVariables, IntrospectionConfig, LambdaAuthorizerConfig, LogConfig, MergedApiExecutionRoleArn, Name, OpenIDConnectConfig, OwnerContact, QueryDepthLimit, ResolverCountLimit, Tags, UserPoolConfig, Visibility, XrayEnabled</div></td></tr>
 <tr data-svc="AppSync" data-c="none" data-d="none" data-props="ApiId Definition DefinitionS3Location">
@@ -1924,9 +1924,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">15<div class="props">Capabilities, Description, DisableRollback, EnableTerminationProtection, NotificationARNs, Parameters, RoleARN, StackName, StackPolicyBody, StackPolicyURL, StackStatusReason, Tags, TemplateBody, TemplateURL, TimeoutInMinutes</div></td></tr>
-<tr data-svc="CloudFormation" data-c="inv-tag" data-d="panel-only" data-props="AdministrationRoleARN AutoDeployment CallAs Capabilities Description ExecutionRoleName ManagedExecution OperationPreferences Parameters PermissionModel StackInstancesGroup StackSetName Tags TemplateBody TemplateURL">
+<tr data-svc="CloudFormation" data-c="inv" data-d="panel-only" data-props="AdministrationRoleARN AutoDeployment CallAs Capabilities Description ExecutionRoleName ManagedExecution OperationPreferences Parameters PermissionModel StackInstancesGroup StackSetName Tags TemplateBody TemplateURL">
 <td class="mono">AWS::CloudFormation::StackSet</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">15<div class="props">AdministrationRoleARN, AutoDeployment, CallAs, Capabilities, Description, ExecutionRoleName, ManagedExecution, OperationPreferences, Parameters, PermissionModel, StackInstancesGroup, StackSetName, Tags, TemplateBody, TemplateURL</div></td></tr>
 <tr data-svc="CloudFormation" data-c="none" data-d="none" data-props="AutoUpdate ExecutionRoleArn LoggingConfig MajorVersion PublicTypeArn PublisherId Type TypeName TypeNameAlias VersionBump">
@@ -2124,9 +2124,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">ContactInfo, Description, DomainName, DomainOwner, OriginConfiguration, Pattern, Tags</div></td></tr>
-<tr data-svc="CodeArtifact" data-c="inv-tag" data-d="panel-only" data-props="Description DomainName DomainOwner ExternalConnections PermissionsPolicyDocument RepositoryName Tags Upstreams">
+<tr data-svc="CodeArtifact" data-c="inv" data-d="panel-only" data-props="Description DomainName DomainOwner ExternalConnections PermissionsPolicyDocument RepositoryName Tags Upstreams">
 <td class="mono">AWS::CodeArtifact::Repository</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">8<div class="props">Description, DomainName, DomainOwner, ExternalConnections, PermissionsPolicyDocument, RepositoryName, Tags, Upstreams</div></td></tr>
 <tr data-svc="CodeBuild" data-c="inv-tag" data-d="panel-only" data-props="BaseCapacity ComputeConfiguration ComputeType EnvironmentType FleetProxyConfiguration FleetServiceRole FleetVpcConfig ImageId Name OverflowBehavior ScalingConfiguration Tags">
@@ -2134,9 +2134,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">12<div class="props">BaseCapacity, ComputeConfiguration, ComputeType, EnvironmentType, FleetProxyConfiguration, FleetServiceRole, FleetVpcConfig, ImageId, Name, OverflowBehavior, ScalingConfiguration, Tags</div></td></tr>
-<tr data-svc="CodeBuild" data-c="inv-tag" data-d="panel-only" data-props="Artifacts AutoRetryLimit BadgeEnabled BuildBatchConfig Cache ConcurrentBuildLimit Description EncryptionKey Environment FileSystemLocations LogsConfig Name QueuedTimeoutInMinutes ResourceAccessRole SecondaryArtifacts SecondarySourceVersions SecondarySources ServiceRole Source SourceVersion Tags TimeoutInMinutes Triggers Visibility VpcConfig">
+<tr data-svc="CodeBuild" data-c="inv" data-d="panel-only" data-props="Artifacts AutoRetryLimit BadgeEnabled BuildBatchConfig Cache ConcurrentBuildLimit Description EncryptionKey Environment FileSystemLocations LogsConfig Name QueuedTimeoutInMinutes ResourceAccessRole SecondaryArtifacts SecondarySourceVersions SecondarySources ServiceRole Source SourceVersion Tags TimeoutInMinutes Triggers Visibility VpcConfig">
 <td class="mono">AWS::CodeBuild::Project</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">25<div class="props">Artifacts, AutoRetryLimit, BadgeEnabled, BuildBatchConfig, Cache, ConcurrentBuildLimit, Description, EncryptionKey, Environment, FileSystemLocations, LogsConfig, Name, QueuedTimeoutInMinutes, ResourceAccessRole, SecondaryArtifacts, SecondarySourceVersions, SecondarySources, ServiceRole, Source, SourceVersion, Tags, TimeoutInMinutes, Triggers, Visibility, VpcConfig</div></td></tr>
 <tr data-svc="CodeBuild" data-c="inv-tag" data-d="panel-only" data-props="DeleteReports ExportConfig Name Tags Type">
@@ -2204,9 +2204,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">8<div class="props">Code, ConnectionArn, EnableIssues, IsPrivate, RepositoryAccessToken, RepositoryDescription, RepositoryName, RepositoryOwner</div></td></tr>
-<tr data-svc="CodeStarConnections" data-c="inv-tag" data-d="panel-only" data-props="ConnectionName HostArn ProviderType Tags">
+<tr data-svc="CodeStarConnections" data-c="inv" data-d="panel-only" data-props="ConnectionName HostArn ProviderType Tags">
 <td class="mono">AWS::CodeStarConnections::Connection</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">ConnectionName, HostArn, ProviderType, Tags</div></td></tr>
 <tr data-svc="CodeStarConnections" data-c="inv-tag" data-d="panel-only" data-props="ConnectionArn EncryptionKeyArn OwnerId RepositoryName Tags">
@@ -2444,9 +2444,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">9<div class="props">ChildHoursOfOperations, Config, Description, HoursOfOperationOverrides, InstanceArn, Name, ParentHoursOfOperations, Tags, TimeZone</div></td></tr>
-<tr data-svc="Connect" data-c="inv-tag" data-d="panel-only" data-props="Attributes DirectoryId IdentityManagementType InstanceAlias Tags">
+<tr data-svc="Connect" data-c="inv" data-d="panel-only" data-props="Attributes DirectoryId IdentityManagementType InstanceAlias Tags">
 <td class="mono">AWS::Connect::Instance</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">Attributes, DirectoryId, IdentityManagementType, InstanceAlias, Tags</div></td></tr>
 <tr data-svc="Connect" data-c="none" data-d="none" data-props="InstanceArn KinesisFirehoseConfig KinesisStreamConfig KinesisVideoStreamConfig ResourceType S3Config StorageType">
@@ -3064,9 +3064,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">DeletionProtection, Engine, EngineVersion, GlobalClusterIdentifier, SourceDBClusterIdentifier, StorageEncrypted, Tags</div></td></tr>
-<tr data-svc="DocDBElastic" data-c="inv-tag" data-d="panel-only" data-props="AdminUserName AdminUserPassword AuthType BackupRetentionPeriod ClusterName KmsKeyId PreferredBackupWindow PreferredMaintenanceWindow ShardCapacity ShardCount ShardInstanceCount SubnetIds Tags VpcSecurityGroupIds">
+<tr data-svc="DocDBElastic" data-c="inv" data-d="panel-only" data-props="AdminUserName AdminUserPassword AuthType BackupRetentionPeriod ClusterName KmsKeyId PreferredBackupWindow PreferredMaintenanceWindow ShardCapacity ShardCount ShardInstanceCount SubnetIds Tags VpcSecurityGroupIds">
 <td class="mono">AWS::DocDBElastic::Cluster</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">14<div class="props">AdminUserName, AdminUserPassword, AuthType, BackupRetentionPeriod, ClusterName, KmsKeyId, PreferredBackupWindow, PreferredMaintenanceWindow, ShardCapacity, ShardCount, ShardInstanceCount, SubnetIds, Tags, VpcSecurityGroupIds</div></td></tr>
 <tr data-svc="DynamoDB" data-c="detailed" data-d="panel-only" data-props="AttributeDefinitions BillingMode GlobalSecondaryIndexes GlobalTableSourceArn GlobalTableWitnesses KeySchema LocalSecondaryIndexes MultiRegionConsistency ReadOnDemandThroughputSettings ReadProvisionedThroughputSettings Replicas SSESpecification StreamSpecification TableName TimeToLiveSpecification WarmThroughput WriteOnDemandThroughputSettings WriteProvisionedThroughputSettings">
@@ -3624,9 +3624,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">6<div class="props">Description, PolicyDocument, PolicyEnabled, SseSpecification, Tags, VerifiedAccessInstanceId</div></td></tr>
-<tr data-svc="EC2" data-c="inv-tag" data-d="panel-only" data-props="CidrEndpointsCustomSubDomain Description FipsEnabled LoggingConfigurations Tags VerifiedAccessTrustProviderIds VerifiedAccessTrustProviders">
+<tr data-svc="EC2" data-c="inv" data-d="panel-only" data-props="CidrEndpointsCustomSubDomain Description FipsEnabled LoggingConfigurations Tags VerifiedAccessTrustProviderIds VerifiedAccessTrustProviders">
 <td class="mono">AWS::EC2::VerifiedAccessInstance</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">CidrEndpointsCustomSubDomain, Description, FipsEnabled, LoggingConfigurations, Tags, VerifiedAccessTrustProviderIds, VerifiedAccessTrustProviders</div></td></tr>
 <tr data-svc="EC2" data-c="inv-tag" data-d="panel-only" data-props="Description DeviceOptions DeviceTrustProviderType NativeApplicationOidcOptions OidcOptions PolicyReferenceName SseSpecification Tags TrustProviderType UserTrustProviderType">
@@ -4394,10 +4394,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">DefaultRunProperties, Description, MaxConcurrentRuns, Name, Tags</div></td></tr>
-<tr data-svc="Grafana" data-c="none" data-d="none" data-props="AccountAccessType AuthenticationProviders ClientToken DataSources Description GrafanaVersion Name NetworkAccessControl NotificationDestinations OrganizationRoleName OrganizationalUnits PermissionType PluginAdminEnabled RoleArn SamlConfiguration StackSetName VpcConfiguration">
+<tr data-svc="Grafana" data-c="inv" data-d="panel-only" data-props="AccountAccessType AuthenticationProviders ClientToken DataSources Description GrafanaVersion Name NetworkAccessControl NotificationDestinations OrganizationRoleName OrganizationalUnits PermissionType PluginAdminEnabled RoleArn SamlConfiguration StackSetName VpcConfiguration">
 <td class="mono">AWS::Grafana::Workspace</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">17<div class="props">AccountAccessType, AuthenticationProviders, ClientToken, DataSources, Description, GrafanaVersion, Name, NetworkAccessControl, NotificationDestinations, OrganizationRoleName, OrganizationalUnits, PermissionType, PluginAdminEnabled, RoleArn, SamlConfiguration, StackSetName, VpcConfiguration</div></td></tr>
 <tr data-svc="Greengrass" data-c="inv-tag" data-d="panel-only" data-props="InitialVersion Name Tags">
 <td class="mono">AWS::Greengrass::ConnectorDefinition</td>
@@ -4564,9 +4564,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">3<div class="props">DatastoreName, KmsKeyArn, Tags</div></td></tr>
-<tr data-svc="HealthLake" data-c="inv-tag" data-d="panel-only" data-props="DatastoreName DatastoreTypeVersion IdentityProviderConfiguration PreloadDataConfig SseConfiguration Tags">
+<tr data-svc="HealthLake" data-c="inv" data-d="panel-only" data-props="DatastoreName DatastoreTypeVersion IdentityProviderConfiguration PreloadDataConfig SseConfiguration Tags">
 <td class="mono">AWS::HealthLake::FHIRDatastore</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">6<div class="props">DatastoreName, DatastoreTypeVersion, IdentityProviderConfiguration, PreloadDataConfig, SseConfiguration, Tags</div></td></tr>
 <tr data-svc="IAM" data-c="detailed" data-d="node" data-props="Serial Status UserName">
@@ -5249,9 +5249,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">2<div class="props">ApplicationName, ReferenceDataSource</div></td></tr>
-<tr data-svc="KinesisAnalyticsV2" data-c="inv-tag" data-d="panel-only" data-props="ApplicationConfiguration ApplicationDescription ApplicationMaintenanceConfiguration ApplicationMode ApplicationName RunConfiguration RuntimeEnvironment ServiceExecutionRole Tags">
+<tr data-svc="KinesisAnalyticsV2" data-c="inv" data-d="panel-only" data-props="ApplicationConfiguration ApplicationDescription ApplicationMaintenanceConfiguration ApplicationMode ApplicationName RunConfiguration RuntimeEnvironment ServiceExecutionRole Tags">
 <td class="mono">AWS::KinesisAnalyticsV2::Application</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">9<div class="props">ApplicationConfiguration, ApplicationDescription, ApplicationMaintenanceConfiguration, ApplicationMode, ApplicationName, RunConfiguration, RuntimeEnvironment, ServiceExecutionRole, Tags</div></td></tr>
 <tr data-svc="KinesisAnalyticsV2" data-c="none" data-d="none" data-props="ApplicationName CloudWatchLoggingOption">
@@ -5339,9 +5339,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">5<div class="props">DestinationConfig, FunctionName, MaximumEventAgeInSeconds, MaximumRetryAttempts, Qualifier</div></td></tr>
-<tr data-svc="Lambda" data-c="inv-tag" data-d="panel-only" data-props="AmazonManagedKafkaEventSourceConfig BatchSize BisectBatchOnFunctionError DestinationConfig DocumentDBEventSourceConfig Enabled EventSourceArn FilterCriteria FunctionName FunctionResponseTypes KmsKeyArn LoggingConfig MaximumBatchingWindowInSeconds MaximumRecordAgeInSeconds MaximumRetryAttempts MetricsConfig ParallelizationFactor ProvisionedPollerConfig Queues ScalingConfig SelfManagedEventSource SelfManagedKafkaEventSourceConfig SourceAccessConfigurations StartingPosition StartingPositionTimestamp Tags Topics TumblingWindowInSeconds">
+<tr data-svc="Lambda" data-c="inv" data-d="panel-only" data-props="AmazonManagedKafkaEventSourceConfig BatchSize BisectBatchOnFunctionError DestinationConfig DocumentDBEventSourceConfig Enabled EventSourceArn FilterCriteria FunctionName FunctionResponseTypes KmsKeyArn LoggingConfig MaximumBatchingWindowInSeconds MaximumRecordAgeInSeconds MaximumRetryAttempts MetricsConfig ParallelizationFactor ProvisionedPollerConfig Queues ScalingConfig SelfManagedEventSource SelfManagedKafkaEventSourceConfig SourceAccessConfigurations StartingPosition StartingPositionTimestamp Tags Topics TumblingWindowInSeconds">
 <td class="mono">AWS::Lambda::EventSourceMapping</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">28<div class="props">AmazonManagedKafkaEventSourceConfig, BatchSize, BisectBatchOnFunctionError, DestinationConfig, DocumentDBEventSourceConfig, Enabled, EventSourceArn, FilterCriteria, FunctionName, FunctionResponseTypes, KmsKeyArn, LoggingConfig, MaximumBatchingWindowInSeconds, MaximumRecordAgeInSeconds, MaximumRetryAttempts, MetricsConfig, ParallelizationFactor, ProvisionedPollerConfig, Queues, ScalingConfig, SelfManagedEventSource, SelfManagedKafkaEventSourceConfig, SourceAccessConfigurations, StartingPosition, StartingPositionTimestamp, Tags, Topics, TumblingWindowInSeconds</div></td></tr>
 <tr data-svc="Lambda" data-c="detailed" data-d="node" data-props="Architectures CapacityProviderConfig Code CodeSigningConfigArn DeadLetterConfig Description DurableConfig Environment EphemeralStorage FileSystemConfigs FunctionName FunctionScalingConfig Handler ImageConfig KmsKeyArn Layers LoggingConfig MemorySize PackageType PublishToLatestPublished RecursiveLoop ReservedConcurrentExecutions Role Runtime RuntimeManagementConfig SnapStart Tags TenancyConfig Timeout TracingConfig VpcConfig">
@@ -5469,9 +5469,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">3<div class="props">DomainEntries, DomainName, Tags</div></td></tr>
-<tr data-svc="Lightsail" data-c="inv-tag" data-d="panel-only" data-props="AddOns AvailabilityZone BlueprintId BundleId Hardware InstanceName KeyPairName Location Networking State Tags UserData">
+<tr data-svc="Lightsail" data-c="inv" data-d="panel-only" data-props="AddOns AvailabilityZone BlueprintId BundleId Hardware InstanceName KeyPairName Location Networking State Tags UserData">
 <td class="mono">AWS::Lightsail::Instance</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">12<div class="props">AddOns, AvailabilityZone, BlueprintId, BundleId, Hardware, InstanceName, KeyPairName, Location, Networking, State, Tags, UserData</div></td></tr>
 <tr data-svc="Lightsail" data-c="inv-tag" data-d="panel-only" data-props="InstanceName InstanceSnapshotName Tags">
@@ -5679,9 +5679,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">6<div class="props">Authentication, ClientSubnets, SecurityGroups, Tags, TargetClusterArn, VpcId</div></td></tr>
-<tr data-svc="MWAA" data-c="inv-tag" data-d="panel-only" data-props="AirflowConfigurationOptions AirflowVersion DagS3Path EndpointManagement EnvironmentClass ExecutionRoleArn KmsKey LoggingConfiguration MaxWebservers MaxWorkers MinWebservers MinWorkers Name NetworkConfiguration PluginsS3ObjectVersion PluginsS3Path RequirementsS3ObjectVersion RequirementsS3Path Schedulers SourceBucketArn StartupScriptS3ObjectVersion StartupScriptS3Path Tags WebserverAccessMode WeeklyMaintenanceWindowStart WorkerReplacementStrategy">
+<tr data-svc="MWAA" data-c="inv" data-d="panel-only" data-props="AirflowConfigurationOptions AirflowVersion DagS3Path EndpointManagement EnvironmentClass ExecutionRoleArn KmsKey LoggingConfiguration MaxWebservers MaxWorkers MinWebservers MinWorkers Name NetworkConfiguration PluginsS3ObjectVersion PluginsS3Path RequirementsS3ObjectVersion RequirementsS3Path Schedulers SourceBucketArn StartupScriptS3ObjectVersion StartupScriptS3Path Tags WebserverAccessMode WeeklyMaintenanceWindowStart WorkerReplacementStrategy">
 <td class="mono">AWS::MWAA::Environment</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">26<div class="props">AirflowConfigurationOptions, AirflowVersion, DagS3Path, EndpointManagement, EnvironmentClass, ExecutionRoleArn, KmsKey, LoggingConfiguration, MaxWebservers, MaxWorkers, MinWebservers, MinWorkers, Name, NetworkConfiguration, PluginsS3ObjectVersion, PluginsS3Path, RequirementsS3ObjectVersion, RequirementsS3Path, Schedulers, SourceBucketArn, StartupScriptS3ObjectVersion, StartupScriptS3Path, Tags, WebserverAccessMode, WeeklyMaintenanceWindowStart, WorkerReplacementStrategy</div></td></tr>
 <tr data-svc="MWAAServerless" data-c="inv-tag" data-d="panel-only" data-props="DefinitionS3Location Description EncryptionConfiguration LoggingConfiguration Name NetworkConfiguration RoleArn Tags TriggerMode">
@@ -6024,9 +6024,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">DeletionProtection, Engine, EngineVersion, GlobalClusterIdentifier, SourceDBClusterIdentifier, StorageEncrypted, Tags</div></td></tr>
-<tr data-svc="NeptuneGraph" data-c="inv-tag" data-d="panel-only" data-props="DeletionProtection GraphName KmsKeyIdentifier ProvisionedMemory PublicConnectivity ReplicaCount Tags VectorSearchConfiguration">
+<tr data-svc="NeptuneGraph" data-c="inv" data-d="panel-only" data-props="DeletionProtection GraphName KmsKeyIdentifier ProvisionedMemory PublicConnectivity ReplicaCount Tags VectorSearchConfiguration">
 <td class="mono">AWS::NeptuneGraph::Graph</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">8<div class="props">DeletionProtection, GraphName, KmsKeyIdentifier, ProvisionedMemory, PublicConnectivity, ReplicaCount, Tags, VectorSearchConfiguration</div></td></tr>
 <tr data-svc="NeptuneGraph" data-c="inv-tag" data-d="panel-only" data-props="GraphIdentifier SnapshotName Tags">
@@ -6309,9 +6309,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">Description, Name, Policy, Type</div></td></tr>
-<tr data-svc="OpenSearchServerless" data-c="inv-tag" data-d="panel-only" data-props="CollectionGroupName DeletionProtection Description EncryptionConfig Name StandbyReplicas Tags Type VectorOptions">
+<tr data-svc="OpenSearchServerless" data-c="inv" data-d="panel-only" data-props="CollectionGroupName DeletionProtection Description EncryptionConfig Name StandbyReplicas Tags Type VectorOptions">
 <td class="mono">AWS::OpenSearchServerless::Collection</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">9<div class="props">CollectionGroupName, DeletionProtection, Description, EncryptionConfig, Name, StandbyReplicas, Tags, Type, VectorOptions</div></td></tr>
 <tr data-svc="OpenSearchServerless" data-c="inv-tag" data-d="panel-only" data-props="CapacityLimits Description Generation Name StandbyReplicas Tags">
@@ -7104,9 +7104,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">AcceptRoleSessionName, AttributeMappings, DurationSeconds, Enabled, ManagedPolicyArns, Name, RequireInstanceProperties, RoleArns, SessionPolicy, Tags</div></td></tr>
-<tr data-svc="RolesAnywhere" data-c="inv-tag" data-d="panel-only" data-props="Enabled Name NotificationSettings Source Tags">
+<tr data-svc="RolesAnywhere" data-c="inv" data-d="panel-only" data-props="Enabled Name NotificationSettings Source Tags">
 <td class="mono">AWS::RolesAnywhere::TrustAnchor</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">Enabled, Name, NotificationSettings, Source, Tags</div></td></tr>
 <tr data-svc="Route53" data-c="none" data-d="none" data-props="Locations Name">
@@ -7304,9 +7304,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">3<div class="props">IamRoleArn, LocationScope, Tags</div></td></tr>
-<tr data-svc="S3" data-c="inv-tag" data-d="panel-only" data-props="Bucket BucketAccountId Name Policy PublicAccessBlockConfiguration Tags VpcConfiguration">
+<tr data-svc="S3" data-c="inv" data-d="panel-only" data-props="Bucket BucketAccountId Name Policy PublicAccessBlockConfiguration Tags VpcConfiguration">
 <td class="mono">AWS::S3::AccessPoint</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">Bucket, BucketAccountId, Name, Policy, PublicAccessBlockConfiguration, Tags, VpcConfiguration</div></td></tr>
 <tr data-svc="S3" data-c="detailed" data-d="node" data-props="AbacStatus AccelerateConfiguration AccessControl AnalyticsConfigurations BucketEncryption BucketName BucketNamePrefix BucketNamespace CorsConfiguration IntelligentTieringConfigurations InventoryConfigurations LifecycleConfiguration LoggingConfiguration MetadataConfiguration MetadataTableConfiguration MetricsConfigurations NotificationConfiguration ObjectLockConfiguration ObjectLockEnabled OwnershipControls PublicAccessBlockConfiguration ReplicationConfiguration Tags VersioningConfiguration WebsiteConfiguration">
@@ -7474,9 +7474,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">3<div class="props">PoolName, ScalingMode, Tags</div></td></tr>
-<tr data-svc="SES" data-c="inv-tag" data-d="panel-only" data-props="ConfigurationSetAttributes DkimAttributes DkimSigningAttributes EmailIdentity FeedbackAttributes MailFromAttributes Tags">
+<tr data-svc="SES" data-c="inv" data-d="panel-only" data-props="ConfigurationSetAttributes DkimAttributes DkimSigningAttributes EmailIdentity FeedbackAttributes MailFromAttributes Tags">
 <td class="mono">AWS::SES::EmailIdentity</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">ConfigurationSetAttributes, DkimAttributes, DkimSigningAttributes, EmailIdentity, FeedbackAttributes, MailFromAttributes, Tags</div></td></tr>
 <tr data-svc="SES" data-c="inv-tag" data-d="panel-only" data-props="AddonSubscriptionId Tags">
@@ -7629,9 +7629,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">19<div class="props">ApplyOnlyAtCronInterval, AssociationDispatchAssumeRole, AssociationName, AutomationTargetParameterName, CalendarNames, ComplianceSeverity, DocumentVersion, InstanceId, MaxConcurrency, MaxErrors, Name, OutputLocation, Parameters, ScheduleExpression, ScheduleOffset, SyncCompliance, Tags, Targets, WaitForSuccessTimeoutSeconds</div></td></tr>
-<tr data-svc="SSM" data-c="inv-tag" data-d="panel-only" data-props="Attachments Content DocumentFormat DocumentType Name Requires Tags TargetType UpdateMethod VersionName">
+<tr data-svc="SSM" data-c="inv" data-d="panel-only" data-props="Attachments Content DocumentFormat DocumentType Name Requires Tags TargetType UpdateMethod VersionName">
 <td class="mono">AWS::SSM::Document</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">Attachments, Content, DocumentFormat, DocumentType, Name, Requires, Tags, TargetType, UpdateMethod, VersionName</div></td></tr>
 <tr data-svc="SSM" data-c="inv-tag" data-d="panel-only" data-props="AllowUnassociatedTargets Cutoff Description Duration EndDate Name Schedule ScheduleOffset ScheduleTimezone StartDate Tags">
@@ -7884,9 +7884,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">EndpointName, FailureReason, LastMonitoringExecutionSummary, MonitoringScheduleConfig, MonitoringScheduleName, MonitoringScheduleStatus, Tags</div></td></tr>
-<tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="AcceleratorTypes AdditionalCodeRepositories DefaultCodeRepository DirectInternetAccess InstanceMetadataServiceConfiguration InstanceType KmsKeyId LifecycleConfigName NotebookInstanceName PlatformIdentifier RoleArn RootAccess SecurityGroupIds SubnetId Tags VolumeSizeInGB">
+<tr data-svc="SageMaker" data-c="inv" data-d="panel-only" data-props="AcceleratorTypes AdditionalCodeRepositories DefaultCodeRepository DirectInternetAccess InstanceMetadataServiceConfiguration InstanceType KmsKeyId LifecycleConfigName NotebookInstanceName PlatformIdentifier RoleArn RootAccess SecurityGroupIds SubnetId Tags VolumeSizeInGB">
 <td class="mono">AWS::SageMaker::NotebookInstance</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">16<div class="props">AcceleratorTypes, AdditionalCodeRepositories, DefaultCodeRepository, DirectInternetAccess, InstanceMetadataServiceConfiguration, InstanceType, KmsKeyId, LifecycleConfigName, NotebookInstanceName, PlatformIdentifier, RoleArn, RootAccess, SecurityGroupIds, SubnetId, Tags, VolumeSizeInGB</div></td></tr>
 <tr data-svc="SageMaker" data-c="none" data-d="none" data-props="NotebookInstanceLifecycleConfigName OnCreate OnStart">
@@ -8069,9 +8069,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">Accounts, DataLakeArn, SourceName, SourceVersion</div></td></tr>
-<tr data-svc="SecurityLake" data-c="inv-tag" data-d="panel-only" data-props="EncryptionConfiguration LifecycleConfiguration MetaStoreManagerRoleArn ReplicationConfiguration Tags">
+<tr data-svc="SecurityLake" data-c="inv" data-d="panel-only" data-props="EncryptionConfiguration LifecycleConfiguration MetaStoreManagerRoleArn ReplicationConfiguration Tags">
 <td class="mono">AWS::SecurityLake::DataLake</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">EncryptionConfiguration, LifecycleConfiguration, MetaStoreManagerRoleArn, ReplicationConfiguration, Tags</div></td></tr>
 <tr data-svc="SecurityLake" data-c="inv-tag" data-d="panel-only" data-props="AccessTypes DataLakeArn Sources SubscriberDescription SubscriberIdentity SubscriberName Tags">
@@ -8194,9 +8194,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">3<div class="props">InstanceAttributes, InstanceId, ServiceId</div></td></tr>
-<tr data-svc="ServiceDiscovery" data-c="inv-tag" data-d="panel-only" data-props="Description Name Properties Tags Vpc">
+<tr data-svc="ServiceDiscovery" data-c="inv" data-d="panel-only" data-props="Description Name Properties Tags Vpc">
 <td class="mono">AWS::ServiceDiscovery::PrivateDnsNamespace</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">Description, Name, Properties, Tags, Vpc</div></td></tr>
 <tr data-svc="ServiceDiscovery" data-c="inv-tag" data-d="panel-only" data-props="Description Name Properties Tags">
@@ -8279,9 +8279,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">NOT collected — management-plane/global service the Resource Groups Tagging API does not index even when tagged; needs a dedicated collector</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">2<div class="props">TeamId, VersionId</div></td></tr>
-<tr data-svc="Synthetics" data-c="inv-tag" data-d="panel-only" data-props="ArtifactConfig ArtifactS3Location BrowserConfigs Code DryRunAndUpdate ExecutionRoleArn FailureRetentionPeriod Name ProvisionedResourceCleanup ResourcesToReplicateTags RunConfig RuntimeVersion Schedule StartCanaryAfterCreation SuccessRetentionPeriod Tags VPCConfig VisualReferences">
+<tr data-svc="Synthetics" data-c="inv" data-d="panel-only" data-props="ArtifactConfig ArtifactS3Location BrowserConfigs Code DryRunAndUpdate ExecutionRoleArn FailureRetentionPeriod Name ProvisionedResourceCleanup ResourcesToReplicateTags RunConfig RuntimeVersion Schedule StartCanaryAfterCreation SuccessRetentionPeriod Tags VPCConfig VisualReferences">
 <td class="mono">AWS::Synthetics::Canary</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">18<div class="props">ArtifactConfig, ArtifactS3Location, BrowserConfigs, Code, DryRunAndUpdate, ExecutionRoleArn, FailureRetentionPeriod, Name, ProvisionedResourceCleanup, ResourcesToReplicateTags, RunConfig, RuntimeVersion, Schedule, StartCanaryAfterCreation, SuccessRetentionPeriod, Tags, VPCConfig, VisualReferences</div></td></tr>
 <tr data-svc="Synthetics" data-c="inv-tag" data-d="panel-only" data-props="Name ResourceArns Tags">
@@ -8304,9 +8304,9 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">18<div class="props">AllocatedStorage, Bucket, DbInstanceType, DbParameterGroupIdentifier, DbStorageType, DeploymentType, FailoverMode, LogDeliveryConfiguration, Name, NetworkType, Organization, Password, Port, PubliclyAccessible, Tags, Username, VpcSecurityGroupIds, VpcSubnetIds</div></td></tr>
-<tr data-svc="Timestream" data-c="inv-tag" data-d="panel-only" data-props="AllocatedStorage Bucket DbInstanceType DbParameterGroupIdentifier DbStorageType DeploymentType LogDeliveryConfiguration MaintenanceSchedule Name NetworkType Organization Password Port PubliclyAccessible Tags Username VpcSecurityGroupIds VpcSubnetIds">
+<tr data-svc="Timestream" data-c="inv" data-d="panel-only" data-props="AllocatedStorage Bucket DbInstanceType DbParameterGroupIdentifier DbStorageType DeploymentType LogDeliveryConfiguration MaintenanceSchedule Name NetworkType Organization Password Port PubliclyAccessible Tags Username VpcSecurityGroupIds VpcSubnetIds">
 <td class="mono">AWS::Timestream::InfluxDBInstance</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">18<div class="props">AllocatedStorage, Bucket, DbInstanceType, DbParameterGroupIdentifier, DbStorageType, DeploymentType, LogDeliveryConfiguration, MaintenanceSchedule, Name, NetworkType, Organization, Password, Port, PubliclyAccessible, Tags, Username, VpcSecurityGroupIds, VpcSubnetIds</div></td></tr>
 <tr data-svc="Timestream" data-c="inv-tag" data-d="panel-only" data-props="ClientToken ErrorReportConfiguration KmsKeyId NotificationConfiguration QueryString ScheduleConfiguration ScheduledQueryExecutionRoleArn ScheduledQueryName Tags TargetConfiguration">

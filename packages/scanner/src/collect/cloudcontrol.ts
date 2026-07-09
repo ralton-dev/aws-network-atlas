@@ -39,6 +39,49 @@ const TYPE_NAMES = [
   'AWS::Kinesis::Stream',
   // Note: AWS::Logs::LogGroup moved to a dedicated collector (collect/logs.ts)
   // — paginated with no cap, plus retention/KMS detail.
+
+  // --- 2026-07-09 coverage-mechanism audit: tag-INDEPENDENT catches for
+  //     high-value under-collected types that support account-wide
+  //     ListResources with no parent identifier. These were previously
+  //     tag-only (untagged instances invisible) or entirely uncollected.
+  //     Unsupported types self-report as guarded per-type ScanErrors, so any
+  //     that a real account rejects can be pruned from a live scan.
+  // Supply chain / CI-CD (privileged roles, external Git trust)
+  'AWS::CodeBuild::Project',
+  'AWS::CodeArtifact::Repository',
+  'AWS::CodeStarConnections::Connection',
+  // Identity / external trust roots
+  'AWS::RolesAnywhere::TrustAnchor',
+  'AWS::ACMPCA::CertificateAuthority',
+  // Serverless / shadow data stores (untagged = invisible today)
+  'AWS::OpenSearchServerless::Collection',
+  'AWS::NeptuneGraph::Graph',
+  'AWS::DocDBElastic::Cluster',
+  'AWS::Timestream::InfluxDBInstance',
+  'AWS::S3::AccessPoint',
+  'AWS::HealthLake::FHIRDatastore',
+  // Public / network-facing workloads
+  'AWS::AppRunner::Service',
+  'AWS::AppSync::GraphQLApi',
+  'AWS::Amplify::App',
+  'AWS::MWAA::Environment',
+  'AWS::Grafana::Workspace',
+  'AWS::Lightsail::Instance',
+  'AWS::SageMaker::NotebookInstance',
+  'AWS::Synthetics::Canary',
+  'AWS::KinesisAnalyticsV2::Application',
+  // Security / governance / ZTNA
+  'AWS::EC2::VerifiedAccessInstance',
+  'AWS::CloudFormation::StackSet',
+  'AWS::SecurityLake::DataLake',
+  // Wiring / integration / DNS / messaging (Lambda event edges are untaggable)
+  'AWS::Lambda::EventSourceMapping',
+  'AWS::ServiceDiscovery::PrivateDnsNamespace',
+  'AWS::SSM::Document',
+  'AWS::SES::EmailIdentity',
+  'AWS::AppFlow::Flow',
+  // Contact center (PII-heavy platform)
+  'AWS::Connect::Instance',
 ] as const;
 
 /** Per-TypeName result cap so a huge estate can't stall the scan. */
