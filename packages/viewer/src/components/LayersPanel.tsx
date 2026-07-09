@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { AtlasGraph, EdgeKind } from '../model/graph-types.js';
-import { hiddenCount, type HiddenState } from '../model/view-state.js';
+import { hiddenCount, type HiddenState, type TfFilter } from '../model/view-state.js';
+import { TerraformMark } from './nodes.js';
 
 const NODE_KIND_LABELS: Record<string, string> = {
   'group-account': 'Account containers',
@@ -81,6 +82,8 @@ export interface LayersPanelProps {
   hidden: HiddenState;
   onToggleNodeKind(kind: string): void;
   onToggleEdgeKind(kind: EdgeKind): void;
+  /** Show only Terraform-managed / only unmanaged resources (undefined = all). */
+  onSetTfFilter(filter?: TfFilter): void;
   /** Un-hide the individually hidden nodes (keeps kind toggles). */
   onShowHiddenNodes(): void;
   /** Reset everything hidden in this view. */
@@ -113,12 +116,48 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
     );
   }, [graph.edges]);
 
+  // tfManaged is only stamped when Terraform stacks are imported, so absence
+  // of the flag on every node means no tf-import yet → hide the section.
+  const tf = useMemo(() => {
+    let managed = 0;
+    let unmanaged = 0;
+    for (const n of graph.nodes) {
+      if (n.data.tfManaged === true) managed += 1;
+      else if (n.data.tfManaged === false) unmanaged += 1;
+    }
+    return { present: managed + unmanaged > 0, managed, unmanaged };
+  }, [graph.nodes]);
+
+  const tfChoices: Array<{ value?: TfFilter; label: string; count?: number }> = [
+    { label: 'All resources' },
+    { value: 'managed', label: 'Terraform-managed only', count: tf.managed },
+    { value: 'unmanaged', label: 'Unmanaged only', count: tf.unmanaged },
+  ];
+
   return (
     <aside className="layers-panel">
       <header>
         <h2>Layers</h2>
         <button className="close-btn" onClick={props.onClose} title="Close">×</button>
       </header>
+
+      {tf.present && (
+        <>
+          <h3 className="tf-heading"><TerraformMark size={15} /> Terraform</h3>
+          {tfChoices.map(({ value, label, count }) => (
+            <label key={value ?? 'all'} className="layer-row">
+              <input
+                type="radio"
+                name="tf-filter"
+                checked={hidden.tfFilter === value}
+                onChange={() => props.onSetTfFilter(value)}
+              />
+              <span className="layer-label">{label}</span>
+              {count !== undefined && <span className="count">{count}</span>}
+            </label>
+          ))}
+        </>
+      )}
 
       <h3>Nodes</h3>
       {nodeKinds.map(([kind, count]) => {

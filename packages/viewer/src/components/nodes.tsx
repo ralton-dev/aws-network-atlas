@@ -15,6 +15,20 @@ function initials(kind: string): string {
   return kind.slice(0, 3).toUpperCase();
 }
 
+/** The Terraform mark, overlaid on nodes claimed by an imported state. */
+export function TerraformMark({ size = 14 }: { size?: number }): React.ReactElement {
+  return (
+    <span className="tf-mark" title="Managed by Terraform" style={{ width: size, height: size }}>
+      <svg viewBox="0 0 24 24" width={size - 4} height={size - 4} aria-label="Terraform">
+        <path
+          fill="currentColor"
+          d="M1.44 0v7.575l6.561 3.79V3.787Zm21.12 4.227-6.561 3.791v7.574l6.56-3.787ZM8.72 4.23v7.575l6.561 3.787V8.018Zm0 8.405v7.575L15.28 24v-7.578Z"
+        />
+      </svg>
+    </span>
+  );
+}
+
 export function ResourceNode({ data, selected }: NodeProps<AtlasNode>): React.ReactElement {
   const Icon = iconFor(data.kind);
   return (
@@ -31,6 +45,7 @@ export function ResourceNode({ data, selected }: NodeProps<AtlasNode>): React.Re
       <EdgeHandles />
       <div className="resource-icon">
         {Icon ? <Icon width={34} height={34} /> : <span className="icon-fallback">{initials(data.kind)}</span>}
+        {data.tfManaged === true && <TerraformMark />}
       </div>
       <div className="resource-text">
         <div className="resource-label">{data.label}</div>

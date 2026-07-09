@@ -4,6 +4,7 @@ import type { ScanError } from '@atlas/schema';
 import type { AtlasIndex, ResourceRef } from '../data.js';
 import type { AtlasEdgeData } from '../model/graph-types.js';
 import { iconFor } from '../icons.js';
+import { TerraformMark } from './nodes.js';
 
 export type Selection =
   | { type: 'resource'; ref: ResourceRef }
@@ -219,7 +220,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
 
       {tfBindings.length > 0 && (
         <section className="terraform">
-          <h3>Terraform</h3>
+          <h3 className="tf-heading"><TerraformMark size={15} /> Terraform</h3>
           {tfBindings.length > 1 && (
             <p className="muted">
               ⚠ Claimed by {tfBindings.length} state instances — likely imported into
@@ -240,7 +241,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
       )}
       {tfBindings.length === 0 && index.terraform.length > 0 && (
         <section className="terraform">
-          <h3>Terraform</h3>
+          <h3 className="tf-heading"><TerraformMark size={15} /> Terraform</h3>
           <p className="muted">
             Not claimed by any imported state ({index.terraform.length} stack
             {index.terraform.length === 1 ? '' : 's'} imported) — created outside

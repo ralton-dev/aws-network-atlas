@@ -4,6 +4,9 @@ import type { EdgeKind } from './graph-types.js';
  * What the user has hidden while decluttering, scoped per view (overview or a
  * single VPC detail — the view hash is the storage key).
  */
+/** Show only Terraform-managed resources, only unmanaged, or everything. */
+export type TfFilter = 'managed' | 'unmanaged';
+
 export interface HiddenState {
   /** Individually hidden nodes: graph node ids or resource refIds. */
   nodeIds: Set<string>;
@@ -11,6 +14,8 @@ export interface HiddenState {
   nodeKinds: Set<string>;
   /** Hidden edge kinds (peering / tgw / vpn / dx / route / assoc). */
   edgeKinds: Set<EdgeKind>;
+  /** When set, resource nodes on the other side of the split are hidden. */
+  tfFilter?: TfFilter;
 }
 
 export function emptyHiddenState(): HiddenState {
@@ -18,7 +23,9 @@ export function emptyHiddenState(): HiddenState {
 }
 
 export function hiddenCount(state: HiddenState): number {
-  return state.nodeIds.size + state.nodeKinds.size + state.edgeKinds.size;
+  return (
+    state.nodeIds.size + state.nodeKinds.size + state.edgeKinds.size + (state.tfFilter ? 1 : 0)
+  );
 }
 
 // --- best-effort localStorage persistence -----------------------------------
@@ -43,6 +50,10 @@ export function loadHiddenState(viewKey: string): HiddenState {
         nodeIds: new Set(isStringArray(parsed.nodeIds) ? parsed.nodeIds : []),
         nodeKinds: new Set(isStringArray(parsed.nodeKinds) ? parsed.nodeKinds : []),
         edgeKinds: new Set((isStringArray(parsed.edgeKinds) ? parsed.edgeKinds : []) as EdgeKind[]),
+        tfFilter:
+          parsed.tfFilter === 'managed' || parsed.tfFilter === 'unmanaged'
+            ? parsed.tfFilter
+            : undefined,
       };
     }
   } catch {
@@ -62,6 +73,7 @@ export function saveHiddenState(viewKey: string, state: HiddenState): void {
           nodeIds: [...state.nodeIds],
           nodeKinds: [...state.nodeKinds],
           edgeKinds: [...state.edgeKinds],
+          tfFilter: state.tfFilter,
         }),
       );
     }

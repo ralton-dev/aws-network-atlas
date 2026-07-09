@@ -1,6 +1,7 @@
 // Smoke-test the Terraform state mapping (tf-import) over file:// with
-// fixture data: "tf" badges on managed nodes, the Terraform section in the
-// details panel (address + stack + repo), and the unmanaged callout.
+// fixture data: the Terraform mark on managed nodes, the Terraform section in
+// the details panel (address + stack + repo), the unmanaged callout, and the
+// managed/unmanaged filter in the Layers panel.
 //   node e2e-terraform.mjs
 import { chromium } from 'playwright';
 import path from 'node:path';
@@ -20,10 +21,10 @@ await page.waitForTimeout(1200);
 
 // Overview: the two fixture stacks claim the prod + dev VPCs (among others).
 const overview = {
-  tfBadges: await page.locator('.resource-node .badge', { hasText: /^tf$/ }).count(),
+  tfMarks: await page.locator('.resource-node .tf-mark').count(),
 };
 console.log('overview:', JSON.stringify(overview));
-if (overview.tfBadges < 2) problems.push(`overview: expected ≥2 tf badges, got ${overview.tfBadges}`);
+if (overview.tfMarks < 2) problems.push(`overview: expected ≥2 Terraform marks, got ${overview.tfMarks}`);
 
 // Managed resource: prod-vpc is claimed by prod-network via module.vpc.aws_vpc.main.
 await page.locator('.resource-node', { hasText: 'prod-vpc' }).first().click();
@@ -55,15 +56,46 @@ console.log('unmanaged:', JSON.stringify(unmanaged));
 if (unmanaged.callout === 0) problems.push('unmanaged: "not claimed" callout missing');
 await page.locator('.details-panel .close-btn').click();
 
-// VPC detail: badges survive the drill-down (same central post-pass).
+// Layers panel: the Terraform managed/unmanaged filter.
+await page.locator('.toolbar-btn', { hasText: 'Layers' }).click();
+await page.waitForTimeout(300);
+const visibleProdVpc = () =>
+  page.locator('.resource-node:visible', { hasText: 'prod-vpc' }).count();
+const visibleCoreTgw = () =>
+  page.locator('.resource-node:visible', { hasText: 'core-tgw' }).count();
+
+await page.locator('.layer-row', { hasText: 'Terraform-managed only' }).locator('input').check();
+await page.waitForTimeout(400);
+const managedOnly = { prodVpc: await visibleProdVpc(), coreTgw: await visibleCoreTgw() };
+console.log('filter-managed:', JSON.stringify(managedOnly));
+if (managedOnly.prodVpc === 0) problems.push('filter-managed: managed prod-vpc was hidden');
+if (managedOnly.coreTgw !== 0) problems.push('filter-managed: unmanaged core-tgw still visible');
+
+await page.locator('.layer-row', { hasText: 'Unmanaged only' }).locator('input').check();
+await page.waitForTimeout(400);
+const unmanagedOnly = { prodVpc: await visibleProdVpc(), coreTgw: await visibleCoreTgw() };
+console.log('filter-unmanaged:', JSON.stringify(unmanagedOnly));
+if (unmanagedOnly.prodVpc !== 0) problems.push('filter-unmanaged: managed prod-vpc still visible');
+if (unmanagedOnly.coreTgw === 0) problems.push('filter-unmanaged: unmanaged core-tgw was hidden');
+
+await page.locator('.layer-row', { hasText: 'All resources' }).locator('input').check();
+await page.waitForTimeout(400);
+const allAgain = { prodVpc: await visibleProdVpc(), coreTgw: await visibleCoreTgw() };
+console.log('filter-all:', JSON.stringify(allAgain));
+if (allAgain.prodVpc === 0 || allAgain.coreTgw === 0) {
+  problems.push('filter-all: resources did not come back after resetting the filter');
+}
+await page.locator('.layers-panel .close-btn').click();
+
+// VPC detail: marks survive the drill-down (same central post-pass).
 await page.locator('.resource-node', { hasText: 'prod-vpc' }).first().dispatchEvent('dblclick');
 await page.waitForFunction(() => window.location.hash.startsWith('#/vpc/'), null, { timeout: 10000 });
 await page.waitForTimeout(1800);
 const detail = {
-  tfBadges: await page.locator('.resource-node .badge', { hasText: /^tf$/ }).count(),
+  tfMarks: await page.locator('.resource-node .tf-mark').count(),
 };
 console.log('vpc-detail:', JSON.stringify(detail));
-if (detail.tfBadges === 0) problems.push('vpc-detail: no tf badges after drill-down');
+if (detail.tfMarks === 0) problems.push('vpc-detail: no Terraform marks after drill-down');
 
 console.log('problems:', JSON.stringify(problems));
 await browser.close();

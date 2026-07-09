@@ -35,6 +35,12 @@ export type AtlasNodeData = {
   ghost?: boolean;
   /** Visually emphasized (the center resource of a focus view). */
   emphasis?: boolean;
+  /**
+   * Terraform state mapping (set only when stacks are imported): true =
+   * claimed by an imported stack (drawn with the Terraform mark), false =
+   * unmanaged. Drives the managed/unmanaged filter in the Layers panel.
+   */
+  tfManaged?: boolean;
 };
 
 export type AtlasNode = Node<AtlasNodeData>;

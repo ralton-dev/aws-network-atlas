@@ -15,6 +15,7 @@ import {
   saveInteractionMode,
   type HiddenState,
   type InteractionMode,
+  type TfFilter,
 } from '../model/view-state.js';
 import { FlowView } from './FlowView.js';
 import { SearchBar } from './SearchBar.js';
@@ -148,6 +149,11 @@ export function App(): React.ReactElement {
       if (!edgeKinds.delete(kind)) edgeKinds.add(kind);
       applyHidden({ ...hidden, edgeKinds });
     },
+    [hidden, applyHidden],
+  );
+
+  const setTfFilter = useCallback(
+    (tfFilter?: TfFilter) => applyHidden({ ...hidden, tfFilter }),
     [hidden, applyHidden],
   );
 
@@ -313,6 +319,7 @@ export function App(): React.ReactElement {
               hidden={hidden}
               onToggleNodeKind={toggleNodeKind}
               onToggleEdgeKind={toggleEdgeKind}
+              onSetTfFilter={setTfFilter}
               onShowHiddenNodes={showHiddenNodes}
               onShowAll={showAll}
               onClose={() => setShowLayers(false)}

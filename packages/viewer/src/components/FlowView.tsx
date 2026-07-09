@@ -102,13 +102,18 @@ export function FlowView(props: FlowViewProps): React.ReactElement {
   // propagate hiddenness down the container hierarchy (hiding a container
   // hides everything inside it).
   const { renderNodes, hiddenIds } = useMemo(() => {
-    const { nodeIds, nodeKinds } = props.hidden;
+    const { nodeIds, nodeKinds, tfFilter } = props.hidden;
     const hiddenIdsAcc = new Set<string>();
     const rendered = nodes.map((n) => {
       const isHidden =
         nodeIds.has(n.id) ||
         (n.data.refId !== undefined && nodeIds.has(n.data.refId)) ||
         nodeKinds.has(n.data.kind) ||
+        // Terraform split: only resource nodes that carry the flag (containers
+        // and synthetic nodes like Internet stay for context).
+        (tfFilter !== undefined &&
+          n.data.tfManaged !== undefined &&
+          n.data.tfManaged !== (tfFilter === 'managed')) ||
         (n.parentId !== undefined && hiddenIdsAcc.has(n.parentId));
       if (isHidden) hiddenIdsAcc.add(n.id);
       return {

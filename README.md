@@ -197,12 +197,13 @@ diagram answers "where is this managed from?".
 attribute values (which routinely contain DB passwords and the like) are never
 persisted; what's written to `data/terraform/<stack>.json` is committable.
 
-On the diagram, every resource claimed by an imported stack gets a `tf` badge,
-and its details panel shows the resource address, stack, and a link to the repo.
-Resources *not* claimed by any imported stack are called out as such — ClickOps
-drift, visible at a glance. The import also prints a match report: state entries
-the scanner couldn't find (stale state or an uncollected resource type) are
-listed per stack.
+On the diagram, every resource claimed by an imported stack gets the Terraform
+mark on its icon, and its details panel shows the resource address, stack, and a
+link to the repo. Resources *not* claimed by any imported stack are called out
+as such — ClickOps drift, visible at a glance — and the Layers panel gains a
+filter to show only Terraform-managed or only unmanaged resources. The import
+also prints a match report: state entries the scanner couldn't find (stale state
+or an uncollected resource type) are listed per stack.
 
 Matching is by ARN, falling back to the AWS-native id — the same convention the
 AWS provider uses for its `id` attribute, so VPCs, subnets, instances, buckets,
