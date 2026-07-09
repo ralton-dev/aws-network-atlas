@@ -56,12 +56,12 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <div class="wrap">
 <h1>AWS Full-Estate Coverage Audit</h1>
 <p class="lede">Every AWS resource type that can be created &mdash; the CloudFormation resource registry, the authoritative &ldquo;what exists&rdquo; spine &mdash; measured against what this tool <b>collects</b> and what it <b>draws on the diagram</b>. Measured against the <i>whole</i> registry, not a self-selected subset, so nothing hides.</p>
-<p class="meta">Generated 2026-07-09 &middot; CloudFormation spec v253.0.0 &middot; 1605 resource types &middot; 280 services. Regenerate with <code>npm run coverage</code>.</p>
+<p class="meta">Generated 2026-07-09 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
-<div class="kpi"><div class="n">1605</div><div class="l">Resource types</div></div>
+<div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
 <div class="kpi det"><div class="n">212</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">909</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">484</div><div class="l">Not collected at all</div></div>
+<div class="kpi inv"><div class="n">922</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">488</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -70,13 +70,13 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <span class="badge none">Not collected</span> = no collector and not taggable &mdash; never seen.<br>
 <b>&ldquo;Displayed&rdquo;:</b> <span class="badge d-node">node</span> = its own box on a graph view &middot; <span class="badge d-edge">edge</span> = only a connecting line/route &middot; <span class="badge d-panel-only">panel-only</span> = searchable list / details pane, never on the graph &middot; <span class="badge d-none">not displayed</span>.</div>
 
-<details class="rollup"><summary>Per-service coverage rollup (280 services)</summary>
+<details class="rollup"><summary>Per-service coverage rollup (281 services)</summary>
 <div class="scroll"><table><thead><tr><th>Service</th><th>Types</th><th>Detailed</th><th>Inventory</th><th>None</th><th>Detailed coverage</th></tr></thead>
 <tbody><tr><td class="mono">EC2</td><td>113</td><td class="c-detailed">50</td><td class="c-inv">39</td><td class="c-none">24</td>
 <td><div class="bar"><span style="width:44%"></span></div><span class="pct">44%</span></td></tr>
-<tr><td class="mono">SageMaker</td><td>35</td><td class="c-detailed">0</td><td class="c-inv">33</td><td class="c-none">2</td>
+<tr><td class="mono">SageMaker</td><td>38</td><td class="c-detailed">0</td><td class="c-inv">35</td><td class="c-none">3</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Connect</td><td>34</td><td class="c-detailed">0</td><td class="c-inv">23</td><td class="c-none">11</td>
+<tr><td class="mono">Connect</td><td>35</td><td class="c-detailed">0</td><td class="c-inv">24</td><td class="c-none">11</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">IoT</td><td>30</td><td class="c-detailed">0</td><td class="c-inv">20</td><td class="c-none">10</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
@@ -96,10 +96,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">CloudFormation</td><td>18</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">16</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Cognito</td><td>18</td><td class="c-detailed">6</td><td class="c-inv">0</td><td class="c-none">12</td>
+<td><div class="bar"><span style="width:33%"></span></div><span class="pct">33%</span></td></tr>
 <tr><td class="mono">DataZone</td><td>17</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">16</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Cognito</td><td>16</td><td class="c-detailed">6</td><td class="c-inv">0</td><td class="c-none">10</td>
-<td><div class="bar"><span style="width:38%"></span></div><span class="pct">38%</span></td></tr>
 <tr><td class="mono">Greengrass</td><td>16</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">8</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">IAM</td><td>16</td><td class="c-detailed">11</td><td class="c-inv">4</td><td class="c-none">1</td>
@@ -114,11 +114,13 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Logs</td><td>15</td><td class="c-detailed">1</td><td class="c-inv">5</td><td class="c-none">9</td>
 <td><div class="bar"><span style="width:7%"></span></div><span class="pct">7%</span></td></tr>
+<tr><td class="mono">MediaLive</td><td>15</td><td class="c-detailed">0</td><td class="c-inv">14</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">SecurityHub</td><td>15</td><td class="c-detailed">1</td><td class="c-inv">6</td><td class="c-none">8</td>
 <td><div class="bar"><span style="width:7%"></span></div><span class="pct">7%</span></td></tr>
 <tr><td class="mono">ApiGatewayV2</td><td>14</td><td class="c-detailed">6</td><td class="c-inv">1</td><td class="c-none">7</td>
 <td><div class="bar"><span style="width:43%"></span></div><span class="pct">43%</span></td></tr>
-<tr><td class="mono">MediaLive</td><td>14</td><td class="c-detailed">0</td><td class="c-inv">13</td><td class="c-none">1</td>
+<tr><td class="mono">QuickSight</td><td>14</td><td class="c-detailed">0</td><td class="c-inv">12</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">VpcLattice</td><td>14</td><td class="c-detailed">2</td><td class="c-inv">10</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:14%"></span></div><span class="pct">14%</span></td></tr>
@@ -126,11 +128,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">DataSync</td><td>13</td><td class="c-detailed">7</td><td class="c-inv">6</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:54%"></span></div><span class="pct">54%</span></td></tr>
+<tr><td class="mono">Lambda</td><td>13</td><td class="c-detailed">2</td><td class="c-inv">5</td><td class="c-none">6</td>
+<td><div class="bar"><span style="width:15%"></span></div><span class="pct">15%</span></td></tr>
 <tr><td class="mono">AppSync</td><td>12</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">8</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">MediaConnect</td><td>12</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">4</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">QuickSight</td><td>12</td><td class="c-detailed">0</td><td class="c-inv">11</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Wisdom</td><td>12</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">4</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
@@ -142,8 +144,6 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">IoTWireless</td><td>11</td><td class="c-detailed">0</td><td class="c-inv">11</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">Lambda</td><td>11</td><td class="c-detailed">2</td><td class="c-inv">3</td><td class="c-none">6</td>
-<td><div class="bar"><span style="width:18%"></span></div><span class="pct">18%</span></td></tr>
 <tr><td class="mono">Route53Resolver</td><td>11</td><td class="c-detailed">7</td><td class="c-inv">2</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:64%"></span></div><span class="pct">64%</span></td></tr>
 <tr><td class="mono">WAFRegional</td><td>11</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">11</td>
@@ -260,6 +260,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Cases</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">CertificateManager</td><td>5</td><td class="c-detailed">1</td><td class="c-inv">3</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:20%"></span></div><span class="pct">20%</span></td></tr>
 <tr><td class="mono">CloudTrail</td><td>5</td><td class="c-detailed">2</td><td class="c-inv">2</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:40%"></span></div><span class="pct">40%</span></td></tr>
 <tr><td class="mono">EntityResolution</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">1</td>
@@ -281,6 +283,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <tr><td class="mono">ResilienceHubV2</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">S3Tables</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">3</td>
+<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">SecurityAgent</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">ServiceDiscovery</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
@@ -336,8 +340,6 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">SecretsManager</td><td>4</td><td class="c-detailed">2</td><td class="c-inv">0</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
-<tr><td class="mono">SecurityAgent</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">SecurityLake</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">ServiceCatalogAppRegistry</td><td>4</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">2</td>
@@ -365,6 +367,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <tr><td class="mono">Cassandra</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Chatbot</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Chime</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">CleanRoomsML</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
@@ -445,10 +449,6 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <tr><td class="mono">ApplicationAutoScaling</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Budgets</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">0</td><td class="c-none">2</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">CertificateManager</td><td>2</td><td class="c-detailed">1</td><td class="c-inv">0</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
-<tr><td class="mono">Chime</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Comprehend</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
@@ -610,6 +610,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">OSIS</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">Outposts</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Pipes</td><td>1</td><td class="c-detailed">1</td><td class="c-inv">0</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">RUM</td><td>1</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">0</td>
@@ -717,11 +719,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>accessAnalyzers</code></div><div class="detail">type (account/org, external/unused-access), status</div></td>
 <td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">IAM Access Analyzer analyzers (external/unused-access)</div></td>
 <td class="pc">5<div class="props">AnalyzerConfiguration, AnalyzerName, ArchiveRules, Tags, Type</div></td></tr>
-<tr data-svc="AmazonMQ" data-c="detailed" data-d="node" data-props="AuthenticationStrategy AutoMinorVersionUpgrade BrokerName Configuration DataReplicationMode DataReplicationPrimaryBrokerArn DeploymentMode EncryptionOptions EngineType EngineVersion HostInstanceType LdapServerMetadata Logs MaintenanceWindowStartTime PubliclyAccessible SecurityGroups StorageType SubnetIds Tags Users">
+<tr data-svc="AmazonMQ" data-c="detailed" data-d="node" data-props="AuthenticationStrategy AutoMinorVersionUpgrade BrokerName Configuration DataReplicationMode DataReplicationPrimaryBrokerArn DeploymentMode EncryptionOptions EngineType EngineVersion HostInstanceType LdapServerMetadata Logs MaintenanceWindowStartTime PubliclyAccessible ResourceShareArns SecurityGroups StorageType SubnetIds Tags Users">
 <td class="mono">AWS::AmazonMQ::Broker</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>mqBrokers</code></div><div class="detail">engineType, deploymentMode, publiclyAccessible, subnets, sgIds</div></td>
 <td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: deploymentMode, state</div></td>
-<td class="pc">20<div class="props">AuthenticationStrategy, AutoMinorVersionUpgrade, BrokerName, Configuration, DataReplicationMode, DataReplicationPrimaryBrokerArn, DeploymentMode, EncryptionOptions, EngineType, EngineVersion, HostInstanceType, LdapServerMetadata, Logs, MaintenanceWindowStartTime, PubliclyAccessible, SecurityGroups, StorageType, SubnetIds, Tags, Users</div></td></tr>
+<td class="pc">21<div class="props">AuthenticationStrategy, AutoMinorVersionUpgrade, BrokerName, Configuration, DataReplicationMode, DataReplicationPrimaryBrokerArn, DeploymentMode, EncryptionOptions, EngineType, EngineVersion, HostInstanceType, LdapServerMetadata, Logs, MaintenanceWindowStartTime, PubliclyAccessible, ResourceShareArns, SecurityGroups, StorageType, SubnetIds, Tags, Users</div></td></tr>
 <tr data-svc="AmazonMQ" data-c="inv-tag" data-d="panel-only" data-props="AuthenticationStrategy Data Description EngineType EngineVersion Name Tags">
 <td class="mono">AWS::AmazonMQ::Configuration</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -1117,11 +1119,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">16<div class="props">AccessEndpoints, AppstreamAgentVersion, Description, DisplayName, DomainJoinInfo, EnableDefaultInternetAccess, IamRoleArn, ImageArn, ImageName, InstanceType, Name, RootVolumeConfig, SoftwaresToInstall, SoftwaresToUninstall, Tags, VpcConfig</div></td></tr>
-<tr data-svc="AppStream" data-c="inv-tag" data-d="panel-only" data-props="AccessEndpoints ApplicationSettings AttributesToDelete ContentRedirection DeleteStorageConnectors Description DisplayName EmbedHostDomains FeedbackURL Name RedirectURL StorageConnectors StreamingExperienceSettings Tags UserSettings">
+<tr data-svc="AppStream" data-c="inv-tag" data-d="panel-only" data-props="AccessEndpoints AgentAccessConfig ApplicationSettings AttributesToDelete ContentRedirection DeleteStorageConnectors Description DisplayName EmbedHostDomains FeedbackURL Name RedirectURL StorageConnectors StreamingExperienceSettings Tags UserSettings">
 <td class="mono">AWS::AppStream::Stack</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
-<td class="pc">15<div class="props">AccessEndpoints, ApplicationSettings, AttributesToDelete, ContentRedirection, DeleteStorageConnectors, Description, DisplayName, EmbedHostDomains, FeedbackURL, Name, RedirectURL, StorageConnectors, StreamingExperienceSettings, Tags, UserSettings</div></td></tr>
+<td class="pc">16<div class="props">AccessEndpoints, AgentAccessConfig, ApplicationSettings, AttributesToDelete, ContentRedirection, DeleteStorageConnectors, Description, DisplayName, EmbedHostDomains, FeedbackURL, Name, RedirectURL, StorageConnectors, StreamingExperienceSettings, Tags, UserSettings</div></td></tr>
 <tr data-svc="AppStream" data-c="none" data-d="none" data-props="FleetName StackName">
 <td class="mono">AWS::AppStream::StackFleetAssociation</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
@@ -1742,6 +1744,21 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">1<div class="props">ExpiryEventsConfiguration</div></td></tr>
+<tr data-svc="CertificateManager" data-c="inv-tag" data-d="panel-only" data-props="AcmeEndpointArn DomainName PrevalidationOptions Tags">
+<td class="mono">AWS::CertificateManager::AcmeDomainValidation</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">4<div class="props">AcmeEndpointArn, DomainName, PrevalidationOptions, Tags</div></td></tr>
+<tr data-svc="CertificateManager" data-c="inv-tag" data-d="panel-only" data-props="AuthorizationBehavior CertificateAuthority CertificateTags Contact Tags">
+<td class="mono">AWS::CertificateManager::AcmeEndpoint</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">5<div class="props">AuthorizationBehavior, CertificateAuthority, CertificateTags, Contact, Tags</div></td></tr>
+<tr data-svc="CertificateManager" data-c="inv-tag" data-d="panel-only" data-props="AcmeEndpointArn Expiration RoleArn Tags">
+<td class="mono">AWS::CertificateManager::AcmeExternalAccountBinding</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">4<div class="props">AcmeEndpointArn, Expiration, RoleArn, Tags</div></td></tr>
 <tr data-svc="CertificateManager" data-c="detailed" data-d="node" data-props="CertificateAuthorityArn CertificateExport CertificateTransparencyLoggingPreference DomainName DomainValidationOptions KeyAlgorithm SubjectAlternativeNames Tags ValidationMethod">
 <td class="mono">AWS::CertificateManager::Certificate</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>acmCertificates</code></div><div class="detail">domainName, SANs, status, type, inUseBy, notAfter</div></td>
@@ -1772,6 +1789,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">5<div class="props">AppInstanceArn, Configuration, Metadata, Name, Tags</div></td></tr>
+<tr data-svc="Chime" data-c="inv-tag" data-d="panel-only" data-props="AppInstanceArn AppInstanceUserId ExpirationSettings Metadata Name Tags">
+<td class="mono">AWS::Chime::AppInstanceUser</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">6<div class="props">AppInstanceArn, AppInstanceUserId, ExpirationSettings, Metadata, Name, Tags</div></td></tr>
 <tr data-svc="CleanRooms" data-c="inv-tag" data-d="panel-only" data-props="AnalysisParameters Description ErrorMessageConfiguration Format MembershipIdentifier Name Schema Source SourceMetadata SyntheticDataParameters Tags">
 <td class="mono">AWS::CleanRooms::AnalysisTemplate</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -1897,11 +1919,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">ExecutionRoleArn, LoggingConfig, SchemaHandlerPackage, TypeName</div></td></tr>
-<tr data-svc="CloudFormation" data-c="inv" data-d="panel-only" data-props="NotificationARNs Parameters Tags TemplateURL TimeoutInMinutes">
+<tr data-svc="CloudFormation" data-c="inv" data-d="panel-only" data-props="Capabilities Description DisableRollback EnableTerminationProtection NotificationARNs Parameters RoleARN StackName StackPolicyBody StackPolicyURL StackStatusReason Tags TemplateBody TemplateURL TimeoutInMinutes">
 <td class="mono">AWS::CloudFormation::Stack</td>
 <td><span class="badge inv">Inventory (untagged-catch)</span><div class="detail">ARN + name + tags (untagged-catch sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
-<td class="pc">5<div class="props">NotificationARNs, Parameters, Tags, TemplateURL, TimeoutInMinutes</div></td></tr>
+<td class="pc">15<div class="props">Capabilities, Description, DisableRollback, EnableTerminationProtection, NotificationARNs, Parameters, RoleARN, StackName, StackPolicyBody, StackPolicyURL, StackStatusReason, Tags, TemplateBody, TemplateURL, TimeoutInMinutes</div></td></tr>
 <tr data-svc="CloudFormation" data-c="inv-tag" data-d="panel-only" data-props="AdministrationRoleARN AutoDeployment CallAs Capabilities Description ExecutionRoleName ManagedExecution OperationPreferences Parameters PermissionModel StackInstancesGroup StackSetName Tags TemplateBody TemplateURL">
 <td class="mono">AWS::CloudFormation::StackSet</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -2232,21 +2254,21 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">6<div class="props">ClientId, Enforcement, Links, TermsName, TermsSource, UserPoolId</div></td></tr>
-<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="AccountRecoverySetting AdminCreateUserConfig AliasAttributes AutoVerifiedAttributes DeletionProtection DeviceConfiguration EmailAuthenticationMessage EmailAuthenticationSubject EmailConfiguration EmailVerificationMessage EmailVerificationSubject EnabledMfas LambdaConfig MfaConfiguration Policies Schema SmsAuthenticationMessage SmsConfiguration SmsVerificationMessage UserAttributeUpdateSettings UserPoolAddOns UserPoolName UserPoolTags UserPoolTier UsernameAttributes UsernameConfiguration VerificationMessageTemplate WebAuthnFactorConfiguration WebAuthnRelyingPartyID WebAuthnUserVerification">
+<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="AccountRecoverySetting AdminCreateUserConfig AliasAttributes AutoVerifiedAttributes DeletionProtection DeviceConfiguration EmailAuthenticationMessage EmailAuthenticationSubject EmailConfiguration EmailVerificationMessage EmailVerificationSubject EnabledMfas IssuerConfiguration KeyConfiguration LambdaConfig MfaConfiguration Policies Schema SmsAuthenticationMessage SmsConfiguration SmsVerificationMessage UserAttributeUpdateSettings UserPoolAddOns UserPoolName UserPoolTags UserPoolTier UsernameAttributes UsernameConfiguration VerificationMessageTemplate WebAuthnFactorConfiguration WebAuthnRelyingPartyID WebAuthnUserVerification">
 <td class="mono">AWS::Cognito::UserPool</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoUserPools</code></div><div class="detail">passwordPolicy, mfaConfiguration, advancedSecurityMode, deletionProtection, domain, identityProviders, appClients (oauth flows/callbacks/idps)</div></td>
 <td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">identity-tier auth config; not yet drawn on the graph</div></td>
-<td class="pc">30<div class="props">AccountRecoverySetting, AdminCreateUserConfig, AliasAttributes, AutoVerifiedAttributes, DeletionProtection, DeviceConfiguration, EmailAuthenticationMessage, EmailAuthenticationSubject, EmailConfiguration, EmailVerificationMessage, EmailVerificationSubject, EnabledMfas, LambdaConfig, MfaConfiguration, Policies, Schema, SmsAuthenticationMessage, SmsConfiguration, SmsVerificationMessage, UserAttributeUpdateSettings, UserPoolAddOns, UserPoolName, UserPoolTags, UserPoolTier, UsernameAttributes, UsernameConfiguration, VerificationMessageTemplate, WebAuthnFactorConfiguration, WebAuthnRelyingPartyID, WebAuthnUserVerification</div></td></tr>
+<td class="pc">32<div class="props">AccountRecoverySetting, AdminCreateUserConfig, AliasAttributes, AutoVerifiedAttributes, DeletionProtection, DeviceConfiguration, EmailAuthenticationMessage, EmailAuthenticationSubject, EmailConfiguration, EmailVerificationMessage, EmailVerificationSubject, EnabledMfas, IssuerConfiguration, KeyConfiguration, LambdaConfig, MfaConfiguration, Policies, Schema, SmsAuthenticationMessage, SmsConfiguration, SmsVerificationMessage, UserAttributeUpdateSettings, UserPoolAddOns, UserPoolName, UserPoolTags, UserPoolTier, UsernameAttributes, UsernameConfiguration, VerificationMessageTemplate, WebAuthnFactorConfiguration, WebAuthnRelyingPartyID, WebAuthnUserVerification</div></td></tr>
 <tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="AccessTokenValidity AllowedOAuthFlows AllowedOAuthFlowsUserPoolClient AllowedOAuthScopes AnalyticsConfiguration AuthSessionValidity CallbackURLs ClientName DefaultRedirectURI EnablePropagateAdditionalUserContextData EnableTokenRevocation ExplicitAuthFlows GenerateSecret IdTokenValidity LogoutURLs PreventUserExistenceErrors ReadAttributes RefreshTokenRotation RefreshTokenValidity SupportedIdentityProviders TokenValidityUnits UserPoolId WriteAttributes">
 <td class="mono">AWS::Cognito::UserPoolClient</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoUserPools</code></div><div class="detail">captured inside cognitoUserPools.appClients[]</div></td>
 <td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">identity-tier auth config; not yet drawn on the graph</div></td>
 <td class="pc">23<div class="props">AccessTokenValidity, AllowedOAuthFlows, AllowedOAuthFlowsUserPoolClient, AllowedOAuthScopes, AnalyticsConfiguration, AuthSessionValidity, CallbackURLs, ClientName, DefaultRedirectURI, EnablePropagateAdditionalUserContextData, EnableTokenRevocation, ExplicitAuthFlows, GenerateSecret, IdTokenValidity, LogoutURLs, PreventUserExistenceErrors, ReadAttributes, RefreshTokenRotation, RefreshTokenValidity, SupportedIdentityProviders, TokenValidityUnits, UserPoolId, WriteAttributes</div></td></tr>
-<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="CustomDomainConfig Domain ManagedLoginVersion UserPoolId">
+<tr data-svc="Cognito" data-c="detailed" data-d="panel-only" data-props="CustomDomainConfig Domain ManagedLoginVersion Routing UserPoolId">
 <td class="mono">AWS::Cognito::UserPoolDomain</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoUserPools</code></div><div class="detail">captured as cognitoUserPools.domain</div></td>
 <td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">identity-tier auth config; not yet drawn on the graph</div></td>
-<td class="pc">4<div class="props">CustomDomainConfig, Domain, ManagedLoginVersion, UserPoolId</div></td></tr>
+<td class="pc">5<div class="props">CustomDomainConfig, Domain, ManagedLoginVersion, Routing, UserPoolId</div></td></tr>
 <tr data-svc="Cognito" data-c="none" data-d="none" data-props="Description GroupName Precedence RoleArn UserPoolId">
 <td class="mono">AWS::Cognito::UserPoolGroup</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
@@ -2257,6 +2279,16 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>cognitoUserPools</code></div><div class="detail">captured as cognitoUserPools.identityProviders</div></td>
 <td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">identity-tier auth config; not yet drawn on the graph</div></td>
 <td class="pc">6<div class="props">AttributeMapping, IdpIdentifiers, ProviderDetails, ProviderName, ProviderType, UserPoolId</div></td></tr>
+<tr data-svc="Cognito" data-c="none" data-d="none" data-props="EmailConfiguration LambdaConfig SmsConfiguration Status UserPoolId UserPoolTags">
+<td class="mono">AWS::Cognito::UserPoolRegionalConfigurationAttachment</td>
+<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
+<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td class="pc">6<div class="props">EmailConfiguration, LambdaConfig, SmsConfiguration, Status, UserPoolId, UserPoolTags</div></td></tr>
+<tr data-svc="Cognito" data-c="none" data-d="none" data-props="RegionName UserPoolId UserPoolTagsAtCreate">
+<td class="mono">AWS::Cognito::UserPoolReplica</td>
+<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
+<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td class="pc">3<div class="props">RegionName, UserPoolId, UserPoolTagsAtCreate</div></td></tr>
 <tr data-svc="Cognito" data-c="none" data-d="none" data-props="Identifier Name Scopes UserPoolId">
 <td class="mono">AWS::Cognito::UserPoolResourceServer</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
@@ -2482,6 +2514,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">11<div class="props">ClientToken, Constraints, ContactFlowArn, Defaults, Description, Fields, InstanceArn, Name, SelfAssignContactFlowArn, Status, Tags</div></td></tr>
+<tr data-svc="Connect" data-c="inv-tag" data-d="panel-only" data-props="Content Description EntryPoint InitializationData InstanceArn Name Status Tags">
+<td class="mono">AWS::Connect::TestCase</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">8<div class="props">Content, Description, EntryPoint, InitializationData, InstanceArn, Name, Status, Tags</div></td></tr>
 <tr data-svc="Connect" data-c="inv-tag" data-d="panel-only" data-props="Description InstanceArn Name Tags">
 <td class="mono">AWS::Connect::TrafficDistributionGroup</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -3677,11 +3714,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">ContainerDefinitions, Cpu, ExecutionRoleArn, Family, IpcMode, Memory, PidMode, Tags, TaskRoleArn, Volumes</div></td></tr>
-<tr data-svc="ECS" data-c="inv-tag" data-d="panel-only" data-props="Cluster Cpu ExecutionRoleArn HealthCheckPath InfrastructureRoleArn Memory NetworkConfiguration PrimaryContainer ScalingTarget ServiceName Tags TaskRoleArn">
+<tr data-svc="ECS" data-c="inv-tag" data-d="panel-only" data-props="Cluster Cpu ExecutionRoleArn HealthCheckPath InfrastructureRoleArn Memory NetworkConfiguration PrimaryContainer ScalingTarget ServiceName Tags TaskDefinitionArn TaskRoleArn">
 <td class="mono">AWS::ECS::ExpressGatewayService</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
-<td class="pc">12<div class="props">Cluster, Cpu, ExecutionRoleArn, HealthCheckPath, InfrastructureRoleArn, Memory, NetworkConfiguration, PrimaryContainer, ScalingTarget, ServiceName, Tags, TaskRoleArn</div></td></tr>
+<td class="pc">13<div class="props">Cluster, Cpu, ExecutionRoleArn, HealthCheckPath, InfrastructureRoleArn, Memory, NetworkConfiguration, PrimaryContainer, ScalingTarget, ServiceName, Tags, TaskDefinitionArn, TaskRoleArn</div></td></tr>
 <tr data-svc="ECS" data-c="none" data-d="none" data-props="Cluster Service TaskSetId">
 <td class="mono">AWS::ECS::PrimaryTaskSet</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
@@ -3732,11 +3769,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">CapabilityName, ClusterName, Configuration, DeletePropagationPolicy, RoleArn, Tags, Type</div></td></tr>
-<tr data-svc="EKS" data-c="detailed" data-d="node" data-props="AccessConfig BootstrapSelfManagedAddons ComputeConfig ControlPlaneScalingConfig DeletionProtection EncryptionConfig Force KubernetesNetworkConfig Logging Name OutpostConfig RemoteNetworkConfig ResourcesVpcConfig RoleArn StorageConfig Tags UpgradePolicy Version ZonalShiftConfig">
+<tr data-svc="EKS" data-c="detailed" data-d="node" data-props="AccessConfig BootstrapSelfManagedAddons ComputeConfig ControlPlaneScalingConfig DeletionProtection EncryptionConfig Force KubernetesNetworkConfig Logging Name OutpostConfig RemoteNetworkConfig ResourcesVpcConfig RoleArn RollbackConfig StorageConfig Tags UpgradePolicy Version ZonalShiftConfig">
 <td class="mono">AWS::EKS::Cluster</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eksClusters</code></div><div class="detail">version, endpoint, vpc, subnets, sgIds, public/private access</div></td>
 <td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: endpoint, endpointPublicAccess, endpointPrivateAccess</div></td>
-<td class="pc">19<div class="props">AccessConfig, BootstrapSelfManagedAddons, ComputeConfig, ControlPlaneScalingConfig, DeletionProtection, EncryptionConfig, Force, KubernetesNetworkConfig, Logging, Name, OutpostConfig, RemoteNetworkConfig, ResourcesVpcConfig, RoleArn, StorageConfig, Tags, UpgradePolicy, Version, ZonalShiftConfig</div></td></tr>
+<td class="pc">20<div class="props">AccessConfig, BootstrapSelfManagedAddons, ComputeConfig, ControlPlaneScalingConfig, DeletionProtection, EncryptionConfig, Force, KubernetesNetworkConfig, Logging, Name, OutpostConfig, RemoteNetworkConfig, ResourcesVpcConfig, RoleArn, RollbackConfig, StorageConfig, Tags, UpgradePolicy, Version, ZonalShiftConfig</div></td></tr>
 <tr data-svc="EKS" data-c="inv-tag" data-d="panel-only" data-props="ClusterName FargateProfileName PodExecutionRoleArn Selectors Subnets Tags">
 <td class="mono">AWS::EKS::FargateProfile</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -5322,6 +5359,16 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">Action, LayerVersionArn, OrganizationId, Principal</div></td></tr>
+<tr data-svc="Lambda" data-c="inv-tag" data-d="panel-only" data-props="AdditionalOsCapabilities BaseImageArn BaseImageVersion BuildRoleArn CodeArtifact CpuConfigurations Description EgressNetworkConnectors EnvironmentVariables Hooks Logging Name Resources Tags">
+<td class="mono">AWS::Lambda::MicrovmImage</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">14<div class="props">AdditionalOsCapabilities, BaseImageArn, BaseImageVersion, BuildRoleArn, CodeArtifact, CpuConfigurations, Description, EgressNetworkConnectors, EnvironmentVariables, Hooks, Logging, Name, Resources, Tags</div></td></tr>
+<tr data-svc="Lambda" data-c="inv-tag" data-d="panel-only" data-props="Configuration Name OperatorRole Tags">
+<td class="mono">AWS::Lambda::NetworkConnector</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">4<div class="props">Configuration, Name, OperatorRole, Tags</div></td></tr>
 <tr data-svc="Lambda" data-c="none" data-d="none" data-props="Action EventSourceToken FunctionName FunctionUrlAuthType InvokedViaFunctionUrl Principal PrincipalOrgID SourceAccount SourceArn">
 <td class="mono">AWS::Lambda::Permission</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
@@ -5812,6 +5859,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">IpPools, Name, Routes, Tags</div></td></tr>
+<tr data-svc="MediaLive" data-c="inv-tag" data-d="panel-only" data-props="ClusterId Name NodeInterfaceMappings Role SdiSourceMappings Tags">
+<td class="mono">AWS::MediaLive::Node</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">6<div class="props">ClusterId, Name, NodeInterfaceMappings, Role, SdiSourceMappings, Tags</div></td></tr>
 <tr data-svc="MediaLive" data-c="inv-tag" data-d="panel-only" data-props="Mode Name Tags Type">
 <td class="mono">AWS::MediaLive::SdiSource</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -6367,6 +6419,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>organizations</code></div><div class="detail">captured as organizations.resourcePolicy</div></td>
 <td><span class="badge d-panel-only">panel-only — never on graph</span><div class="detail">the org entity: featureSet, management account, roots + policy-type enablement, trusted service principals, delegated admins + services, resource policy; drawing the org tree is a follow-up</div></td>
 <td class="pc">2<div class="props">Content, Tags</div></td></tr>
+<tr data-svc="Outposts" data-c="inv-tag" data-d="panel-only" data-props="Description Name Notes OperatingAddress RackPhysicalProperties ShippingAddress Tags">
+<td class="mono">AWS::Outposts::Site</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">7<div class="props">Description, Name, Notes, OperatingAddress, RackPhysicalProperties, ShippingAddress, Tags</div></td></tr>
 <tr data-svc="PCAConnectorAD" data-c="inv-tag" data-d="panel-only" data-props="CertificateAuthorityArn DirectoryId Tags VpcInformation">
 <td class="mono">AWS::PCAConnectorAD::Connector</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -6677,11 +6734,21 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">13<div class="props">AlternateDataSourceParameters, AwsAccountId, Credentials, DataSourceId, DataSourceParameters, ErrorInfo, FolderArns, Name, Permissions, SslProperties, Tags, Type, VpcConnectionProperties</div></td></tr>
+<tr data-svc="QuickSight" data-c="none" data-d="none" data-props="AwsAccountId Description FlowDefinition Name Permissions">
+<td class="mono">AWS::QuickSight::Flow</td>
+<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
+<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td class="pc">5<div class="props">AwsAccountId, Description, FlowDefinition, Name, Permissions</div></td></tr>
 <tr data-svc="QuickSight" data-c="inv-tag" data-d="panel-only" data-props="AwsAccountId FolderId FolderType Name ParentFolderArn Permissions SharingModel Tags">
 <td class="mono">AWS::QuickSight::Folder</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">8<div class="props">AwsAccountId, FolderId, FolderType, Name, ParentFolderArn, Permissions, SharingModel, Tags</div></td></tr>
+<tr data-svc="QuickSight" data-c="inv-tag" data-d="panel-only" data-props="ClientId ClientSecret DataSourceType IdentityProviderVpcConnectionProperties Name OAuthAuthorizationEndpointUrl OAuthClientApplicationId OAuthClientAuthenticationType OAuthScopes OAuthTokenEndpointUrl Tags">
+<td class="mono">AWS::QuickSight::OAuthClientApplication</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">11<div class="props">ClientId, ClientSecret, DataSourceType, IdentityProviderVpcConnectionProperties, Name, OAuthAuthorizationEndpointUrl, OAuthClientApplicationId, OAuthClientAuthenticationType, OAuthScopes, OAuthTokenEndpointUrl, Tags</div></td></tr>
 <tr data-svc="QuickSight" data-c="none" data-d="none" data-props="AwsAccountId DataSetId Schedule">
 <td class="mono">AWS::QuickSight::RefreshSchedule</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
@@ -6962,11 +7029,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">4<div class="props">Criticality, Description, Name, ServiceArn</div></td></tr>
-<tr data-svc="ResilienceHubV2" data-c="inv-tag" data-d="panel-only" data-props="Description KmsKeyId Name Tags">
+<tr data-svc="ResilienceHubV2" data-c="inv-tag" data-d="panel-only" data-props="Description KmsKeyId Name SharingEnabled Tags">
 <td class="mono">AWS::ResilienceHubV2::System</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
-<td class="pc">4<div class="props">Description, KmsKeyId, Name, Tags</div></td></tr>
+<td class="pc">5<div class="props">Description, KmsKeyId, Name, SharingEnabled, Tags</div></td></tr>
 <tr data-svc="ResilienceHubV2" data-c="none" data-d="none" data-props="Description Name PolicyArn SystemIdentifier">
 <td class="mono">AWS::ResilienceHubV2::UserJourney</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
@@ -7677,6 +7744,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">CustomerManagedPolicyReferences, Description, InlinePolicy, InstanceArn, ManagedPolicies, Name, PermissionsBoundary, RelayStateType, SessionDuration, Tags</div></td></tr>
+<tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="AlgorithmDescription AlgorithmName CertifyForMarketplace InferenceSpecification Tags TrainingSpecification">
+<td class="mono">AWS::SageMaker::Algorithm</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">6<div class="props">AlgorithmDescription, AlgorithmName, CertifyForMarketplace, InferenceSpecification, Tags, TrainingSpecification</div></td></tr>
 <tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="AppName AppType DomainId RecoveryMode ResourceSpec Tags UserProfileName">
 <td class="mono">AWS::SageMaker::App</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -7717,11 +7789,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">13<div class="props">AppNetworkAccessType, AppSecurityGroupManagement, AuthMode, DefaultSpaceSettings, DefaultUserSettings, DomainName, DomainSettings, HomeEfsFileSystemCreation, KmsKeyId, SubnetIds, TagPropagation, Tags, VpcId</div></td></tr>
-<tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="DeploymentConfig EndpointConfigName EndpointName ExcludeRetainedVariantProperties RetainAllVariantProperties RetainDeploymentConfig Tags">
+<tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="DeploymentConfig EndpointConfigName ExcludeRetainedVariantProperties RetainAllVariantProperties RetainDeploymentConfig Tags">
 <td class="mono">AWS::SageMaker::Endpoint</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
-<td class="pc">7<div class="props">DeploymentConfig, EndpointConfigName, EndpointName, ExcludeRetainedVariantProperties, RetainAllVariantProperties, RetainDeploymentConfig, Tags</div></td></tr>
+<td class="pc">6<div class="props">DeploymentConfig, EndpointConfigName, ExcludeRetainedVariantProperties, RetainAllVariantProperties, RetainDeploymentConfig, Tags</div></td></tr>
 <tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="AsyncInferenceConfig DataCaptureConfig EnableNetworkIsolation EndpointConfigName ExecutionRoleArn ExplainerConfig KmsKeyId ProductionVariants ShadowProductionVariants Tags VpcConfig">
 <td class="mono">AWS::SageMaker::EndpointConfig</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -7732,6 +7804,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">10<div class="props">Description, EventTimeFeatureName, FeatureDefinitions, FeatureGroupName, OfflineStoreConfig, OnlineStoreConfig, RecordIdentifierFeatureName, RoleArn, Tags, ThroughputConfig</div></td></tr>
+<tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="HubDescription HubDisplayName HubName HubSearchKeywords S3StorageConfig Tags">
+<td class="mono">AWS::SageMaker::Hub</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">6<div class="props">HubDescription, HubDisplayName, HubName, HubSearchKeywords, S3StorageConfig, Tags</div></td></tr>
 <tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="ImageDescription ImageDisplayName ImageName ImageRoleArn Tags">
 <td class="mono">AWS::SageMaker::Image</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -7777,6 +7854,11 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">Content, CreatedBy, LastModifiedBy, ModelCardName, ModelCardStatus, SecurityConfig, Tags</div></td></tr>
+<tr data-svc="SageMaker" data-c="none" data-d="none" data-props="ModelCardExportJobName ModelCardName ModelCardVersion OutputConfig">
+<td class="mono">AWS::SageMaker::ModelCardExportJob</td>
+<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
+<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td class="pc">4<div class="props">ModelCardExportJobName, ModelCardName, ModelCardVersion, OutputConfig</div></td></tr>
 <tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="EndpointName JobDefinitionName JobResources ModelExplainabilityAppSpecification ModelExplainabilityBaselineConfig ModelExplainabilityJobInput ModelExplainabilityJobOutputConfig NetworkConfig RoleArn StoppingCondition Tags">
 <td class="mono">AWS::SageMaker::ModelExplainabilityJobDefinition</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
@@ -7892,11 +7974,16 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">DefaultKmsKeyId, IdCConfiguration, RoleArn, Tags</div></td></tr>
-<tr data-svc="SecurityAgent" data-c="none" data-d="none" data-props="AgentSpaceId Assets CodeRemediationStrategy ExcludeRiskTypes LogConfig NetworkTrafficConfig ServiceRole Title VpcConfig">
+<tr data-svc="SecurityAgent" data-c="none" data-d="none" data-props="AgentSpaceId Assets CleanUpStrategy CodeRemediationStrategy DisableManagedSkills ExcludeRiskTypes LogConfig NetworkTrafficConfig ServiceRole Title VpcConfig">
 <td class="mono">AWS::SecurityAgent::Pentest</td>
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
-<td class="pc">9<div class="props">AgentSpaceId, Assets, CodeRemediationStrategy, ExcludeRiskTypes, LogConfig, NetworkTrafficConfig, ServiceRole, Title, VpcConfig</div></td></tr>
+<td class="pc">11<div class="props">AgentSpaceId, Assets, CleanUpStrategy, CodeRemediationStrategy, DisableManagedSkills, ExcludeRiskTypes, LogConfig, NetworkTrafficConfig, ServiceRole, Title, VpcConfig</div></td></tr>
+<tr data-svc="SecurityAgent" data-c="inv-tag" data-d="panel-only" data-props="Description KmsKeyId Name SecurityRequirements Status Tags">
+<td class="mono">AWS::SecurityAgent::SecurityRequirementPack</td>
+<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
+<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td class="pc">6<div class="props">Description, KmsKeyId, Name, SecurityRequirements, Status, Tags</div></td></tr>
 <tr data-svc="SecurityAgent" data-c="inv-tag" data-d="panel-only" data-props="Tags TargetDomainName VerificationMethod">
 <td class="mono">AWS::SecurityAgent::TargetDomain</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
