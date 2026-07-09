@@ -6,6 +6,7 @@
   "scripts": {
     "scan": "tsx src/cli.ts scan",
     "bundle": "tsx src/cli.ts bundle",
+    "tf-import": "tsx src/cli.ts tf-import",
     "fixture": "tsx src/fixture.ts",
     "typecheck": "tsc -p tsconfig.json"
   },

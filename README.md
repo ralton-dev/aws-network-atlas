@@ -174,6 +174,43 @@ npm run bundle
 
 Notes render in the details panel (markdown supported) and are searchable.
 
+## Terraform state mapping
+
+Map the scanned estate onto the Terraform stacks that manage it. Export each
+stack's state and import it — large estates have many state files, so import
+as many as you have, recording which repo/project each one came from:
+
+```bash
+# from each stack's Terraform working directory (any backend):
+terraform state pull > /tmp/prod-network.tfstate
+
+# then, from this repo:
+npm run tf-import -- --repo github.com/acme/infra-network --stack prod-network /tmp/prod-network.tfstate
+npm run tf-import -- --repo github.com/acme/platform states/*.tfstate   # stack names derive from file names
+```
+
+Both raw state (`terraform state pull` / the `.tfstate` file itself) and
+`terraform show -json` output are accepted. `--repo` is required — it's how the
+diagram answers "where is this managed from?".
+
+**Only identifiers leave the state file** — address, type, `id`, `arn`. State
+attribute values (which routinely contain DB passwords and the like) are never
+persisted; what's written to `data/terraform/<stack>.json` is committable.
+
+On the diagram, every resource claimed by an imported stack gets a `tf` badge,
+and its details panel shows the resource address, stack, and a link to the repo.
+Resources *not* claimed by any imported stack are called out as such — ClickOps
+drift, visible at a glance. The import also prints a match report: state entries
+the scanner couldn't find (stale state or an uncollected resource type) are
+listed per stack.
+
+Matching is by ARN, falling back to the AWS-native id — the same convention the
+AWS provider uses for its `id` attribute, so VPCs, subnets, instances, buckets,
+and ARN-only resources (Lambda, SNS, IAM…) all join without per-type rules.
+Relationship-only resources (`aws_route`, `aws_security_group_rule`,
+attachment/association resources) have synthetic ids that don't correspond to a
+drawable resource; they're imported but simply never match a node.
+
 ## Configuration — `atlas.config.json`
 
 ```jsonc
@@ -196,7 +233,8 @@ listed in the snapshot (and shown as a note in the overview) so nothing disappea
 | Command | What it does |
 | --- | --- |
 | `npm run scan` | Verify AWS CLI + credentials, scan accounts (read-only), write snapshots, rebuild `site/data/` |
-| `npm run bundle` | Rebuild `site/data/` from committed snapshots + annotations only |
+| `npm run bundle` | Rebuild `site/data/` from committed snapshots + annotations + Terraform stacks only |
+| `npm run tf-import` | Import Terraform state file(s) → `data/terraform/<stack>.json`, rebuild `site/data/` |
 | `npm run fixture` | Regenerate the synthetic demo estate (no AWS needed) into `site/data/` |
 | `npm run dev` | Viewer dev server with hot reload (uses the same `site/data/`) |
 | `npm run build` | Rebuild the committed single-file viewer `site/index.html` |
@@ -209,6 +247,7 @@ listed in the snapshot (and shown as a note in the overview) so nothing disappea
 | Path | Owner | Notes |
 | --- | --- | --- |
 | `data/accounts/*.json` | scanner | Deterministic (sorted keys/arrays) → clean diffs per scan |
+| `data/terraform/*.json` | `tf-import` | Identifiers only (address/type/id/arn) — never state attribute values |
 | `site/data/*.js` | scanner | Derived data bundle the viewer loads |
 | `site/index.html` | `npm run build` | The whole viewer, one file |
 | `annotations/*.yaml` | **you** | Your notes, links to Terraform, etc. |

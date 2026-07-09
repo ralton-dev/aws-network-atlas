@@ -11,6 +11,7 @@ import {
 } from '@atlas/schema';
 import type { ResolvedConfig } from './config.js';
 import { stableStringify } from './stable-json.js';
+import { readTerraformStacks } from './terraform.js';
 
 /**
  * Escape a JSON string for embedding in single quotes inside a classic JS
@@ -46,7 +47,7 @@ export async function writeAccountSnapshot(
   return file;
 }
 
-async function readAccountSnapshots(config: ResolvedConfig): Promise<AccountSnapshot[]> {
+export async function readAccountSnapshots(config: ResolvedConfig): Promise<AccountSnapshot[]> {
   const dir = accountsDir(config);
   if (!existsSync(dir)) return [];
   const files = (await readdir(dir)).filter((f) => f.endsWith('.json')).sort();
@@ -91,9 +92,12 @@ async function readAnnotations(config: ResolvedConfig): Promise<AnnotationMap> {
  * snapshots and annotation sidecars. Editing an annotation or re-scanning an
  * account only requires re-running this — never a viewer rebuild.
  */
-export async function bundle(config: ResolvedConfig): Promise<{ accounts: number; annotations: number }> {
+export async function bundle(
+  config: ResolvedConfig,
+): Promise<{ accounts: number; annotations: number; terraformStacks: number }> {
   const accounts = await readAccountSnapshots(config);
   const annotations = await readAnnotations(config);
+  const terraform = await readTerraformStacks(config);
 
   const snapshot: Snapshot = {
     version: SNAPSHOT_VERSION,
@@ -109,5 +113,14 @@ export async function bundle(config: ResolvedConfig): Promise<{ accounts: number
     jsonScriptPayload('__ATLAS_ANNOTATIONS__', annotations),
     'utf8',
   );
-  return { accounts: accounts.length, annotations: Object.keys(annotations).length };
+  await writeFile(
+    path.join(dir, 'terraform.js'),
+    jsonScriptPayload('__ATLAS_TERRAFORM__', terraform),
+    'utf8',
+  );
+  return {
+    accounts: accounts.length,
+    annotations: Object.keys(annotations).length,
+    terraformStacks: terraform.length,
+  };
 }

@@ -13,3 +13,8 @@ packages/viewer/dist/
 # Logs
 npm-debug.log*
 *.log
+
+# Raw Terraform state must never land in the repo (it can contain secrets) —
+# import it with `npm run tf-import`, which extracts identifiers only.
+*.tfstate
+*.tfstate.backup

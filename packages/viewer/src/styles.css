@@ -256,6 +256,17 @@ html, body, #root { margin: 0; height: 100%; }
 }
 .muted { color: var(--muted); font-size: 12px; }
 
+/* Terraform state bindings (tf-import) in the details panel. */
+.terraform {
+  background: #f6f4fd; border: 1px solid #ddd3f0; border-radius: 8px;
+  padding: 4px 12px 10px; margin-top: 10px;
+}
+.terraform-bindings { list-style: none; margin: 6px 0 0; padding: 0; }
+.terraform-bindings li { margin-bottom: 8px; }
+.terraform-bindings li:last-child { margin-bottom: 0; }
+.tf-address { font-size: 12px; font-weight: 600; color: #5c4d9a; word-break: break-all; }
+.tf-origin { font-size: 12px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+
 /* Scan-error list shown when a partially-scanned account/region is selected. */
 .scan-error-note { margin: 10px 0 4px; line-height: 1.5; }
 .scan-errors { list-style: none; margin: 6px 0 0; padding: 0; }

@@ -3,6 +3,7 @@ import { buildIndex, type ResourceRef } from '../data.js';
 import { buildFocus } from '../model/focus.js';
 import { buildOverview } from '../model/overview.js';
 import { buildVpcDetail } from '../model/vpc-detail.js';
+import { applyTerraformBadges } from '../model/terraform.js';
 import { layoutGraph } from '../model/layout.js';
 import type { AtlasEdge, AtlasGraph, AtlasNode, EdgeKind } from '../model/graph-types.js';
 import {
@@ -78,12 +79,14 @@ export function App(): React.ReactElement {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    const built =
+    const built = applyTerraformBadges(
       route.view === 'vpc'
         ? buildVpcDetail(index, route.vpcId)
         : route.view === 'focus'
           ? buildFocus(index, route.key)
-          : buildOverview(index);
+          : buildOverview(index),
+      index,
+    );
     void layoutGraph(built).then((laidOut) => {
       if (cancelled) return;
       setGraph(laidOut);

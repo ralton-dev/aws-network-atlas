@@ -6,6 +6,8 @@ import {
   type AnnotationMap,
   type RegionSnapshot,
   type Snapshot,
+  type TerraformBinding,
+  type TerraformStackFile,
 } from '@atlas/schema';
 
 /** A uniform handle on any scanned resource, for search/details/navigation. */
@@ -24,11 +26,15 @@ export interface ResourceRef {
 export interface AtlasIndex {
   snapshot: Snapshot;
   annotations: AnnotationMap;
+  /** Imported Terraform stacks (tf-import); empty when none imported. */
+  terraform: TerraformStackFile[];
   all: ResourceRef[];
   /** Keyed by id AND arn. */
   byKey: Map<string, ResourceRef>;
   accountLabel(accountId: string): string;
   annotationFor(ref: ResourceRef): Annotation | undefined;
+  /** Terraform instances claiming this resource (>1 = claimed by several stacks). */
+  terraformFor(ref: ResourceRef): TerraformBinding[];
   findRegion(accountId: string, region: string): RegionSnapshot | undefined;
 }
 
@@ -207,6 +213,7 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
 export function buildIndex(): AtlasIndex {
   const snapshot = window.__ATLAS_DATA__ ?? EMPTY_SNAPSHOT;
   const annotations = window.__ATLAS_ANNOTATIONS__ ?? {};
+  const terraform = window.__ATLAS_TERRAFORM__ ?? [];
 
   // Normalize once at load: snapshots committed by older scanner versions
   // predate some collections, so fill every missing array from the empty
@@ -288,14 +295,45 @@ export function buildIndex(): AtlasIndex {
     accountLabels.set(a.accountId, a.alias ? `${a.alias} (${a.accountId})` : a.accountId);
   }
 
+  // Terraform state instances, keyed by id AND arn like byKey — a scanned
+  // resource matches on either. The same key appearing in several stacks is
+  // preserved (it's a real smell worth surfacing, not a dedupe case).
+  const tfByKey = new Map<string, TerraformBinding[]>();
+  for (const stack of terraform) {
+    for (const res of stack.resources) {
+      const binding: TerraformBinding = {
+        stack: stack.stack,
+        repo: stack.repo,
+        address: res.address,
+        type: res.type,
+      };
+      for (const key of new Set([res.id, res.arn])) {
+        if (!key) continue;
+        const existing = tfByKey.get(key);
+        if (existing) existing.push(binding);
+        else tfByKey.set(key, [binding]);
+      }
+    }
+  }
+  const terraformFor = (ref: ResourceRef): TerraformBinding[] => {
+    const byArn = ref.arn ? tfByKey.get(ref.arn) : undefined;
+    const byId = tfByKey.get(ref.id);
+    if (!byArn) return byId ?? [];
+    if (!byId || byId === byArn) return byArn;
+    // Distinct hits on both keys (id-keyed + arn-keyed stacks): merge, dedupe.
+    return [...new Set([...byArn, ...byId])];
+  };
+
   return {
     snapshot,
     annotations,
+    terraform,
     all,
     byKey,
     accountLabel: (accountId) => accountLabels.get(accountId) ?? accountId,
     annotationFor: (ref) =>
       (ref.arn ? annotations[ref.arn] : undefined) ?? annotations[ref.id],
+    terraformFor,
     findRegion: (accountId, region) =>
       snapshot.accounts
         .find((a) => a.accountId === accountId)

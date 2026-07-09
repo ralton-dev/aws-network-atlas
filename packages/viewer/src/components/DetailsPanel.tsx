@@ -36,6 +36,17 @@ function PropertyValue({ value }: { value: unknown }): React.ReactElement {
   );
 }
 
+/** Render a stack's repo as a link when it looks like one, else plain text. */
+function RepoRef({ repo }: { repo: string }): React.ReactElement {
+  const href = /^https?:\/\//.test(repo)
+    ? repo
+    : /^[\w.-]+\.[a-z]{2,}\//i.test(repo) // github.com/org/repo style slug
+      ? `https://${repo}`
+      : undefined;
+  if (!href) return <code>{repo}</code>;
+  return <a href={href} target="_blank" rel="noreferrer">{repo}</a>;
+}
+
 function annotationHint(ref: ResourceRef): string {
   const key = ref.arn ?? ref.id;
   return `# annotations/my-notes.yaml
@@ -134,6 +145,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
   const { ref } = selection;
   const Icon = iconFor(ref.kind);
   const annotation = index.annotationFor(ref);
+  const tfBindings = index.terraformFor(ref);
   const tags = (ref.raw['tags'] ?? {}) as Record<string, string>;
   const properties = Object.entries(ref.raw).filter(
     ([k, v]) => !HIDDEN_KEYS.has(k) && v !== undefined,
@@ -202,6 +214,38 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {tfBindings.length > 0 && (
+        <section className="terraform">
+          <h3>Terraform</h3>
+          {tfBindings.length > 1 && (
+            <p className="muted">
+              ⚠ Claimed by {tfBindings.length} state instances — likely imported into
+              more than one stack.
+            </p>
+          )}
+          <ul className="terraform-bindings">
+            {tfBindings.map((b) => (
+              <li key={`${b.stack}:${b.address}`}>
+                <code className="tf-address">{b.address}</code>
+                <div className="tf-origin">
+                  stack <strong>{b.stack}</strong> · <RepoRef repo={b.repo} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {tfBindings.length === 0 && index.terraform.length > 0 && (
+        <section className="terraform">
+          <h3>Terraform</h3>
+          <p className="muted">
+            Not claimed by any imported state ({index.terraform.length} stack
+            {index.terraform.length === 1 ? '' : 's'} imported) — created outside
+            Terraform, or managed by a stack that hasn't been imported.
+          </p>
         </section>
       )}
 

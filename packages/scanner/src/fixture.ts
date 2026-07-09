@@ -28,6 +28,7 @@ import {
   type RegionSnapshot,
   type Route,
   type Snapshot,
+  type TerraformStackFile,
 } from '@atlas/schema';
 import { jsonScriptPayload } from './bundle.js';
 
@@ -1099,10 +1100,48 @@ const annotations: AnnotationMap = {
   },
 };
 
+// Two imported Terraform stacks (as `atlas-scan tf-import` would produce):
+// prod networking is fully managed, dev is partially managed, and the whole
+// shared-services account is unmanaged — so the viewer demos all three cases.
+const terraform: TerraformStackFile[] = [
+  {
+    version: 1,
+    stack: 'prod-network',
+    repo: 'github.com/acme/infra-network',
+    source: 'states/prod-network.tfstate',
+    importedAt: '2026-07-06T09:19:00.000Z',
+    terraformVersion: '1.9.5',
+    serial: 412,
+    resources: [
+      { address: 'module.vpc.aws_vpc.main', type: 'aws_vpc', id: 'vpc-0prod00000000000a1' },
+      { address: 'module.vpc.aws_internet_gateway.main', type: 'aws_internet_gateway', id: 'igw-0prod000000000001' },
+      { address: 'aws_lb.prod_alb', type: 'aws_lb', id: `arn:aws:elasticloadbalancing:${EU}:${ACCT.prod}:loadbalancer/app/prod-alb/abc123`, arn: `arn:aws:elasticloadbalancing:${EU}:${ACCT.prod}:loadbalancer/app/prod-alb/abc123` },
+      { address: 'module.db.aws_rds_cluster.aurora', type: 'aws_rds_cluster', id: 'prod-aurora', arn: `arn:aws:rds:${EU}:${ACCT.prod}:cluster:prod-aurora` },
+      { address: 'aws_lambda_function.worker', type: 'aws_lambda_function', id: 'prod-worker', arn: `arn:aws:lambda:${EU}:${ACCT.prod}:function:prod-worker` },
+    ],
+  },
+  {
+    version: 1,
+    stack: 'dev-platform',
+    repo: 'https://github.com/acme/dev-platform',
+    source: 'states/dev-platform.tfstate',
+    importedAt: '2026-07-06T09:19:30.000Z',
+    terraformVersion: '1.8.2',
+    serial: 87,
+    resources: [
+      { address: 'aws_vpc.dev', type: 'aws_vpc', id: 'vpc-0dev000000000000a1' },
+      { address: 'aws_dynamodb_table.scratch', type: 'aws_dynamodb_table', id: 'dev-scratch', arn: `arn:aws:dynamodb:${EU}:${ACCT.dev}:table/dev-scratch` },
+      { address: 'aws_s3_bucket.sandbox', type: 'aws_s3_bucket', id: 'acme-dev-sandbox', arn: 'arn:aws:s3:::acme-dev-sandbox' },
+      { address: 'aws_iam_role.app', type: 'aws_iam_role', id: 'dev-app-role', arn: `arn:aws:iam::${ACCT.dev}:role/dev-app-role` },
+    ],
+  },
+];
+
 const outDir = path.resolve(import.meta.dirname, '../../../site/data');
 await mkdir(outDir, { recursive: true });
 await writeFile(path.join(outDir, 'data.js'), jsonScriptPayload('__ATLAS_DATA__', snapshot), 'utf8');
 await writeFile(path.join(outDir, 'annotations.js'), jsonScriptPayload('__ATLAS_ANNOTATIONS__', annotations), 'utf8');
+await writeFile(path.join(outDir, 'terraform.js'), jsonScriptPayload('__ATLAS_TERRAFORM__', terraform), 'utf8');
 
 const counts = snapshot.accounts.map((a) => `${a.alias}: ${a.regions.reduce((n, reg) => n + reg.vpcs.length, 0)} VPC(s)`);
 console.log(`Fixture written to ${outDir}`);
