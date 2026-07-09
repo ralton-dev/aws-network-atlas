@@ -323,13 +323,26 @@ function hasTags(def) {
 // even when the resource carries a tag. A `Tags` property in the CFN schema
 // therefore does NOT imply the tagging-API sweep would catch them, and
 // hasTags() must not be trusted to promote them to the "Inventory — if tagged"
-// tier. These are management-plane / org-namespace resources that live outside
-// the per-region, per-account tag index: chiefly AWS Organizations (accounts,
-// OUs, and SCPs/RCPs live in the management account's organization namespace and
-// are reachable only through the Organizations API, never tag:GetResources).
-// Without this list they get a false "if tagged" badge that hides a real gap —
-// a dedicated collector is the only way to actually see them.
-const RGT_BLIND_SERVICES = new Set(['Organizations']);
+// tier. These live outside the per-region, per-account resource tag index that
+// tag:GetResources reads: the multi-account governance plane (Organizations,
+// Control Tower), the billing/cost-management plane (all global, management-
+// account only), the identity plane (RGT returns no IAM/Identity Center
+// identities), and management-plane notification/chatops/observability config.
+// Without this list they get a false "if tagged" badge that counts ZERO real
+// resources as coverage — pure phantom. (Identified by the 2026-07-09 coverage-
+// mechanism audit; the Organizations case was the first found.) A dedicated
+// collector — or nothing — is the honest classification for these.
+const RGT_BLIND_SERVICES = new Set([
+  // Multi-account governance / management plane
+  'Organizations', 'ControlTower',
+  // Billing & cost-management plane (global, management-account only)
+  'Billing', 'BillingConductor', 'BCM', 'BCMDataExports', 'BcmPricingCalculator',
+  'CUR', 'CE', 'Budgets', 'Invoicing',
+  // Identity plane — tag:GetResources returns no IAM / Identity Center identities
+  'IdentityStore',
+  // Management-plane notifications / chatops / support / org-observability config
+  'Notifications', 'NotificationsContacts', 'Chatbot', 'SupportApp', 'ObservabilityAdmin',
+]);
 
 // ---------------------------------------------------------------------------
 // Drift checks — fail loudly if the audit inputs no longer match the code.
