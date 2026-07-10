@@ -129,6 +129,8 @@ const DETAILED = {
   'AWS::Elasticsearch::Domain': { field: 'openSearchDomains', attrs: 'legacy ES domain (same collector)' },
   'AWS::MSK::Cluster': { field: 'mskClusters', attrs: 'type, state, kafkaVersion, brokerNodes, subnets, sgIds' },
   'AWS::Redshift::Cluster': { field: 'redshiftClusters', attrs: 'nodeType, numNodes, vpc, subnets, sgIds, publiclyAccessible, endpoint, AZ' },
+  'AWS::RedshiftServerless::Workgroup': { field: 'redshiftServerlessWorkgroups', attrs: 'VPC-attached serverless DW compute: vpc (derived), subnets, sgIds, publiclyAccessible, endpoint address/port, namespaceName, baseCapacity (RPU), enhancedVpcRouting, status' },
+  'AWS::RedshiftServerless::Namespace': { field: 'redshiftServerlessNamespaces', attrs: 'data/identity half: adminUsername, dbName, kmsKeyId, defaultIamRoleArn, status' },
   'AWS::AmazonMQ::Broker': { field: 'mqBrokers', attrs: 'engineType, deploymentMode, publiclyAccessible, subnets, sgIds' },
   'AWS::KMS::Key': { field: 'kmsKeys', attrs: 'aliases, keyManager, state, usage, spec, rotationEnabled, multiRegion' },
   'AWS::CertificateManager::Certificate': { field: 'acmCertificates', attrs: 'domainName, SANs, status, type, inUseBy, notAfter' },

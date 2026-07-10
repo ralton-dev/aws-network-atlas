@@ -89,6 +89,14 @@ export function deriveRegion(out: RegionSnapshot): void {
     if (vpc.dhcpOptionsId) dhcpById.get(vpc.dhcpOptionsId)?.vpcIds.push(vpc.id);
   }
 
+  // Redshift Serverless workgroups carry subnetIds but only expose a VPC id
+  // via their endpoint's VPC endpoints (absent while creating / when the
+  // endpoint isn't materialized) — resolve it from a scanned subnet.
+  const vpcBySubnet = new Map(out.subnets.map((s) => [s.id, s.vpcId]));
+  for (const wg of out.redshiftServerlessWorkgroups) {
+    wg.vpcId ??= wg.subnetIds.map((s) => vpcBySubnet.get(s)).find((v) => v !== undefined);
+  }
+
   // A region is "empty" when it has nothing beyond an untouched default VPC
   // AND nothing went wrong while scanning it. Zero ENIs is the strongest
   // resource signal: any real workload creates ENIs.
@@ -113,6 +121,8 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.openSearchDomains.length === 0 &&
     out.mskClusters.length === 0 &&
     out.redshiftClusters.length === 0 &&
+    out.redshiftServerlessWorkgroups.length === 0 &&
+    out.redshiftServerlessNamespaces.length === 0 &&
     out.mqBrokers.length === 0 &&
     out.peeringConnections.length === 0 &&
     out.transitGateways.length === 0 &&
@@ -411,6 +421,12 @@ export function deriveRegion(out: RegionSnapshot): void {
   }
   sortById(out.redshiftClusters);
   for (const c of out.redshiftClusters) c.securityGroupIds.sort();
+  sortById(out.redshiftServerlessWorkgroups);
+  for (const w of out.redshiftServerlessWorkgroups) {
+    w.subnetIds.sort();
+    w.securityGroupIds.sort();
+  }
+  sortById(out.redshiftServerlessNamespaces);
   sortById(out.mqBrokers);
   for (const b of out.mqBrokers) {
     b.subnetIds.sort();

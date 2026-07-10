@@ -561,6 +561,37 @@ function prodEuWest1(): RegionSnapshot {
     storageCapacityGiB: 1024, storageType: 'SSD', deploymentType: 'MULTI_AZ_1', lifecycle: 'AVAILABLE',
   });
 
+  // Redshift Serverless: an internet-facing workgroup in the db subnets
+  // (publiclyAccessible exercises the exposure badge; dbSg draws the SG-attach
+  // edge) + its namespace (the data/identity half, panel-only).
+  r.redshiftServerlessWorkgroups.push({
+    id: 'prod-analytics-wg',
+    arn: `arn:aws:redshift-serverless:${EU}:${ACCT.prod}:workgroup/0aabbccd-1122-3344-5566-77889900aabb`,
+    name: 'prod-analytics-wg',
+    tags: { env: 'prod' },
+    namespaceName: 'prod-analytics',
+    status: 'AVAILABLE',
+    vpcId: vpc,
+    subnetIds: ['subnet-0proddb00000001', 'subnet-0proddb00000101'],
+    securityGroupIds: [dbSg],
+    publiclyAccessible: true,
+    endpointAddress: `prod-analytics-wg.${ACCT.prod}.${EU}.redshift-serverless.amazonaws.com`,
+    endpointPort: 5439,
+    baseCapacity: 32,
+    enhancedVpcRouting: false,
+  });
+  r.redshiftServerlessNamespaces.push({
+    id: 'prod-analytics',
+    arn: `arn:aws:redshift-serverless:${EU}:${ACCT.prod}:namespace/00112233-4455-6677-8899-aabbccddeeff`,
+    name: 'prod-analytics',
+    tags: { env: 'prod' },
+    adminUsername: 'analytics_admin',
+    dbName: 'analytics',
+    kmsKeyId: `arn:aws:kms:${EU}:${ACCT.prod}:key/1234abcd-12ab-34cd-56ef-1234567890ab`,
+    defaultIamRoleArn: `arn:aws:iam::${ACCT.prod}:role/prod-redshift-serverless-role`,
+    status: 'AVAILABLE',
+  });
+
   // Glue: a JDBC connection into the db subnets + a dev endpoint in the app tier.
   r.glueConnections.push({
     id: 'acme-prod-glue-conn',

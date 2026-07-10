@@ -103,6 +103,8 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('opensearch', region.openSearchDomains as unknown as Array<Record<string, unknown>>);
   add('msk', region.mskClusters as unknown as Array<Record<string, unknown>>);
   add('redshift', region.redshiftClusters as unknown as Array<Record<string, unknown>>);
+  add('redshift-serverless-workgroup', region.redshiftServerlessWorkgroups as unknown as Array<Record<string, unknown>>);
+  add('redshift-serverless-namespace', region.redshiftServerlessNamespaces as unknown as Array<Record<string, unknown>>);
   add('mq', region.mqBrokers as unknown as Array<Record<string, unknown>>);
   add('dynamodb-table', region.dynamoDbTables as unknown as Array<Record<string, unknown>>);
   // security services

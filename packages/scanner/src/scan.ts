@@ -39,6 +39,7 @@ import { collectBatch } from './collect/batch.js';
 import { collectNeptune, collectDocDb } from './collect/graph-doc-db.js';
 import { collectMemoryDb } from './collect/memorydb.js';
 import { collectFsx } from './collect/fsx.js';
+import { collectRedshiftServerless } from './collect/redshift-serverless.js';
 import { collectTransfer } from './collect/transfer.js';
 import { collectBeanstalk } from './collect/beanstalk.js';
 import { collectGlue } from './collect/glue.js';
@@ -130,6 +131,7 @@ export async function scanAccount(
           collectDocDb(ctx, region, out),
           collectMemoryDb(ctx, region, out),
           collectFsx(ctx, region, out),
+          collectRedshiftServerless(ctx, region, out),
           collectTransfer(ctx, region, out),
           collectBeanstalk(ctx, region, out),
           collectGlue(ctx, region, out),

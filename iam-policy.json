@@ -101,6 +101,8 @@
         "elasticache:Describe*",
         "memorydb:Describe*",
         "redshift:Describe*",
+        "redshift-serverless:List*",
+        "redshift-serverless:Get*",
         "es:Describe*",
         "es:List*",
         "kafka:List*",

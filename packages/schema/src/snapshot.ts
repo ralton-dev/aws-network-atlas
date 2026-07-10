@@ -1620,6 +1620,43 @@ export interface RedshiftCluster extends BaseResource {
   availabilityZone?: string;
 }
 
+/**
+ * Amazon Redshift Serverless workgroup — the VPC-attached compute half of
+ * serverless Redshift (a separate API from provisioned clusters): subnets,
+ * security groups and an endpoint, potentially publiclyAccessible — an
+ * internet-facing data warehouse invisible to the tag sweep when untagged.
+ * vpcId comes off the endpoint's VPC endpoints when present, else it is
+ * derived from a scanned subnet.
+ */
+export interface RedshiftServerlessWorkgroup extends BaseResource {
+  /** The namespace (data/identity half) this workgroup serves. */
+  namespaceName?: string;
+  /** CREATING | AVAILABLE | MODIFYING | DELETING. */
+  status?: string;
+  vpcId?: string;
+  subnetIds: string[];
+  securityGroupIds: string[];
+  publiclyAccessible?: boolean;
+  endpointAddress?: string;
+  endpointPort?: number;
+  /** Base compute capacity, in Redshift Processing Units (RPUs). */
+  baseCapacity?: number;
+  enhancedVpcRouting?: boolean;
+}
+
+/**
+ * Amazon Redshift Serverless namespace — the data/identity half paired with a
+ * workgroup: admin user, database name, KMS key, default IAM role.
+ */
+export interface RedshiftServerlessNamespace extends BaseResource {
+  adminUsername?: string;
+  dbName?: string;
+  kmsKeyId?: string;
+  defaultIamRoleArn?: string;
+  /** CREATING | AVAILABLE | MODIFYING | DELETING. */
+  status?: string;
+}
+
 export interface MqBroker extends BaseResource {
   engineType?: string;
   deploymentMode?: string;
@@ -2103,6 +2140,8 @@ export interface RegionSnapshot {
   openSearchDomains: OpenSearchDomain[];
   mskClusters: MskCluster[];
   redshiftClusters: RedshiftCluster[];
+  redshiftServerlessWorkgroups: RedshiftServerlessWorkgroup[];
+  redshiftServerlessNamespaces: RedshiftServerlessNamespace[];
   mqBrokers: MqBroker[];
   dynamoDbTables: DynamoDbTable[];
 
@@ -2336,6 +2375,8 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     openSearchDomains: [],
     mskClusters: [],
     redshiftClusters: [],
+    redshiftServerlessWorkgroups: [],
+    redshiftServerlessNamespaces: [],
     mqBrokers: [],
     dynamoDbTables: [],
     kmsKeys: [],

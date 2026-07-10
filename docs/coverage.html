@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-10 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">222</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">893</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">224</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">891</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">507</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -422,8 +422,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Proton</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">RedshiftServerless</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">RedshiftServerless</td><td>3</td><td class="c-detailed">2</td><td class="c-inv">1</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:67%"></span></div><span class="pct">67%</span></td></tr>
 <tr><td class="mono">Rekognition</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">ResourceExplorer2</td><td>3</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">1</td>
@@ -6954,20 +6954,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
 <td><span class="badge d-none">Not displayed (not collected)</span></td>
 <td class="pc">8<div class="props">Enable, EndTime, IamRole, Schedule, ScheduledActionDescription, ScheduledActionName, StartTime, TargetAction</div></td></tr>
-<tr data-svc="RedshiftServerless" data-c="inv-tag" data-d="panel-only" data-props="AdminPasswordSecretKmsKeyId AdminUserPassword AdminUsername DbName DefaultIamRoleArn FinalSnapshotName FinalSnapshotRetentionPeriod IamRoles KmsKeyId LogExports ManageAdminPassword NamespaceName NamespaceResourcePolicy RedshiftIdcApplicationArn SnapshotCopyConfigurations Tags">
+<tr data-svc="RedshiftServerless" data-c="detailed" data-d="panel-only" data-props="AdminPasswordSecretKmsKeyId AdminUserPassword AdminUsername DbName DefaultIamRoleArn FinalSnapshotName FinalSnapshotRetentionPeriod IamRoles KmsKeyId LogExports ManageAdminPassword NamespaceName NamespaceResourcePolicy RedshiftIdcApplicationArn SnapshotCopyConfigurations Tags">
 <td class="mono">AWS::RedshiftServerless::Namespace</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>redshiftServerlessNamespaces</code></div><div class="detail">data/identity half: adminUsername, dbName, kmsKeyId, defaultIamRoleArn, status</div></td>
+<td><span class="badge d-panel-only">panel-only — searchable inventory + details</span><div class="detail">the data/identity half (adminUsername, dbName, kmsKeyId, defaultIamRoleArn) — not VPC-placed; the paired workgroup is the drawn network-attached side</div></td>
 <td class="pc">16<div class="props">AdminPasswordSecretKmsKeyId, AdminUserPassword, AdminUsername, DbName, DefaultIamRoleArn, FinalSnapshotName, FinalSnapshotRetentionPeriod, IamRoles, KmsKeyId, LogExports, ManageAdminPassword, NamespaceName, NamespaceResourcePolicy, RedshiftIdcApplicationArn, SnapshotCopyConfigurations, Tags</div></td></tr>
 <tr data-svc="RedshiftServerless" data-c="inv-tag" data-d="panel-only" data-props="NamespaceName RetentionPeriod SnapshotName Tags">
 <td class="mono">AWS::RedshiftServerless::Snapshot</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">NamespaceName, RetentionPeriod, SnapshotName, Tags</div></td></tr>
-<tr data-svc="RedshiftServerless" data-c="inv-tag" data-d="panel-only" data-props="BaseCapacity ConfigParameters EnhancedVpcRouting MaxCapacity NamespaceName Port PricePerformanceTarget PubliclyAccessible RecoveryPointId SecurityGroupIds SnapshotArn SnapshotName SnapshotOwnerAccount SubnetIds Tags TrackName Workgroup WorkgroupName">
+<tr data-svc="RedshiftServerless" data-c="detailed" data-d="node" data-props="BaseCapacity ConfigParameters EnhancedVpcRouting MaxCapacity NamespaceName Port PricePerformanceTarget PubliclyAccessible RecoveryPointId SecurityGroupIds SnapshotArn SnapshotName SnapshotOwnerAccount SubnetIds Tags TrackName Workgroup WorkgroupName">
 <td class="mono">AWS::RedshiftServerless::Workgroup</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>redshiftServerlessWorkgroups</code></div><div class="detail">VPC-attached serverless DW compute: vpc (derived), subnets, sgIds, publiclyAccessible, endpoint address/port, namespaceName, baseCapacity (RPU), enhancedVpcRouting, status</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn in the drill-down (placed in its subnet) with sg-attach edges + a public badge when publiclyAccessible; off-diagram: endpoint address/port, baseCapacity, enhancedVpcRouting, status</div></td>
 <td class="pc">18<div class="props">BaseCapacity, ConfigParameters, EnhancedVpcRouting, MaxCapacity, NamespaceName, Port, PricePerformanceTarget, PubliclyAccessible, RecoveryPointId, SecurityGroupIds, SnapshotArn, SnapshotName, SnapshotOwnerAccount, SubnetIds, Tags, TrackName, Workgroup, WorkgroupName</div></td></tr>
 <tr data-svc="RefactorSpaces" data-c="inv-tag" data-d="panel-only" data-props="ApiGatewayProxy EnvironmentIdentifier Name ProxyType Tags VpcId">
 <td class="mono">AWS::RefactorSpaces::Application</td>

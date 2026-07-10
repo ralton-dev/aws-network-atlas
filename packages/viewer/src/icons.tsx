@@ -193,6 +193,8 @@ export const ICONS: Record<string, IconComponent> = {
   opensearch: OpenSearch,
   msk: Msk,
   redshift: Redshift,
+  'redshift-serverless-workgroup': Redshift,
+  'redshift-serverless-namespace': Redshift,
   mq: AmazonMq,
   'rds-proxy': RdsProxy,
   'elasticache-serverless': ElastiCacheNode,

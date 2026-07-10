@@ -44,6 +44,8 @@
 "openSearchDomains":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: endpoint, inVpc, endpointPublicAccess"},
 "mskClusters":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: state, kafkaVersion, numberOfBrokerNodes"},
 "redshiftClusters":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: numberOfNodes, state, endpoint, subnetGroupName"},
+"redshiftServerlessWorkgroups":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn in the drill-down (placed in its subnet) with sg-attach edges + a public badge when publiclyAccessible; off-diagram: endpoint address/port, baseCapacity, enhancedVpcRouting, status"},
+"redshiftServerlessNamespaces":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"the data/identity half (adminUsername, dbName, kmsKeyId, defaultIamRoleArn) — not VPC-placed; the paired workgroup is the drawn network-attached side"},
 "mqBrokers":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: deploymentMode, state"},
 "dynamoDbTables":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"keys, encryption, streams, PITR, global-table replicas; cross-region replicas could later be edges"},
 "kmsKeys":{"render":"node","label":"node · overview (customer-managed only) + focus","note":"AWS-managed keys collapsed to a note; keyState, keyUsage, keySpec, multiRegion, extra aliases only in panel"},

@@ -126,6 +126,16 @@ const detail = {
   wafEdge: await page.locator('.edge-label', { hasText: 'WAF protects' }).count(),
   efs: await page.locator('.resource-node', { hasText: 'prod-shared-assets' }).count(),
   fsx: await page.locator('.resource-node', { hasText: 'prod-fsx-ontap' }).count(),
+  // Redshift Serverless workgroup: subnet-placed node, `public` exposure
+  // badge, and its SG-attach edge to the db-tier security group.
+  redshiftServerlessWg: await page.locator('.resource-node', { hasText: 'prod-analytics-wg' }).count(),
+  redshiftServerlessWgPublicBadge: await page
+    .locator('.resource-node', { hasText: 'prod-analytics-wg' })
+    .locator('.badge', { hasText: 'public' })
+    .count(),
+  redshiftServerlessWgSgEdge: await page
+    .locator('.react-flow__edge[data-id="edge:sgatt:sg-0proddb0000000001|res:prod-analytics-wg"]')
+    .count(),
   dnsFirewall: await page.locator('.resource-node', { hasText: 'prod-dns-firewall' }).count(),
   flowLog: await page.locator('.resource-node', { hasText: 'prod-vpc-flow' }).count(),
 };
@@ -136,6 +146,9 @@ if (detail.fwPolicyEdge === 0) problems.push('vpc: firewall → policy edge miss
 if (detail.wafEdge === 0) problems.push('vpc: WAF protects edge missing');
 if (detail.efs === 0) problems.push('vpc: EFS file system node missing');
 if (detail.fsx === 0) problems.push('vpc: FSx file system node missing');
+if (detail.redshiftServerlessWg === 0) problems.push('vpc: Redshift Serverless workgroup node missing');
+if (detail.redshiftServerlessWgPublicBadge === 0) problems.push('vpc: Redshift Serverless workgroup `public` badge missing');
+if (detail.redshiftServerlessWgSgEdge === 0) problems.push('vpc: Redshift Serverless workgroup SG-attach edge (db-sg → workgroup) missing');
 if (detail.dnsFirewall === 0) problems.push('vpc: DNS Firewall rule group node missing');
 if (detail.flowLog === 0) problems.push('vpc: flow log node missing');
 if (detail.sgNodes === 0) problems.push('vpc: no security group nodes');
@@ -151,7 +164,7 @@ if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connect
 // The expected numbers come from running the builders directly over the
 // same fixture (npx tsx graph-check.mts, which also asserts every edge
 // endpoint resolves to a node). Update both together on fixture changes.
-const EXPECTED_EDGES = { overview: 40, prodVpc: 72 };
+const EXPECTED_EDGES = { overview: 40, prodVpc: 73 };
 if (overview.edges !== EXPECTED_EDGES.overview)
   problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
 if (detail.edges !== EXPECTED_EDGES.prodVpc)

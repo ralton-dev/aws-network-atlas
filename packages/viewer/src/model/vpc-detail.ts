@@ -245,6 +245,20 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
       c.publiclyAccessible ? ['public'] : undefined,
     ));
   }
+  for (const wg of region.redshiftServerlessWorkgroups) {
+    // Placed in the first of its subnets that belongs to this VPC (like FSx/
+    // MemoryDB); falls back to the VPC box when the subnets weren't scanned
+    // but the workgroup resolved to this VPC.
+    const parent =
+      subnetNode(wg.subnetIds.find((s) => subnets.some((x) => x.id === s))) ??
+      (wg.vpcId === vpcId ? vpcNodeId : undefined);
+    if (!parent) continue;
+    leaves.set(`res:${wg.id}`, leaf(
+      `res:${wg.id}`, parent, 'redshift-serverless-workgroup',
+      wg.name ?? wg.id, `Redshift serverless · ${wg.namespaceName ?? 'workgroup'}`, wg.id,
+      wg.publiclyAccessible ? ['public'] : undefined,
+    ));
+  }
   for (const broker of region.mqBrokers) {
     if (!inVpcSubnets(broker.subnetIds)) continue;
     leaves.set(`res:${broker.id}`, leaf(
@@ -629,6 +643,7 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     ...region.openSearchDomains.filter((d) => d.vpcId === vpcId).map((d) => ({ nodeId: `res:${d.id}`, sgIds: d.securityGroupIds })),
     ...region.mskClusters.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
     ...region.redshiftClusters.filter((c) => c.vpcId === vpcId).map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
+    ...region.redshiftServerlessWorkgroups.map((wg) => ({ nodeId: `res:${wg.id}`, sgIds: wg.securityGroupIds })),
     ...region.mqBrokers.map((broker) => ({ nodeId: `res:${broker.id}`, sgIds: broker.securityGroupIds })),
     ...region.elastiCacheServerlessCaches.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
     ...region.instanceConnectEndpoints.filter((e) => e.vpcId === vpcId).map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
