@@ -392,6 +392,11 @@ export function deriveRegion(out: RegionSnapshot): void {
   for (const e of out.eksClusters) {
     e.subnetIds.sort();
     e.securityGroupIds.sort();
+    e.accessEntries?.sort((a, b) => a.principalArn.localeCompare(b.principalArn));
+    e.podIdentityAssociations?.sort((a, b) =>
+      `${a.namespace}/${a.serviceAccount}`.localeCompare(`${b.namespace}/${b.serviceAccount}`),
+    );
+    e.identityProviderConfigs?.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   sortById(out.elastiCacheClusters);

@@ -159,6 +159,20 @@ const detail = {
   latticeResourceConfigEdge: await page
     .locator('.react-flow__edge[data-id="edge:latrcgw:rcfg-0prodaurora001"]')
     .count(),
+  // EKS cluster with its IAM → Kubernetes access-surface badges and its
+  // SG-attach edge to the app-tier security group.
+  eksCluster: await page.locator('.resource-node', { hasText: 'prod-eks' }).count(),
+  eksAccessEntriesBadge: await page
+    .locator('.resource-node', { hasText: 'prod-eks' })
+    .locator('.badge', { hasText: 'access entries' })
+    .count(),
+  eksPodIdentityBadge: await page
+    .locator('.resource-node', { hasText: 'prod-eks' })
+    .locator('.badge', { hasText: 'pod-identity' })
+    .count(),
+  eksSgEdge: await page
+    .locator('.react-flow__edge[data-id="edge:sgatt:sg-0prodapp000000001|res:arn:aws:eks:eu-west-1:111111111111:cluster/prod-eks"]')
+    .count(),
 };
 console.log('vpc-detail:', JSON.stringify(detail));
 if (detail.fwPolicy === 0) problems.push('vpc: Network Firewall policy node missing');
@@ -180,6 +194,10 @@ if (detail.latticeResourceGateway === 0) problems.push('vpc: Lattice resource ga
 if (detail.latticeResourceGatewaySgEdge === 0) problems.push('vpc: Lattice resource gateway SG-attach edge (db-sg → gateway) missing');
 if (detail.latticeResourceConfig === 0) problems.push('vpc: Lattice resource configuration node missing');
 if (detail.latticeResourceConfigEdge === 0) problems.push('vpc: Lattice resource config → gateway edge missing');
+if (detail.eksCluster === 0) problems.push('vpc: EKS cluster node missing');
+if (detail.eksAccessEntriesBadge === 0) problems.push('vpc: EKS access-entries badge missing');
+if (detail.eksPodIdentityBadge === 0) problems.push('vpc: EKS pod-identity badge missing');
+if (detail.eksSgEdge === 0) problems.push('vpc: EKS SG-attach edge (app-sg → cluster) missing');
 if (detail.sgNodes === 0) problems.push('vpc: no security group nodes');
 if (detail.sgRuleLabels === 0) problems.push('vpc: no SG rule edges');
 if (detail.exposureLabels === 0) problems.push('vpc: no internet-exposure edges');
@@ -193,7 +211,7 @@ if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connect
 // The expected numbers come from running the builders directly over the
 // same fixture (npx tsx graph-check.mts, which also asserts every edge
 // endpoint resolves to a node). Update both together on fixture changes.
-const EXPECTED_EDGES = { overview: 40, prodVpc: 78 };
+const EXPECTED_EDGES = { overview: 40, prodVpc: 79 };
 if (overview.edges !== EXPECTED_EDGES.overview)
   problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
 if (detail.edges !== EXPECTED_EDGES.prodVpc)
@@ -265,6 +283,29 @@ if (searchCount > 0) {
     JSON.stringify({ panelShowsArn: await page.locator('.details-panel .arn').count() }),
   );
 }
+
+// Focus view: the EKS cluster's IAM → Kubernetes access surface — the access
+// edges to the drawn IAM role and the ghost CI/CD principal, the pod-identity
+// edge, and the OIDC identity-provider stand-in node.
+await page.goto(
+  `file://${SITE}#/focus/${encodeURIComponent('arn:aws:eks:eu-west-1:111111111111:cluster/prod-eks')}`,
+);
+await page.waitForTimeout(1800);
+const eksFocus = {
+  center: await page.locator('.resource-node.is-emphasized', { hasText: 'prod-eks' }).count(),
+  accessEdgeLabels: await page.locator('.edge-label.edge-label-eks-access').count(),
+  appRole: await page.locator('.resource-node', { hasText: 'prod-app-role' }).count(),
+  ghostCicdRole: await page.locator('.resource-node.is-ghost', { hasText: 'prod-eks-cicd-deployer' }).count(),
+  podIdentityEdge: await page.locator('.edge-label', { hasText: 'pod identity · payments/payments-api' }).count(),
+  oidcIdp: await page.locator('.resource-node', { hasText: 'acme-okta-oidc' }).count(),
+};
+console.log('eks-focus:', JSON.stringify(eksFocus));
+if (eksFocus.center !== 1) problems.push('eks-focus: center is not the EKS cluster');
+if (eksFocus.accessEdgeLabels < 4) problems.push('eks-focus: expected ≥4 eks-access edge labels (2 access entries + pod identity + OIDC)');
+if (eksFocus.appRole === 0) problems.push('eks-focus: access-entry edge did not resolve to the drawn prod-app-role node');
+if (eksFocus.ghostCicdRole === 0) problems.push('eks-focus: unscanned access-entry principal did not draw as a ghost');
+if (eksFocus.podIdentityEdge === 0) problems.push('eks-focus: pod-identity edge missing');
+if (eksFocus.oidcIdp === 0) problems.push('eks-focus: OIDC identity-provider node missing');
 
 // Back to overview via breadcrumb.
 await page.locator('.crumb', { hasText: 'Overview' }).click();

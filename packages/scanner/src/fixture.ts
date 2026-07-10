@@ -364,6 +364,54 @@ function prodEuWest1(): RegionSnapshot {
     vpcConfig: { vpcId: vpc, subnetIds: azs.map((_, i) => `subnet-0prodapp0000${i}01`), securityGroupIds: [sg] },
     functionUrl: { url: 'https://abcdef123.lambda-url.eu-west-1.on.aws/', authType: 'AWS_IAM' },
   });
+  // EKS cluster in the app subnets (private endpoint), with its IAM →
+  // Kubernetes access surface: an access entry for the prod app role (drawn
+  // node) and one for a CI/CD deployer role that was never scanned (ghost),
+  // a Pod Identity association mapping a service account onto the Lambda
+  // role, and a corporate OIDC identity provider config.
+  r.eksClusters.push({
+    id: `arn:aws:eks:${EU}:${ACCT.prod}:cluster/prod-eks`,
+    arn: `arn:aws:eks:${EU}:${ACCT.prod}:cluster/prod-eks`,
+    name: 'prod-eks',
+    tags: { env: 'prod' },
+    version: '1.32',
+    endpoint: `https://0123456789ABCDEF.gr7.${EU}.eks.amazonaws.com`,
+    vpcId: vpc,
+    subnetIds: azs.map((_, i) => `subnet-0prodapp0000${i}01`),
+    securityGroupIds: [sg],
+    endpointPublicAccess: false,
+    endpointPrivateAccess: true,
+    accessEntries: [
+      {
+        principalArn: `arn:aws:iam::${ACCT.prod}:role/prod-app-role`,
+        type: 'STANDARD',
+        username: 'prod-app',
+        accessPolicies: [
+          { policyArn: 'arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy', scopeType: 'namespace', namespaces: ['payments'] },
+        ],
+      },
+      {
+        principalArn: `arn:aws:iam::${ACCT.prod}:role/prod-eks-cicd-deployer`,
+        type: 'STANDARD',
+        username: 'cicd-deployer',
+        kubernetesGroups: ['deployers'],
+        accessPolicies: [
+          { policyArn: 'arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy', scopeType: 'cluster' },
+        ],
+      },
+    ],
+    podIdentityAssociations: [
+      {
+        namespace: 'payments',
+        serviceAccount: 'payments-api',
+        roleArn: `arn:aws:iam::${ACCT.prod}:role/prod-lambda-role`,
+        associationArn: `arn:aws:eks:${EU}:${ACCT.prod}:podidentityassociation/prod-eks/a-1a2b3c4d5e6f7a8b9`,
+      },
+    ],
+    identityProviderConfigs: [
+      { name: 'acme-okta-oidc', type: 'oidc', issuerUrl: 'https://login.acme.example/oidc', clientId: 'eks-prod' },
+    ],
+  });
   r.vpcEndpoints.push(
     { id: 'vpce-0prods30000001', name: 's3-gateway', tags: {}, vpcId: vpc, serviceName: `com.amazonaws.${EU}.s3`, endpointType: 'Gateway', state: 'available', subnetIds: [], routeTableIds: azs.map((_, i) => `rtb-0prodapp00000${i}01`), networkInterfaceIds: [] },
     { id: 'vpce-0prodssm000001', name: 'ssm', tags: {}, vpcId: vpc, serviceName: `com.amazonaws.${EU}.ssm`, endpointType: 'Interface', state: 'available', subnetIds: azs.map((_, i) => `subnet-0prodapp0000${i}01`), routeTableIds: [], networkInterfaceIds: ['eni-0prodssm00000001'], privateDnsEnabled: true },

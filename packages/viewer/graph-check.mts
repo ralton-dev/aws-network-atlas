@@ -187,11 +187,29 @@ expectFocus(
   ['private DNS'],
   ['subnet-0devpriv0000001', 'nat-0dev00000000001'], // the peer VPC's internals stay out
 );
-// An IAM role: who assumes it, via which instance profile.
+// An IAM role: who assumes it, via which instance profile — and the reverse
+// EKS access relation (the cluster this role holds an access entry for).
 expectFocus(
   'prod-app-role',
-  ['i-0prodapp0000000001', 'prod-app-profile'],
-  ['assumes role', 'instance profile'],
+  ['i-0prodapp0000000001', 'prod-app-profile',
+    'arn:aws:eks:eu-west-1:111111111111:cluster/prod-eks'], // EKS access entry, reversed
+  ['assumes role', 'instance profile', 'View'],
+);
+// The EKS cluster: its IAM → Kubernetes access surface — access-entry
+// principals (the drawn prod-app role; the never-scanned CI/CD role becomes
+// a ghost), the pod-identity role, and the OIDC identity-provider config
+// (no scanned IAM OIDC provider matches its issuer → stand-in node).
+expectFocus(
+  'arn:aws:eks:eu-west-1:111111111111:cluster/prod-eks',
+  [
+    'prod-app-role', // access entry → drawn IAM role
+    'arn:aws:iam::111111111111:role/prod-eks-cicd-deployer', // unscanned principal → ghost
+    'prod-lambda-role', // pod-identity association role
+    'eksidp:arn:aws:eks:eu-west-1:111111111111:cluster/prod-eks|acme-okta-oidc', // OIDC stand-in
+    'sg-0prodapp000000001', // cluster security group
+    'vpc-0prod00000000000a1', // placement
+  ],
+  ['View', 'ClusterAdmin', 'pod identity · payments/payments-api', 'OIDC · acme-okta-oidc'],
 );
 // A hub TGW: every attached VPC + routing subnets + VPN/DX/TGW-peering spokes,
 // but NOT the spoke VPCs' internal routing (NATs, peering fan-out).
@@ -301,6 +319,21 @@ function adversarialAccount(): AccountSnapshot {
     { id: 'arn:aws:secretsmanager:eu-west-1:555555555555:secret:capped', name: 'capped', tags: {}, kmsKeyId: 'alias/adv-6' },
     { id: 'arn:aws:secretsmanager:eu-west-1:555555555555:secret:missingkey', name: 'missingkey', tags: {}, kmsKeyId: 'alias/nonexistent' },
   );
+  // EKS access-surface edge cases: an access entry for an unscanned principal
+  // (ghost), a pod-identity association with NO roleArn (must draw nothing,
+  // not a dangling edge), one to an unscanned role (ghost), and an identity
+  // provider config with no issuerUrl (stand-in node).
+  r.eksClusters.push({
+    id: 'arn:aws:eks:eu-west-1:555555555555:cluster/adv-eks',
+    name: 'adv-eks', tags: {}, vpcId: vpc,
+    subnetIds: ['subnet-adv00000000001'], securityGroupIds: ['sg-adv0000000000001'],
+    accessEntries: [{ principalArn: 'arn:aws:iam::555555555555:role/never-scanned-eks-admin' }],
+    podIdentityAssociations: [
+      { namespace: 'default', serviceAccount: 'no-role-sa' },
+      { namespace: 'apps', serviceAccount: 'ghost-role-sa', roleArn: 'arn:aws:iam::555555555555:role/ghost-pod-role' },
+    ],
+    identityProviderConfigs: [{ name: 'adv-idp', type: 'oidc' }],
+  });
   // Private API GW pointing at a missing VPC endpoint; public one too.
   r.apiGateways.push(
     { id: 'advprivapi', name: 'adv-private', tags: {}, protocolType: 'REST', endpointType: 'PRIVATE', stages: [], vpcEndpointIds: ['vpce-missing0000001'] },

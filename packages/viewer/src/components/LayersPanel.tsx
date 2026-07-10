@@ -80,6 +80,7 @@ const EDGE_KIND_LABELS: Record<EdgeKind, string> = {
   governs: 'SCP / policy attachments',
   'sso-assign': 'SSO assignments',
   'ram-share': 'RAM shares',
+  'eks-access': 'EKS access',
   placement: 'Placement',
 };
 

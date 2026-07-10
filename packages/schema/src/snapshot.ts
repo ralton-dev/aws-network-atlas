@@ -529,6 +529,41 @@ export interface EksCluster extends BaseResource {
   securityGroupIds: string[];
   endpointPublicAccess?: boolean;
   endpointPrivateAccess?: boolean;
+  /**
+   * IAM → Kubernetes access surface: which IAM principals get cluster access
+   * (EKS access entries), with their Kubernetes groups/username and the
+   * associated EKS access policies + scope. Capped per cluster.
+   */
+  accessEntries?: Array<{
+    principalArn: string;
+    /** STANDARD | EC2_LINUX | EC2_WINDOWS | FARGATE_LINUX | … */
+    type?: string;
+    kubernetesGroups?: string[];
+    username?: string;
+    accessPolicies?: Array<{
+      policyArn: string;
+      /** cluster | namespace. */
+      scopeType?: string;
+      namespaces?: string[];
+    }>;
+  }>;
+  /**
+   * EKS Pod Identity: which IAM roles Kubernetes service accounts assume
+   * (namespace/serviceAccount → roleArn). Capped per cluster.
+   */
+  podIdentityAssociations?: Array<{
+    namespace: string;
+    serviceAccount: string;
+    roleArn?: string;
+    associationArn?: string;
+  }>;
+  /** OIDC identity provider configs (user authentication). Capped per cluster. */
+  identityProviderConfigs?: Array<{
+    name: string;
+    type: string;
+    issuerUrl?: string;
+    clientId?: string;
+  }>;
 }
 
 export interface ElastiCacheCluster extends BaseResource {

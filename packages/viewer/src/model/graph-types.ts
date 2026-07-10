@@ -81,6 +81,11 @@ export type EdgeKind =
   | 'sso-assign'
   /** AWS RAM resource share: owning account → the principal it shares with. */
   | 'ram-share'
+  /**
+   * EKS IAM↔Kubernetes access surface: access-entry principal → cluster,
+   * cluster → pod-identity role, cluster → OIDC identity provider.
+   */
+  | 'eks-access'
   /** Focus view: where a resource lives (instance → subnet, subnet → VPC…). */
   | 'placement';
 

@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-10 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">229</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">887</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">232</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">884</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">506</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -184,8 +184,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">CustomerProfiles</td><td>8</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">EKS</td><td>8</td><td class="c-detailed">1</td><td class="c-inv">7</td><td class="c-none">0</td>
-<td><div class="bar"><span style="width:13%"></span></div><span class="pct">13%</span></td></tr>
+<tr><td class="mono">EKS</td><td>8</td><td class="c-detailed">4</td><td class="c-inv">4</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
 <tr><td class="mono">EMR</td><td>8</td><td class="c-detailed">1</td><td class="c-inv">2</td><td class="c-none">5</td>
 <td><div class="bar"><span style="width:13%"></span></div><span class="pct">13%</span></td></tr>
 <tr><td class="mono">MSK</td><td>8</td><td class="c-detailed">1</td><td class="c-inv">3</td><td class="c-none">4</td>
@@ -3754,10 +3754,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>efsFileSystems</code></div><div class="detail">captured inside efsFileSystems.mountTargets[]</div></td>
 <td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: encrypted, performanceMode, state, mount-target IPs/AZs</div></td>
 <td class="pc">6<div class="props">FileSystemId, IpAddress, IpAddressType, Ipv6Address, SecurityGroups, SubnetId</div></td></tr>
-<tr data-svc="EKS" data-c="inv-tag" data-d="panel-only" data-props="AccessPolicies ClusterName KubernetesGroups PrincipalArn Tags Type Username">
+<tr data-svc="EKS" data-c="detailed" data-d="node" data-props="AccessPolicies ClusterName KubernetesGroups PrincipalArn Tags Type Username">
 <td class="mono">AWS::EKS::AccessEntry</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eksClusters</code></div><div class="detail">captured as eksClusters.accessEntries (principalArn, type, kubernetesGroups, username, associated access policies + scope)</div></td>
+<td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: endpoint, endpointPublicAccess, endpointPrivateAccess</div></td>
 <td class="pc">7<div class="props">AccessPolicies, ClusterName, KubernetesGroups, PrincipalArn, Tags, Type, Username</div></td></tr>
 <tr data-svc="EKS" data-c="inv-tag" data-d="panel-only" data-props="AddonName AddonVersion ClusterName ConfigurationValues NamespaceConfig PodIdentityAssociations PreserveOnDelete ResolveConflicts ServiceAccountRoleArn Tags">
 <td class="mono">AWS::EKS::Addon</td>
@@ -3779,20 +3779,20 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">6<div class="props">ClusterName, FargateProfileName, PodExecutionRoleArn, Selectors, Subnets, Tags</div></td></tr>
-<tr data-svc="EKS" data-c="inv-tag" data-d="panel-only" data-props="ClusterName IdentityProviderConfigName Oidc Tags Type">
+<tr data-svc="EKS" data-c="detailed" data-d="node" data-props="ClusterName IdentityProviderConfigName Oidc Tags Type">
 <td class="mono">AWS::EKS::IdentityProviderConfig</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eksClusters</code></div><div class="detail">captured as eksClusters.identityProviderConfigs (oidc: name, type, issuerUrl, clientId)</div></td>
+<td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: endpoint, endpointPublicAccess, endpointPrivateAccess</div></td>
 <td class="pc">5<div class="props">ClusterName, IdentityProviderConfigName, Oidc, Tags, Type</div></td></tr>
 <tr data-svc="EKS" data-c="inv-tag" data-d="panel-only" data-props="AmiType CapacityType ClusterName DiskSize ForceUpdateEnabled InstanceTypes Labels LaunchTemplate NodeRepairConfig NodeRole NodegroupName ReleaseVersion RemoteAccess ScalingConfig Subnets Tags Taints UpdateConfig Version WarmPoolConfig">
 <td class="mono">AWS::EKS::Nodegroup</td>
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">20<div class="props">AmiType, CapacityType, ClusterName, DiskSize, ForceUpdateEnabled, InstanceTypes, Labels, LaunchTemplate, NodeRepairConfig, NodeRole, NodegroupName, ReleaseVersion, RemoteAccess, ScalingConfig, Subnets, Tags, Taints, UpdateConfig, Version, WarmPoolConfig</div></td></tr>
-<tr data-svc="EKS" data-c="inv-tag" data-d="panel-only" data-props="ClusterName DisableSessionTags Namespace Policy RoleArn ServiceAccount Tags TargetRoleArn">
+<tr data-svc="EKS" data-c="detailed" data-d="node" data-props="ClusterName DisableSessionTags Namespace Policy RoleArn ServiceAccount Tags TargetRoleArn">
 <td class="mono">AWS::EKS::PodIdentityAssociation</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>eksClusters</code></div><div class="detail">captured as eksClusters.podIdentityAssociations (namespace, serviceAccount, roleArn)</div></td>
+<td><span class="badge d-node">node · VPC-detail + focus</span><div class="detail">off-diagram: endpoint, endpointPublicAccess, endpointPrivateAccess</div></td>
 <td class="pc">8<div class="props">ClusterName, DisableSessionTags, Namespace, Policy, RoleArn, ServiceAccount, Tags, TargetRoleArn</div></td></tr>
 <tr data-svc="EMR" data-c="detailed" data-d="node" data-props="AdditionalInfo Applications AutoScalingRole AutoTerminationPolicy BootstrapActions Configurations CustomAmiId EbsRootVolumeIops EbsRootVolumeSize EbsRootVolumeThroughput Instances JobFlowRole KerberosAttributes LogEncryptionKmsKeyId LogUri ManagedScalingPolicy Name OSReleaseLabel PlacementGroupConfigs ReleaseLabel ScaleDownBehavior SecurityConfiguration ServiceRole StepConcurrencyLevel Steps Tags VisibleToAllUsers">
 <td class="mono">AWS::EMR::Cluster</td>

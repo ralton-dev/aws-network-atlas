@@ -199,7 +199,21 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     leaves.set(`res:${svc.id}`, leaf(`res:${svc.id}`, vpcNodeId, 'ecs', svc.name ?? svc.id, `ECS · ${svc.clusterName ?? ''}`, svc.id));
   }
   for (const eks of region.eksClusters.filter((e) => e.vpcId === vpcId)) {
-    leaves.set(`res:${eks.id}`, leaf(`res:${eks.id}`, vpcNodeId, 'eks', eks.name ?? eks.id, `EKS ${eks.version ?? ''}`, eks.id));
+    // Access-surface badges (IAM → Kubernetes): access entries, pod-identity
+    // role associations, OIDC identity providers. The focus view draws the
+    // actual edges; here the counts flag that the surface exists.
+    const nEntries = eks.accessEntries?.length ?? 0;
+    const nPodIds = eks.podIdentityAssociations?.length ?? 0;
+    const nIdps = eks.identityProviderConfigs?.length ?? 0;
+    const accessBadges = [
+      ...(nEntries > 0 ? [`${nEntries} access entr${nEntries === 1 ? 'y' : 'ies'}`] : []),
+      ...(nPodIds > 0 ? [`${nPodIds} pod-identity`] : []),
+      ...(nIdps > 0 ? [`${nIdps} OIDC`] : []),
+    ];
+    leaves.set(`res:${eks.id}`, leaf(
+      `res:${eks.id}`, vpcNodeId, 'eks', eks.name ?? eks.id, `EKS ${eks.version ?? ''}`, eks.id,
+      accessBadges.length > 0 ? accessBadges : undefined,
+    ));
   }
   for (const cache of region.elastiCacheClusters.filter((c) => c.vpcId === vpcId)) {
     leaves.set(`res:${cache.id}`, leaf(`res:${cache.id}`, vpcNodeId, 'elasticache', cache.name ?? cache.id, cache.engine, cache.id));

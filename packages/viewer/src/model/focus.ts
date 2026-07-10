@@ -101,6 +101,9 @@ function collectRelations(index: AtlasIndex): Relation[] {
   // Cross-account lookups (CloudFront origins can live in other accounts).
   const lbByDns = new Map<string, string>();
   const s3ByName = new Map<string, string>();
+  // Scanned IAM OIDC providers by issuer URL (scheme-less, as IAM stores them)
+  // — lets an EKS identity-provider config resolve to its drawn node.
+  const oidcProviderByUrl = new Map<string, string>();
   for (const account of index.snapshot.accounts) {
     for (const region of account.regions) {
       for (const lb of region.loadBalancers) {
@@ -110,6 +113,10 @@ function collectRelations(index: AtlasIndex): Relation[] {
     for (const b of account.global.s3Buckets) {
       const name = b.name ?? b.id;
       if (!s3ByName.has(name)) s3ByName.set(name, b.id);
+    }
+    for (const p of account.global.iamOidcProviders) {
+      const url = p.url?.replace(/^https?:\/\//, '');
+      if (url && !oidcProviderByUrl.has(url)) oidcProviderByUrl.set(url, p.arn ?? p.id);
     }
   }
 
@@ -351,6 +358,64 @@ function collectRelations(index: AtlasIndex): Relation[] {
           title: `${fn.name ?? fn.id} assumes ${role.name ?? role.id}`,
           refId: roleKey(role),
         });
+      }
+
+      // --- EKS access surface: IAM ↔ Kubernetes --------------------------------
+      // Access entries: the IAM principal is granted access INTO the cluster
+      // (principal → cluster, like `trust` account → role). Pod identity:
+      // the cluster's service accounts assume an IAM role (cluster → role,
+      // like the `assumes role` edges above). Unscanned principals become
+      // ghost nodes — add() keys resolve through the index when scanned.
+      for (const eks of region.eksClusters) {
+        for (const entry of eks.accessEntries ?? []) {
+          // 'AmazonEKSClusterAdminPolicy' → 'ClusterAdmin' for a compact label.
+          const policyNames = (entry.accessPolicies ?? []).map((p) =>
+            (p.policyArn.split('/').pop() ?? p.policyArn).replace(/^AmazonEKS/, '').replace(/Policy$/, ''),
+          );
+          add(`eksaccess:${eks.id}|${entry.principalArn}`, entry.principalArn, eks.id, {
+            edgeKind: 'eks-access',
+            label: policyNames.length > 0
+              ? destsLabel(policyNames, 2)
+              : entry.kubernetesGroups?.length
+                ? destsLabel(entry.kubernetesGroups, 2)
+                : 'access entry',
+            title: `${nameOf(entry.principalArn)} has EKS access to ${eks.name ?? eks.id}${entry.username ? ` as ${entry.username}` : ''}`,
+            ...(entry.accessPolicies?.length
+              ? {
+                  columns: ['Access policy', 'Scope', 'Namespaces'] as [string, string, string],
+                  routes: entry.accessPolicies.map((p) => ({
+                    from: p.policyArn.split('/').pop() ?? p.policyArn,
+                    dest: p.scopeType ?? 'cluster',
+                    state: p.namespaces?.join(', '),
+                  })),
+                }
+              : {}),
+            refId: eks.id,
+          });
+        }
+        for (const assoc of eks.podIdentityAssociations ?? []) {
+          if (!assoc.roleArn) continue; // nothing to connect to
+          add(`ekspodid:${eks.id}|${assoc.namespace}/${assoc.serviceAccount}`, eks.id, assoc.roleArn, {
+            edgeKind: 'eks-access',
+            label: `pod identity · ${assoc.namespace}/${assoc.serviceAccount}`,
+            title: `Service account ${assoc.namespace}/${assoc.serviceAccount} on ${eks.name ?? eks.id} assumes ${nameOf(assoc.roleArn)}`,
+            refId: eks.id,
+          });
+        }
+        for (const idp of eks.identityProviderConfigs ?? []) {
+          // Resolve the issuer to a scanned IAM OIDC provider when one
+          // matches; otherwise a synthetic `eksidp:` node (kind oidc-provider)
+          // stands in — makeNode/kindOf special-case the prefix.
+          const scanned = idp.issuerUrl
+            ? oidcProviderByUrl.get(idp.issuerUrl.replace(/^https?:\/\//, ''))
+            : undefined;
+          add(`eksidp:${eks.id}|${idp.name}`, eks.id, scanned ?? `eksidp:${eks.id}|${idp.name}`, {
+            edgeKind: 'eks-access',
+            label: `OIDC · ${idp.name}`,
+            title: `${eks.name ?? eks.id} authenticates users via ${idp.issuerUrl ?? idp.name}`,
+            refId: eks.id,
+          });
+        }
       }
 
       // --- certificates, secrets ----------------------------------------------
@@ -991,6 +1056,7 @@ function kindOf(index: AtlasIndex, key: string): string {
   if (key === INTERNET) return 'internet';
   if (key.startsWith('acct:')) return 'account';
   if (key.startsWith('s3ext:')) return 's3';
+  if (key.startsWith('eksidp:')) return 'oidc-provider';
   return index.byKey.get(key)?.kind ?? guessKind(key);
 }
 
@@ -1009,6 +1075,7 @@ const KIND_PLURALS: Record<string, string> = {
   zone: 'Route 53 zones',
   vpc: 'VPCs',
   ecs: 'ECS services',
+  eks: 'EKS clusters',
 };
 
 const pluralOf = (kind: string): string => KIND_PLURALS[kind] ?? `${kind} resources`;
@@ -1048,6 +1115,7 @@ function subtitleFor(index: AtlasIndex, ref: ResourceRef, center: ResourceRef | 
     case 'lambda': base = (raw['runtime'] as string | undefined) ?? 'Lambda function'; break;
     case 'rds':
     case 'rds-cluster': base = (raw['engine'] as string | undefined) ?? ref.kind; break;
+    case 'eks': base = `EKS ${(raw['version'] as string | undefined) ?? ''}`.trim(); break;
     case 'elasticache': base = (raw['engine'] as string | undefined) ?? 'ElastiCache'; break;
     case 'vpce': base = (raw['serviceName'] as string | undefined)?.split('.').slice(3).join('.') || 'VPC endpoint'; break;
     case 'acm': base = (raw['domainName'] as string | undefined) ?? 'certificate'; break;
@@ -1290,6 +1358,18 @@ export function buildFocus(index: AtlasIndex, centerKey: string): AtlasGraph {
         kind: 's3',
         label: key.slice('s3ext:'.length),
         subtitle: 'S3 bucket · not scanned',
+        ghost: true,
+      };
+      return node;
+    }
+    if (key.startsWith('eksidp:')) {
+      // EKS identity-provider config with no matching scanned IAM OIDC
+      // provider — a stand-in node, named after the config.
+      node.data = {
+        ...node.data,
+        kind: 'oidc-provider',
+        label: key.split('|').pop() ?? key,
+        subtitle: 'EKS identity provider (OIDC)',
         ghost: true,
       };
       return node;

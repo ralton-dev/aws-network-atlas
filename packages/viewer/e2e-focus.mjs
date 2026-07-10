@@ -15,7 +15,7 @@ page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
 // Expected counts come from the builder over the same fixture (graph-check.mts
 // output). React Flow silently drops dangling edges, so a mismatch here means
 // edges vanished between builder and canvas. Update together on fixture changes.
-const EXPECTED = { instance: { nodes: 21, edges: 30 }, sg: { nodes: 17, edges: 20 } };
+const EXPECTED = { instance: { nodes: 25, edges: 40 }, sg: { nodes: 18, edges: 22 } };
 
 await page.goto(`file://${SITE}#/`);
 await page.waitForSelector('.resource-node', { timeout: 15000 });
