@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-10 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">221</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">894</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">222</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">893</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">507</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -234,8 +234,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">DocDB</td><td>6</td><td class="c-detailed">1</td><td class="c-inv">4</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:17%"></span></div><span class="pct">17%</span></td></tr>
-<tr><td class="mono">FSx</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">FSx</td><td>6</td><td class="c-detailed">1</td><td class="c-inv">4</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:17%"></span></div><span class="pct">17%</span></td></tr>
 <tr><td class="mono">MediaTailor</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">5</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">MemoryDB</td><td>6</td><td class="c-detailed">2</td><td class="c-inv">4</td><td class="c-none">0</td>
@@ -4119,10 +4119,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">7<div class="props">BatchImportMetaDataOnCreate, DataRepositoryPath, FileSystemId, FileSystemPath, ImportedFileChunkSize, S3, Tags</div></td></tr>
-<tr data-svc="FSx" data-c="inv-tag" data-d="panel-only" data-props="BackupId FileSystemType FileSystemTypeVersion KmsKeyId LustreConfiguration NetworkType OntapConfiguration OpenZFSConfiguration SecurityGroupIds StorageCapacity StorageType SubnetIds Tags WindowsConfiguration">
+<tr data-svc="FSx" data-c="detailed" data-d="node" data-props="BackupId FileSystemType FileSystemTypeVersion KmsKeyId LustreConfiguration NetworkType OntapConfiguration OpenZFSConfiguration SecurityGroupIds StorageCapacity StorageType SubnetIds Tags WindowsConfiguration">
 <td class="mono">AWS::FSx::FileSystem</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>fsxFileSystems</code></div><div class="detail">VPC-attached: vpcId, subnetIds, ENIs; type (Windows/Lustre/ONTAP/OpenZFS), deploymentType, storage GiB/type, DNS name, lifecycle</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">drawn on the drill-down; ONTAP/OpenZFS volumes, SVMs, snapshots and DRAs stay tag-only inventory</div></td>
 <td class="pc">14<div class="props">BackupId, FileSystemType, FileSystemTypeVersion, KmsKeyId, LustreConfiguration, NetworkType, OntapConfiguration, OpenZFSConfiguration, SecurityGroupIds, StorageCapacity, StorageType, SubnetIds, Tags, WindowsConfiguration</div></td></tr>
 <tr data-svc="FSx" data-c="none" data-d="none" data-props="Name OntapConfiguration OpenZFSConfiguration S3AccessPoint Type">
 <td class="mono">AWS::FSx::S3AccessPointAttachment</td>

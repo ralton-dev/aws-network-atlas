@@ -64,6 +64,7 @@ import FlowLogs from 'aws-icons/icons/resource/AmazonVPCFlowLogs.svg?react';
 import CloudWatchLogs from 'aws-icons/icons/resource/AmazonCloudWatchLogs.svg?react';
 // VPC-attached workloads
 import Efs from 'aws-icons/icons/architecture-service/AmazonEFS.svg?react';
+import Fsx from 'aws-icons/icons/architecture-service/AmazonFSx.svg?react';
 import OpenSearch from 'aws-icons/icons/architecture-service/AmazonOpenSearchService.svg?react';
 import Msk from 'aws-icons/icons/architecture-service/AmazonManagedStreamingforApacheKafka.svg?react';
 import Redshift from 'aws-icons/icons/architecture-service/AmazonRedshift.svg?react';
@@ -188,6 +189,7 @@ export const ICONS: Record<string, IconComponent> = {
   'tgw-connect-peer': TgwAttachment,
   // VPC-attached workloads
   efs: Efs,
+  fsx: Fsx,
   opensearch: OpenSearch,
   msk: Msk,
   redshift: Redshift,

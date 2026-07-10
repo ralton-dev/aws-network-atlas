@@ -550,6 +550,17 @@ function prodEuWest1(): RegionSnapshot {
     mountTargets: ['a', 'b'].map((az, i) => ({ id: `fsmt-0prod000000${i}01`, subnetId: `subnet-0proddb00000${i}01`, ipAddress: `10.0.2${i}.100`, availabilityZone: `${EU}${az}`, securityGroupIds: [dbSg] })),
   });
 
+  // FSx for NetApp ONTAP multi-AZ file system alongside it (EFS's peer).
+  r.fsxFileSystems.push({
+    id: 'fs-0prodfsx0000000001', arn: `arn:aws:fsx:${EU}:${ACCT.prod}:file-system/fs-0prodfsx0000000001`,
+    name: 'prod-fsx-ontap', tags: { Name: 'prod-fsx-ontap', env: 'prod' },
+    fileSystemType: 'ONTAP', vpcId: 'vpc-0prod00000000000a1',
+    subnetIds: ['subnet-0proddb00000001', 'subnet-0proddb00000101'],
+    networkInterfaceIds: ['eni-0prodfsx00000001', 'eni-0prodfsx00000101'],
+    dnsName: `fs-0prodfsx0000000001.fsx.${EU}.amazonaws.com`,
+    storageCapacityGiB: 1024, storageType: 'SSD', deploymentType: 'MULTI_AZ_1', lifecycle: 'AVAILABLE',
+  });
+
   // Glue: a JDBC connection into the db subnets + a dev endpoint in the app tier.
   r.glueConnections.push({
     id: 'acme-prod-glue-conn',

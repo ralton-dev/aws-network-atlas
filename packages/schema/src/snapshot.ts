@@ -1564,6 +1564,30 @@ export interface EfsFileSystem extends BaseResource {
   }>;
 }
 
+/**
+ * Amazon FSx file system (Windows / Lustre / ONTAP / OpenZFS) — VPC-ATTACHED
+ * network storage, the direct peer of EFS: vpcId + subnetIds + ENIs come
+ * straight off the file system. The name is the Name tag (FSx has no native
+ * name field). Nested ONTAP/OpenZFS detail (volumes, SVMs, snapshots, data
+ * repository associations) is not collected — those stay in the tag sweep.
+ */
+export interface FsxFileSystem extends BaseResource {
+  /** WINDOWS | LUSTRE | ONTAP | OPENZFS. */
+  fileSystemType: string;
+  vpcId?: string;
+  subnetIds: string[];
+  networkInterfaceIds?: string[];
+  dnsName?: string;
+  /** StorageCapacity, in GiB. */
+  storageCapacityGiB?: number;
+  /** SSD | HDD | INTELLIGENT_TIERING. */
+  storageType?: string;
+  /** From the type-specific config block, e.g. MULTI_AZ_1, PERSISTENT_2. */
+  deploymentType?: string;
+  /** AVAILABLE | CREATING | FAILED | …. */
+  lifecycle?: string;
+}
+
 export interface OpenSearchDomain extends BaseResource {
   engineVersion?: string;
   endpoint?: string;
@@ -2075,6 +2099,7 @@ export interface RegionSnapshot {
   elastiCacheReplicationGroups: ElastiCacheReplicationGroup[];
   elastiCacheServerlessCaches: ElastiCacheServerlessCache[];
   efsFileSystems: EfsFileSystem[];
+  fsxFileSystems: FsxFileSystem[];
   openSearchDomains: OpenSearchDomain[];
   mskClusters: MskCluster[];
   redshiftClusters: RedshiftCluster[];
@@ -2307,6 +2332,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     elastiCacheReplicationGroups: [],
     elastiCacheServerlessCaches: [],
     efsFileSystems: [],
+    fsxFileSystems: [],
     openSearchDomains: [],
     mskClusters: [],
     redshiftClusters: [],

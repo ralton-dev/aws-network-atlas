@@ -105,6 +105,7 @@
         "es:List*",
         "kafka:List*",
         "elasticfilesystem:Describe*",
+        "fsx:Describe*",
         "glue:Get*",
         "logs:Describe*",
         "s3:GetBucket*",

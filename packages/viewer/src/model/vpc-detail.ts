@@ -216,6 +216,19 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
       fs.encrypted === false ? ['unencrypted'] : undefined,
     ));
   }
+  for (const fsx of region.fsxFileSystems) {
+    // Placed in the first of its subnets that belongs to this VPC (like
+    // MemoryDB/Neptune); falls back to the VPC box when the subnets weren't
+    // scanned but the file system declares this VPC (like EFS).
+    const parent =
+      subnetNode(fsx.subnetIds.find((s) => subnets.some((x) => x.id === s))) ??
+      (fsx.vpcId === vpcId ? vpcNodeId : undefined);
+    if (!parent) continue;
+    leaves.set(`res:${fsx.id}`, leaf(
+      `res:${fsx.id}`, parent, 'fsx',
+      fsx.name ?? fsx.id, `FSx · ${fsx.fileSystemType.toLowerCase()}`, fsx.id,
+    ));
+  }
   for (const d of region.openSearchDomains.filter((d) => d.vpcId === vpcId)) {
     leaves.set(`res:${d.id}`, leaf(
       `res:${d.id}`, vpcNodeId, 'opensearch', d.name ?? d.id, `OpenSearch ${d.engineVersion ?? ''}`, d.id,

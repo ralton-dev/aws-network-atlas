@@ -124,6 +124,7 @@ const DETAILED = {
   'AWS::ElastiCache::ReplicationGroup': { field: 'elastiCacheReplicationGroups', attrs: 'status, members, clusterMode, failover, endpoints' },
   'AWS::ElastiCache::ServerlessCache': { field: 'elastiCacheServerlessCaches', attrs: 'engine, status, endpoint, subnets, sgIds' },
   'AWS::EFS::FileSystem': { field: 'efsFileSystems', attrs: 'state, encrypted, perfMode, vpcId, mountTargets(subnet/ip/AZ/sg)' },
+  'AWS::FSx::FileSystem': { field: 'fsxFileSystems', attrs: 'VPC-attached: vpcId, subnetIds, ENIs; type (Windows/Lustre/ONTAP/OpenZFS), deploymentType, storage GiB/type, DNS name, lifecycle' },
   'AWS::OpenSearchService::Domain': { field: 'openSearchDomains', attrs: 'version, endpoint, inVpc, vpc, subnets, sgIds' },
   'AWS::Elasticsearch::Domain': { field: 'openSearchDomains', attrs: 'legacy ES domain (same collector)' },
   'AWS::MSK::Cluster': { field: 'mskClusters', attrs: 'type, state, kafkaVersion, brokerNodes, subnets, sgIds' },

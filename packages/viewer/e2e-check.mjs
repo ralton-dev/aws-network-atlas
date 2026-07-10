@@ -125,6 +125,7 @@ const detail = {
   fwPolicyEdge: await page.locator('.edge-label', { hasText: 'firewall policy' }).count(),
   wafEdge: await page.locator('.edge-label', { hasText: 'WAF protects' }).count(),
   efs: await page.locator('.resource-node', { hasText: 'prod-shared-assets' }).count(),
+  fsx: await page.locator('.resource-node', { hasText: 'prod-fsx-ontap' }).count(),
   dnsFirewall: await page.locator('.resource-node', { hasText: 'prod-dns-firewall' }).count(),
   flowLog: await page.locator('.resource-node', { hasText: 'prod-vpc-flow' }).count(),
 };
@@ -134,6 +135,7 @@ if (detail.fwRuleGroups === 0) problems.push('vpc: Network Firewall rule group n
 if (detail.fwPolicyEdge === 0) problems.push('vpc: firewall → policy edge missing');
 if (detail.wafEdge === 0) problems.push('vpc: WAF protects edge missing');
 if (detail.efs === 0) problems.push('vpc: EFS file system node missing');
+if (detail.fsx === 0) problems.push('vpc: FSx file system node missing');
 if (detail.dnsFirewall === 0) problems.push('vpc: DNS Firewall rule group node missing');
 if (detail.flowLog === 0) problems.push('vpc: flow log node missing');
 if (detail.sgNodes === 0) problems.push('vpc: no security group nodes');

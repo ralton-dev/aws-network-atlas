@@ -99,6 +99,7 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('elasticache-replication-group', region.elastiCacheReplicationGroups as unknown as Array<Record<string, unknown>>);
   add('elasticache-serverless', region.elastiCacheServerlessCaches as unknown as Array<Record<string, unknown>>);
   add('efs', region.efsFileSystems as unknown as Array<Record<string, unknown>>);
+  add('fsx', region.fsxFileSystems as unknown as Array<Record<string, unknown>>);
   add('opensearch', region.openSearchDomains as unknown as Array<Record<string, unknown>>);
   add('msk', region.mskClusters as unknown as Array<Record<string, unknown>>);
   add('redshift', region.redshiftClusters as unknown as Array<Record<string, unknown>>);

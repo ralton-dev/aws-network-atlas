@@ -109,6 +109,7 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.elastiCacheReplicationGroups.length === 0 &&
     out.elastiCacheServerlessCaches.length === 0 &&
     out.efsFileSystems.length === 0 &&
+    out.fsxFileSystems.length === 0 &&
     out.openSearchDomains.length === 0 &&
     out.mskClusters.length === 0 &&
     out.redshiftClusters.length === 0 &&
@@ -393,6 +394,11 @@ export function deriveRegion(out: RegionSnapshot): void {
   }
 
   sortById(out.efsFileSystems);
+  sortById(out.fsxFileSystems);
+  for (const f of out.fsxFileSystems) {
+    f.subnetIds.sort();
+    f.networkInterfaceIds?.sort();
+  }
   sortById(out.openSearchDomains);
   for (const d of out.openSearchDomains) {
     d.subnetIds.sort();

@@ -155,6 +155,7 @@ function collectRelations(index: AtlasIndex): Relation[] {
       for (const f of region.efsFileSystems) {
         for (const mt of f.mountTargets) place(f.id, mt.subnetId, 'mount target in');
       }
+      for (const f of region.fsxFileSystems) for (const s of f.subnetIds) place(f.id, s, 'in subnet');
       for (const d of region.openSearchDomains) {
         if (d.subnetIds.length > 0) for (const s of d.subnetIds) place(d.id, s, 'in subnet');
         else place(d.id, d.vpcId, 'in VPC');
@@ -1036,6 +1037,7 @@ function subtitleFor(index: AtlasIndex, ref: ResourceRef, center: ResourceRef | 
     case 'dx-vif': base = `${(raw['vifType'] as string | undefined) ?? ''} VIF`.trim(); break;
     case 'dx-lag': base = 'DX LAG'; break;
     case 'efs': base = 'EFS file system'; break;
+    case 'fsx': base = `FSx · ${(raw['fileSystemType'] as string | undefined)?.toLowerCase() ?? 'file system'}`; break;
     case 'opensearch': base = `OpenSearch ${(raw['engineVersion'] as string | undefined) ?? ''}`.trim(); break;
     case 'msk': base = 'MSK cluster'; break;
     case 'redshift': base = (raw['nodeType'] as string | undefined) ?? 'Redshift'; break;

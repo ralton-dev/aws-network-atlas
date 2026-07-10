@@ -40,6 +40,7 @@
 "elastiCacheReplicationGroups":{"render":"node","label":"node · focus only","note":"not on overview/VPC-detail; description, status, clusterMode, failover, endpoints only in panel"},
 "elastiCacheServerlessCaches":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: status, endpoint"},
 "efsFileSystems":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: encrypted, performanceMode, state, mount-target IPs/AZs"},
+"fsxFileSystems":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn on the drill-down; ONTAP/OpenZFS volumes, SVMs, snapshots and DRAs stay tag-only inventory"},
 "openSearchDomains":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: endpoint, inVpc, endpointPublicAccess"},
 "mskClusters":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: state, kafkaVersion, numberOfBrokerNodes"},
 "redshiftClusters":{"render":"node","label":"node · VPC-detail + focus","note":"off-diagram: numberOfNodes, state, endpoint, subnetGroupName"},
