@@ -163,6 +163,7 @@ function collectRelations(index: AtlasIndex): Relation[] {
       for (const c of region.mskClusters) for (const s of c.subnetIds) place(c.id, s, 'in subnet');
       for (const c of region.redshiftClusters) place(c.id, c.vpcId, 'in VPC');
       for (const wg of region.redshiftServerlessWorkgroups) for (const s of wg.subnetIds) place(wg.id, s, 'in subnet');
+      for (const d of region.directoryServiceDirectories) for (const s of d.subnetIds) place(d.id, s, 'in subnet');
       for (const broker of region.mqBrokers) for (const s of broker.subnetIds) place(broker.id, s, 'in subnet');
       for (const c of region.elastiCacheServerlessCaches) for (const s of c.subnetIds) place(c.id, s, 'in subnet');
       for (const ice of region.instanceConnectEndpoints) place(ice.id, ice.subnetId, 'in subnet');
@@ -224,6 +225,7 @@ function collectRelations(index: AtlasIndex): Relation[] {
         ...region.mskClusters.map((c) => ({ id: c.id, sgIds: c.securityGroupIds })),
         ...region.redshiftClusters.map((c) => ({ id: c.id, sgIds: c.securityGroupIds })),
         ...region.redshiftServerlessWorkgroups.map((wg) => ({ id: wg.id, sgIds: wg.securityGroupIds })),
+        ...region.directoryServiceDirectories.map((d) => ({ id: d.id, sgIds: d.securityGroupId ? [d.securityGroupId] : [] })),
         ...region.mqBrokers.map((broker) => ({ id: broker.id, sgIds: broker.securityGroupIds })),
         ...region.elastiCacheServerlessCaches.map((c) => ({ id: c.id, sgIds: c.securityGroupIds })),
         ...region.instanceConnectEndpoints.map((e) => ({ id: e.id, sgIds: e.securityGroupIds })),
@@ -1045,6 +1047,7 @@ function subtitleFor(index: AtlasIndex, ref: ResourceRef, center: ResourceRef | 
     case 'redshift': base = (raw['nodeType'] as string | undefined) ?? 'Redshift'; break;
     case 'redshift-serverless-workgroup': base = `Redshift serverless${raw['baseCapacity'] !== undefined ? ` · ${String(raw['baseCapacity'])} RPU` : ''}`; break;
     case 'redshift-serverless-namespace': base = (raw['dbName'] as string | undefined) ?? 'Redshift Serverless namespace'; break;
+    case 'directory-service': base = `Directory Service · ${(raw['type'] as string | undefined) ?? 'directory'}`; break;
     case 'mq': base = `MQ · ${(raw['engineType'] as string | undefined) ?? ''}`.trim(); break;
     case 'rds-proxy': base = 'RDS Proxy'; break;
     case 'elasticache-serverless': base = `${(raw['engine'] as string | undefined) ?? 'cache'} · serverless`; break;

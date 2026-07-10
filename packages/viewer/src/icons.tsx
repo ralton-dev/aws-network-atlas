@@ -81,6 +81,7 @@ import DocumentDb from 'aws-icons/icons/architecture-service/AmazonDocumentDB.sv
 import MemoryDb from 'aws-icons/icons/architecture-service/AmazonMemoryDB.svg?react';
 import TransferFamily from 'aws-icons/icons/architecture-service/AWSTransferFamily.svg?react';
 import Beanstalk from 'aws-icons/icons/architecture-service/AWSElasticBeanstalk.svg?react';
+import DirectoryService from 'aws-icons/icons/architecture-service/AWSDirectoryService.svg?react';
 // security groups, internet, on-prem DNS targets
 import Shield from 'aws-icons/icons/resource/Shield.svg?react';
 import Internet from 'aws-icons/icons/resource/Internetalt1.svg?react';
@@ -211,6 +212,7 @@ export const ICONS: Record<string, IconComponent> = {
   'memorydb-cluster': MemoryDb,
   'transfer-server': TransferFamily,
   'beanstalk-environment': Beanstalk,
+  'directory-service': DirectoryService,
   // security groups, internet, DNS targets
   sg: Shield,
   internet: Internet,

@@ -259,6 +259,20 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
       wg.publiclyAccessible ? ['public'] : undefined,
     ));
   }
+  for (const dir of region.directoryServiceDirectories) {
+    // Placed in the first of its subnets that belongs to this VPC (like FSx/
+    // Redshift Serverless); falls back to the VPC box when the subnets
+    // weren't scanned but the directory declares this VPC.
+    const parent =
+      subnetNode(dir.subnetIds.find((s) => subnets.some((x) => x.id === s))) ??
+      (dir.vpcId === vpcId ? vpcNodeId : undefined);
+    if (!parent) continue;
+    leaves.set(`res:${dir.id}`, leaf(
+      `res:${dir.id}`, parent, 'directory-service',
+      dir.name ?? dir.id, `Directory Service · ${dir.type}`, dir.id,
+      dir.stage && dir.stage !== 'Active' ? [dir.stage] : undefined,
+    ));
+  }
   for (const broker of region.mqBrokers) {
     if (!inVpcSubnets(broker.subnetIds)) continue;
     leaves.set(`res:${broker.id}`, leaf(
@@ -644,6 +658,7 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     ...region.mskClusters.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
     ...region.redshiftClusters.filter((c) => c.vpcId === vpcId).map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
     ...region.redshiftServerlessWorkgroups.map((wg) => ({ nodeId: `res:${wg.id}`, sgIds: wg.securityGroupIds })),
+    ...region.directoryServiceDirectories.map((d) => ({ nodeId: `res:${d.id}`, sgIds: d.securityGroupId ? [d.securityGroupId] : [] })),
     ...region.mqBrokers.map((broker) => ({ nodeId: `res:${broker.id}`, sgIds: broker.securityGroupIds })),
     ...region.elastiCacheServerlessCaches.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
     ...region.instanceConnectEndpoints.filter((e) => e.vpcId === vpcId).map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),

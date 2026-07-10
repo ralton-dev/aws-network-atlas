@@ -136,6 +136,12 @@ const detail = {
   redshiftServerlessWgSgEdge: await page
     .locator('.react-flow__edge[data-id="edge:sgatt:sg-0proddb0000000001|res:prod-analytics-wg"]')
     .count(),
+  // Directory Service (Managed Microsoft AD): subnet-placed node in the db
+  // tier and its SG-attach edge to the db-tier security group.
+  directoryService: await page.locator('.resource-node', { hasText: 'ad.acme.example' }).count(),
+  directoryServiceSgEdge: await page
+    .locator('.react-flow__edge[data-id="edge:sgatt:sg-0proddb0000000001|res:d-9367001aaa"]')
+    .count(),
   dnsFirewall: await page.locator('.resource-node', { hasText: 'prod-dns-firewall' }).count(),
   flowLog: await page.locator('.resource-node', { hasText: 'prod-vpc-flow' }).count(),
 };
@@ -149,6 +155,8 @@ if (detail.fsx === 0) problems.push('vpc: FSx file system node missing');
 if (detail.redshiftServerlessWg === 0) problems.push('vpc: Redshift Serverless workgroup node missing');
 if (detail.redshiftServerlessWgPublicBadge === 0) problems.push('vpc: Redshift Serverless workgroup `public` badge missing');
 if (detail.redshiftServerlessWgSgEdge === 0) problems.push('vpc: Redshift Serverless workgroup SG-attach edge (db-sg → workgroup) missing');
+if (detail.directoryService === 0) problems.push('vpc: Directory Service directory node missing');
+if (detail.directoryServiceSgEdge === 0) problems.push('vpc: Directory Service SG-attach edge (db-sg → directory) missing');
 if (detail.dnsFirewall === 0) problems.push('vpc: DNS Firewall rule group node missing');
 if (detail.flowLog === 0) problems.push('vpc: flow log node missing');
 if (detail.sgNodes === 0) problems.push('vpc: no security group nodes');
@@ -164,7 +172,7 @@ if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connect
 // The expected numbers come from running the builders directly over the
 // same fixture (npx tsx graph-check.mts, which also asserts every edge
 // endpoint resolves to a node). Update both together on fixture changes.
-const EXPECTED_EDGES = { overview: 40, prodVpc: 73 };
+const EXPECTED_EDGES = { overview: 40, prodVpc: 74 };
 if (overview.edges !== EXPECTED_EDGES.overview)
   problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
 if (detail.edges !== EXPECTED_EDGES.prodVpc)

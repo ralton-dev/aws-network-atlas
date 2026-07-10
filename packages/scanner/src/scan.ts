@@ -29,6 +29,7 @@ import { collectVpcWorkloads } from './collect/vpc-workloads.js';
 import { collectLattice } from './collect/lattice.js';
 import { collectLogs } from './collect/logs.js';
 import { collectCognito } from './collect/cognito.js';
+import { collectDirectoryService } from './collect/directory-service.js';
 import { collectEcr } from './collect/ecr.js';
 import { collectDynamoDb } from './collect/dynamodb.js';
 import { collectSns, collectSqs } from './collect/messaging.js';
@@ -117,6 +118,7 @@ export async function scanAccount(
           collectLattice(ctx, region, out),
           collectLogs(ctx, region, out),
           collectCognito(ctx, region, out),
+          collectDirectoryService(ctx, region, identity.accountId, out),
           collectEcr(ctx, region, out),
           collectDynamoDb(ctx, region, out),
           collectSns(ctx, region, out),

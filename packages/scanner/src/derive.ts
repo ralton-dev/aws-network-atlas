@@ -162,6 +162,7 @@ export function deriveRegion(out: RegionSnapshot): void {
     // holding only untagged tables/queues/topics/repos/pools would be dropped.
     out.cognitoUserPools.length === 0 &&
     out.cognitoIdentityPools.length === 0 &&
+    out.directoryServiceDirectories.length === 0 &&
     out.ecrRepositories.length === 0 &&
     out.ecrRegistries.length === 0 &&
     out.dynamoDbTables.length === 0 &&
@@ -516,6 +517,11 @@ export function deriveRegion(out: RegionSnapshot): void {
     pool.cognitoUserPoolProviders.sort();
     pool.samlProviderArns.sort();
     pool.openIdConnectProviderArns.sort();
+  }
+  sortById(out.directoryServiceDirectories);
+  for (const d of out.directoryServiceDirectories) {
+    d.subnetIds.sort();
+    d.dnsIps.sort();
   }
   sortById(out.dynamoDbTables);
   for (const t of out.dynamoDbTables) t.globalTableReplicas.sort();

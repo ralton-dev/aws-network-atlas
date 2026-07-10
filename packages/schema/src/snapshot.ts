@@ -582,6 +582,44 @@ export interface CognitoIdentityPool extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// Directory Service (regional): VPC-attached managed directories
+// ---------------------------------------------------------------------------
+
+/**
+ * AWS Directory Service directory (Managed Microsoft AD / Simple AD /
+ * AD Connector) — VPC-ATTACHED identity infrastructure: domain controllers
+ * (or connector endpoints) live as ENIs in two subnets behind a dedicated
+ * security group, none of which the tag sweep can see when untagged. The API
+ * returns no ARN; it is constructed (arn:aws:ds:region:account:directory/id).
+ * For SharedMicrosoftAD the placement fields stay empty — the directory lives
+ * in the owner account's VPC, not this one's.
+ */
+export interface DirectoryServiceDirectory extends BaseResource {
+  /** The directory's NetBIOS short name, e.g. CORP. */
+  shortName?: string;
+  /** SimpleAD | MicrosoftAD | ADConnector | SharedMicrosoftAD. */
+  type: string;
+  /** Managed Microsoft AD only: Standard | Enterprise. */
+  edition?: string;
+  /** Simple AD only: Small | Large. */
+  size?: string;
+  /** Lifecycle stage: Active | Creating | Impaired | Failed | …. */
+  stage?: string;
+  /** Access-URL alias (<alias>.awsapps.com), when one was created. */
+  alias?: string;
+  /**
+   * Directory DNS server IPs (domain controllers for Simple/Microsoft AD;
+   * the self-managed DNS servers an AD Connector forwards to).
+   */
+  dnsIps: string[];
+  /** From VpcSettings (Simple/Microsoft AD) or ConnectSettings (AD Connector). */
+  vpcId?: string;
+  subnetIds: string[];
+  /** The directory-controllers security group Directory Service manages. */
+  securityGroupId?: string;
+}
+
+// ---------------------------------------------------------------------------
 // ECR (regional): container registries + repositories
 // ---------------------------------------------------------------------------
 
@@ -2173,6 +2211,7 @@ export interface RegionSnapshot {
   // identity services (regional)
   cognitoUserPools: CognitoUserPool[];
   cognitoIdentityPools: CognitoIdentityPool[];
+  directoryServiceDirectories: DirectoryServiceDirectory[];
 
   // container registry (regional)
   ecrRepositories: EcrRepository[];
@@ -2402,6 +2441,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     logGroups: [],
     cognitoUserPools: [],
     cognitoIdentityPools: [],
+    directoryServiceDirectories: [],
     ecrRepositories: [],
     ecrRegistries: [],
     snsTopics: [],

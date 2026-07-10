@@ -133,6 +133,7 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   // identity services
   add('cognito-user-pool', region.cognitoUserPools as unknown as Array<Record<string, unknown>>);
   add('cognito-identity-pool', region.cognitoIdentityPools as unknown as Array<Record<string, unknown>>);
+  add('directory-service', region.directoryServiceDirectories as unknown as Array<Record<string, unknown>>);
   // container registry
   add('ecr-repository', region.ecrRepositories as unknown as Array<Record<string, unknown>>);
   add('ecr-registry', region.ecrRegistries as unknown as Array<Record<string, unknown>>);

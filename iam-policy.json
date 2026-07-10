@@ -204,7 +204,8 @@
         "cognito-idp:List*",
         "cognito-identity:Describe*",
         "cognito-identity:Get*",
-        "cognito-identity:List*"
+        "cognito-identity:List*",
+        "ds:Describe*"
       ],
       "Resource": "*"
     },

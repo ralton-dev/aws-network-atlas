@@ -71,6 +71,7 @@
 "logGroups":{"render":"panel-only","label":"panel-only — collection not drawn","note":"a log-group node appears in focus only if a flow log's logGroupName matches; retentionDays, kmsKeyId, logGroupClass panel-only"},
 "cognitoUserPools":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"identity-tier auth config; not yet drawn on the graph"},
 "cognitoIdentityPools":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"federated identity → IAM role mapping; not yet drawn on the graph"},
+"directoryServiceDirectories":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn in the drill-down (placed in its subnet) with an sg-attach edge to the Directory Service-managed security group; off-diagram: dnsIps, edition/size, stage, alias"},
 "ecrRepositories":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"repository + resource policies (cross-account grants); not yet drawn on the graph"},
 "ecrRegistries":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"registry replication + pull-through-cache + scanning config; not yet drawn"},
 "snsTopics":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"topic policy + subscriptions (cross-account destinations); subscriber ARNs could later be edges"},

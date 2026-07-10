@@ -170,6 +170,8 @@ const DETAILED = {
   'AWS::Cognito::UserPoolIdentityProvider': { field: 'cognitoUserPools', attrs: 'captured as cognitoUserPools.identityProviders' },
   'AWS::Cognito::IdentityPool': { field: 'cognitoIdentityPools', attrs: 'allowUnauthenticated, cognitoUserPoolProviders, saml/oidc providers, auth/unauth roleArns' },
   'AWS::Cognito::IdentityPoolRoleAttachment': { field: 'cognitoIdentityPools', attrs: 'captured as cognitoIdentityPools auth/unauth roleArns' },
+  'AWS::DirectoryService::MicrosoftAD': { field: 'directoryServiceDirectories', attrs: 'VPC-attached identity: vpcId, subnetIds, securityGroupId; edition, stage, dnsIps, alias, shortName (SharedMicrosoftAD captured too — no CFN type)' },
+  'AWS::DirectoryService::SimpleAD': { field: 'directoryServiceDirectories', attrs: 'VPC-attached identity: vpcId, subnetIds, securityGroupId; size, stage, dnsIps, alias, shortName (AD Connector captured too — no CFN type)' },
   'AWS::DynamoDB::Table': { field: 'dynamoDbTables', attrs: 'keySchema, billingMode, SSE(KMS), streams, PITR, TTL, globalTableReplicas, deletionProtection' },
   'AWS::DynamoDB::GlobalTable': { field: 'dynamoDbTables', attrs: 'captured as dynamoDbTables.globalTableReplicas (multi-region)' },
   'AWS::ECR::Repository': { field: 'ecrRepositories', attrs: 'uri, imageTagMutability, scanOnPush, encryption(KMS/AES256), repositoryPolicy (cross-account), lifecyclePolicy' },

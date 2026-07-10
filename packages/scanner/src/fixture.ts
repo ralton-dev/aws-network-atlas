@@ -592,6 +592,25 @@ function prodEuWest1(): RegionSnapshot {
     status: 'AVAILABLE',
   });
 
+  // AWS Managed Microsoft AD in the two db subnets — VPC-attached identity
+  // infrastructure (its domain controllers are ENIs there; dbSg draws the
+  // SG-attach edge in the drill-down).
+  r.directoryServiceDirectories.push({
+    id: 'd-9367001aaa',
+    arn: `arn:aws:ds:${EU}:${ACCT.prod}:directory/d-9367001aaa`,
+    name: 'ad.acme.example',
+    tags: { env: 'prod' },
+    shortName: 'ACME',
+    type: 'MicrosoftAD',
+    edition: 'Standard',
+    stage: 'Active',
+    alias: 'acme-ad',
+    dnsIps: ['10.0.20.10', '10.0.21.10'],
+    vpcId: vpc,
+    subnetIds: ['subnet-0proddb00000001', 'subnet-0proddb00000101'],
+    securityGroupId: dbSg,
+  });
+
   // Glue: a JDBC connection into the db subnets + a dev endpoint in the app tier.
   r.glueConnections.push({
     id: 'acme-prod-glue-conn',
