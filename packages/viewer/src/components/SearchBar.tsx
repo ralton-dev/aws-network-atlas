@@ -149,8 +149,22 @@ export function SearchBar({ index, onPick }: SearchBarProps): React.ReactElement
   }, [index]);
 
   const results = useMemo(() => {
-    if (query.trim().length < 2) return [];
-    return mini.search(query).slice(0, 20);
+    const q = query.trim();
+    if (q.length < 2) return [];
+    // Exact whole-query matches win. A resource whose name OR an indexed value
+    // (a CloudFront alias, an ACM subject, a hosted-zone name) IS the query —
+    // "acme.example" — is more relevant than one that merely matched a sub-token
+    // ("acme" in "acme-prod-db"), whatever field carried it. MiniSearch scores
+    // the sub-token NAME hits above the exact value hit (name boost) and would
+    // otherwise bury it below the result cap; lift exact matches to the front,
+    // stable within each tier.
+    const full = q.toLowerCase();
+    return mini
+      .search(q)
+      .map((hit, i) => ({ hit, i, exact: (hit.terms ?? []).some((t) => t.toLowerCase() === full) ? 1 : 0 }))
+      .sort((a, b) => b.exact - a.exact || a.i - b.i)
+      .slice(0, 20)
+      .map((x) => x.hit);
   }, [mini, query]);
 
   return (
