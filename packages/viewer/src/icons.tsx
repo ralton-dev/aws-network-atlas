@@ -37,6 +37,8 @@ import VpcService from 'aws-icons/icons/architecture-service/AmazonVirtualPrivat
 import IamService from 'aws-icons/icons/architecture-service/AWSIdentityandAccessManagement.svg?react';
 import IamRole from 'aws-icons/icons/resource/AWSIdentityAccessManagementRole.svg?react';
 import IamPermissions from 'aws-icons/icons/resource/AWSIdentityAccessManagementPermissions.svg?react';
+import IdentityCenter from 'aws-icons/icons/architecture-service/AWSIAMIdentityCenter.svg?react';
+import IamSts from 'aws-icons/icons/resource/AWSIdentityAccessManagementAWSSTS.svg?react';
 import Kms from 'aws-icons/icons/architecture-service/AWSKeyManagementService.svg?react';
 import Acm from 'aws-icons/icons/architecture-service/AWSCertificateManager.svg?react';
 import SecretsManager from 'aws-icons/icons/architecture-service/AWSSecretsManager.svg?react';
@@ -134,6 +136,12 @@ export const ICONS: Record<string, IconComponent> = {
   'iam-group': IamService,
   'iam-policy': IamPermissions,
   'iam-instance-profile': IamRole,
+  // IAM Identity Center (SSO) + federation providers
+  'sso-instance': IdentityCenter,
+  'sso-permission-set': IamPermissions,
+  'sso-application': IdentityCenter,
+  'saml-provider': IamSts,
+  'oidc-provider': IamSts,
   kms: Kms,
   acm: Acm,
   secret: SecretsManager,

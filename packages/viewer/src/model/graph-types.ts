@@ -77,6 +77,8 @@ export type EdgeKind =
   | 'dns'
   /** AWS Organizations policy (SCP/RCP/…) attached to a root / OU / account. */
   | 'governs'
+  /** Identity Center permission set assigned into an org member account. */
+  | 'sso-assign'
   /** Focus view: where a resource lives (instance → subnet, subnet → VPC…). */
   | 'placement';
 

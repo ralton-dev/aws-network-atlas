@@ -17,6 +17,7 @@ const EDGE_STYLES: Record<EdgeKind, React.CSSProperties> = {
   'edge-service': { stroke: '#0972d3', strokeWidth: 2 },
   dns: { stroke: '#1f7a4d', strokeDasharray: '3 5', strokeWidth: 1.5 },
   governs: { stroke: '#c2277a', strokeDasharray: '5 3', strokeWidth: 1.7 },
+  'sso-assign': { stroke: '#7a5195', strokeDasharray: '4 4', strokeWidth: 1.5 },
   placement: { stroke: '#9aa5b1', strokeDasharray: '6 4', strokeWidth: 1.2 },
 };
 

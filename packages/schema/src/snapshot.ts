@@ -1816,6 +1816,109 @@ export interface OrganizationPolicy extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// IAM Identity Center (SSO) + IAM federation (account-global; Identity Center
+// data is only visible from the management account or the Identity Center
+// delegated administrator — everywhere else these collections stay [])
+// ---------------------------------------------------------------------------
+
+/**
+ * An IAM Identity Center (successor to AWS SSO) instance. At most one
+ * organization instance exists, and it lives in exactly ONE region — the
+ * scanner calls ListInstances in the profile's home region only, so an
+ * instance homed elsewhere is not found (recorded caveat, not an error).
+ */
+export interface SsoInstance {
+  /** Instance ARN (arn:aws:sso:::instance/ssoins-…). */
+  id: string;
+  arn?: string;
+  /** Instance display name, when one is set. */
+  name?: string;
+  /** The identity store backing the instance (d-…). */
+  identityStoreId?: string;
+  /** Account that owns the instance (management or delegated admin). */
+  ownerAccountId?: string;
+  /** ACTIVE | CREATE_IN_PROGRESS | DELETE_IN_PROGRESS. */
+  status?: string;
+  createdDate?: string;
+}
+
+/**
+ * An Identity Center permission set plus where it is assigned: the managed /
+ * customer-managed / inline policies it carries, and the account assignments
+ * (accountId + principal) that grant it.
+ */
+export interface SsoPermissionSet {
+  /** Permission set ARN (arn:aws:sso:::permissionSet/ssoins-…/ps-…). */
+  id: string;
+  arn?: string;
+  name: string;
+  /** The owning Identity Center instance. */
+  instanceArn?: string;
+  description?: string;
+  /** ISO-8601 duration (PT1H…PT12H). */
+  sessionDuration?: string;
+  /** Console relay state URL, when set. */
+  relayState?: string;
+  createdDate?: string;
+  /** AWS-managed policies attached to the set. */
+  managedPolicyArns: string[];
+  /** Customer-managed policy references (resolved by name in each target account). */
+  customerManagedPolicies: Array<{ name: string; path?: string }>;
+  /** Inline policy document JSON, when one exists. */
+  inlinePolicy?: string;
+  /**
+   * Who gets this permission set where: one entry per (account, principal).
+   * principalName needs an Identity Store lookup the scanner does not make,
+   * so it is optional and normally unset.
+   */
+  assignments: Array<{
+    accountId: string;
+    /** USER | GROUP. */
+    principalType?: string;
+    principalId?: string;
+    principalName?: string;
+  }>;
+}
+
+/** An Identity Center application (SAML/OAuth app on the access portal). */
+export interface SsoApplication {
+  /** Application ARN (arn:aws:sso::…:application/ssoins-…/apl-…). */
+  id: string;
+  arn?: string;
+  name?: string;
+  /** The owning Identity Center instance. */
+  instanceArn?: string;
+  /** The application provider (arn:aws:sso::aws:applicationProvider/…). */
+  applicationProviderArn?: string;
+  /** ENABLED | DISABLED. */
+  status?: string;
+  description?: string;
+  /** Access-portal visibility (PortalOptions.Visibility): ENABLED | DISABLED. */
+  portalVisibility?: string;
+  /** Sign-in origin (PortalOptions.SignInOptions.Origin): IDENTITY_CENTER | APPLICATION. */
+  portalSignInOrigin?: string;
+  createdDate?: string;
+}
+
+/** An IAM SAML identity provider (federation into IAM roles). */
+export interface IamSamlProvider extends BaseResource {
+  /** Metadata expiry — federation breaks past this date. */
+  validUntil?: string;
+  createDate?: string;
+}
+
+/** An IAM OpenID Connect identity provider (e.g. GitHub Actions, EKS IRSA). */
+export interface IamOidcProvider extends BaseResource {
+  /** The provider URL (issuer), e.g. token.actions.githubusercontent.com. */
+  url?: string;
+  /** Client IDs (audiences) accepted from the provider. */
+  clientIds: string[];
+  /** Server-certificate thumbprints. */
+  thumbprints: string[];
+  createDate?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Global (non-regional) resources
 // ---------------------------------------------------------------------------
 
@@ -2098,6 +2201,18 @@ export interface AccountSnapshot {
     organizationalUnits: OrganizationalUnit[];
     organizationAccounts: OrganizationAccount[];
     organizationPolicies: OrganizationPolicy[];
+    /**
+     * IAM Identity Center — populated only when the scanned account is the
+     * management account or the Identity Center delegated administrator AND
+     * the instance is homed in the profile's home region (ListInstances is
+     * region-scoped; the scanner does not sweep other regions for it).
+     */
+    ssoInstances: SsoInstance[];
+    ssoPermissionSets: SsoPermissionSet[];
+    ssoApplications: SsoApplication[];
+    /** IAM identity federation: SAML + OIDC identity providers. */
+    iamSamlProviders: IamSamlProvider[];
+    iamOidcProviders: IamOidcProvider[];
     /** WAF v2 CLOUDFRONT-scope ACLs/sets/groups (API in us-east-1). */
     wafWebAcls: WafWebAcl[];
     wafIpSets: WafIpSet[];
@@ -2251,6 +2366,11 @@ export function emptyGlobal(): AccountSnapshot['global'] {
     organizationalUnits: [],
     organizationAccounts: [],
     organizationPolicies: [],
+    ssoInstances: [],
+    ssoPermissionSets: [],
+    ssoApplications: [],
+    iamSamlProviders: [],
+    iamOidcProviders: [],
     wafWebAcls: [],
     wafIpSets: [],
     wafRuleGroups: [],

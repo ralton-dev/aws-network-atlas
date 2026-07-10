@@ -193,6 +193,25 @@
         "cognito-identity:List*"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "IdentityCenterAndFederation",
+      "Effect": "Allow",
+      "Action": [
+        "sso:ListInstances",
+        "sso:ListPermissionSets",
+        "sso:DescribePermissionSet",
+        "sso:ListManagedPoliciesInPermissionSet",
+        "sso:ListCustomerManagedPolicyReferencesInPermissionSet",
+        "sso:GetInlinePolicyForPermissionSet",
+        "sso:ListAccountsForProvisionedPermissionSet",
+        "sso:ListAccountAssignments",
+        "sso:ListApplications",
+        "iam:ListSAMLProviders",
+        "iam:ListOpenIDConnectProviders",
+        "iam:GetOpenIDConnectProvider"
+      ],
+      "Resource": "*"
     }
   ]
 }

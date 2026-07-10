@@ -57,6 +57,7 @@ import {
 import { collectGlobalAccelerator } from './collect/global-accelerator.js';
 import { collectCloudWan } from './collect/cloudwan.js';
 import { collectOrganizations } from './collect/organizations.js';
+import { collectSso } from './collect/sso.js';
 import { deriveRegion, sortErrors } from './derive.js';
 import { sortById } from './util.js';
 
@@ -157,7 +158,7 @@ export async function scanAccount(
 
   const global = emptyGlobal();
   progress(
-    `[${account.profile}] collecting global resources (Route 53, DX, S3, IAM, CloudFront, WAF, Global Accelerator, Cloud WAN, Organizations)…`,
+    `[${account.profile}] collecting global resources (Route 53, DX, S3, IAM, CloudFront, WAF, Global Accelerator, Cloud WAN, Organizations, SSO / Identity Center)…`,
   );
   await Promise.all([
     collectGlobal(ctx, global),
@@ -167,6 +168,7 @@ export async function scanAccount(
     collectGlobalAccelerator(ctx, global),
     collectCloudWan(ctx, global),
     collectOrganizations(ctx, global),
+    collectSso(ctx, global),
   ]);
   global.hostedZones.sort((a, b) => a.id.localeCompare(b.id));
   for (const z of global.hostedZones) {
@@ -227,6 +229,26 @@ export async function scanAccount(
   sortById(global.organizationPolicies);
   for (const p of global.organizationPolicies) {
     p.targets.sort((a, b) => a.targetId.localeCompare(b.targetId));
+  }
+  sortById(global.ssoInstances);
+  sortById(global.ssoPermissionSets);
+  for (const ps of global.ssoPermissionSets) {
+    ps.managedPolicyArns.sort();
+    ps.customerManagedPolicies.sort((a, b) =>
+      `${a.name}|${a.path ?? ''}`.localeCompare(`${b.name}|${b.path ?? ''}`),
+    );
+    ps.assignments.sort((a, b) =>
+      `${a.accountId}|${a.principalType ?? ''}|${a.principalId ?? ''}`.localeCompare(
+        `${b.accountId}|${b.principalType ?? ''}|${b.principalId ?? ''}`,
+      ),
+    );
+  }
+  sortById(global.ssoApplications);
+  sortById(global.iamSamlProviders);
+  sortById(global.iamOidcProviders);
+  for (const p of global.iamOidcProviders) {
+    p.clientIds.sort();
+    p.thumbprints.sort();
   }
   sortById(global.wafWebAcls);
   sortById(global.wafIpSets);

@@ -124,5 +124,10 @@
 "organizations":{"render":"panel-only","label":"panel-only — never on graph","note":"the org entity: featureSet, management account, roots + policy-type enablement, trusted service principals, delegated admins + services, resource policy; drawing the org tree is a follow-up"},
 "organizationalUnits":{"render":"panel-only","label":"panel-only — never on graph","note":"OU name + parentId (org-tree edge) + tags; org-tree rendering is a follow-up"},
 "organizationAccounts":{"render":"panel-only","label":"panel-only — never on graph","note":"org membership records (distinct from scanned accounts): email, status, joinedMethod/Timestamp, parent root/OU, tags"},
-"organizationPolicies":{"render":"panel-only","label":"panel-only — never on graph","note":"SCP/RCP/tag/backup/… policies: content JSON, awsManaged, attachment targets (root/OU/account); a governance overlay on the graph is a follow-up"}
+"organizationPolicies":{"render":"panel-only","label":"panel-only — never on graph","note":"SCP/RCP/tag/backup/… policies: content JSON, awsManaged, attachment targets (root/OU/account); a governance overlay on the graph is a follow-up"},
+"ssoInstances":{"render":"node","label":"node · overview (Identity & security lane)","note":"off-diagram: identityStoreId, ownerAccountId, status, createdDate; only the instance homed in the profile's home region is found (ListInstances is region-scoped)"},
+"ssoPermissionSets":{"render":"node","label":"node · overview (capped 8, Identity & security lane) + assignment edges to drawn org accounts","note":"off-diagram: description, sessionDuration, relayState, managed + customer-managed policy refs, inline policy JSON; assignments (accountId + principal type/id) drive edges and the panel"},
+"ssoApplications":{"render":"node","label":"node · overview (capped 8, Identity & security lane)","note":"off-diagram: applicationProviderArn, status, portal visibility + sign-in origin"},
+"iamSamlProviders":{"render":"node","label":"node · overview (Identity & security lane)","note":"off-diagram: validUntil (metadata expiry), createDate"},
+"iamOidcProviders":{"render":"node","label":"node · overview (Identity & security lane)","note":"off-diagram: url (issuer), clientIds (audiences), thumbprints, createDate"}
 }

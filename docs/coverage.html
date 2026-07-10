@@ -56,12 +56,12 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <div class="wrap">
 <h1>AWS Full-Estate Coverage Audit</h1>
 <p class="lede">Every AWS resource type that can be created &mdash; the CloudFormation resource registry, the authoritative &ldquo;what exists&rdquo; spine &mdash; measured against what this tool <b>collects</b> and what it <b>draws on the diagram</b>. Measured against the <i>whole</i> registry, not a self-selected subset, so nothing hides.</p>
-<p class="meta">Generated 2026-07-09 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
+<p class="meta">Generated 2026-07-10 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">212</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">900</div><div class="l">Inventory only</div></div>
-<div class="kpi non"><div class="n">510</div><div class="l">Not collected at all</div></div>
+<div class="kpi det"><div class="n">220</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">895</div><div class="l">Inventory only</div></div>
+<div class="kpi non"><div class="n">507</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
 <span class="badge detailed">Detailed</span> = dedicated collector with typed attributes.
@@ -102,8 +102,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">Greengrass</td><td>16</td><td class="c-detailed">0</td><td class="c-inv">8</td><td class="c-none">8</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">IAM</td><td>16</td><td class="c-detailed">11</td><td class="c-inv">4</td><td class="c-none">1</td>
-<td><div class="bar"><span style="width:69%"></span></div><span class="pct">69%</span></td></tr>
+<tr><td class="mono">IAM</td><td>16</td><td class="c-detailed">13</td><td class="c-inv">2</td><td class="c-none">1</td>
+<td><div class="bar"><span style="width:81%"></span></div><span class="pct">81%</span></td></tr>
 <tr><td class="mono">NetworkManager</td><td>16</td><td class="c-detailed">1</td><td class="c-inv">11</td><td class="c-none">4</td>
 <td><div class="bar"><span style="width:6%"></span></div><span class="pct">6%</span></td></tr>
 <tr><td class="mono">RDS</td><td>16</td><td class="c-detailed">3</td><td class="c-inv">11</td><td class="c-none">2</td>
@@ -248,8 +248,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">RoboMaker</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">SSO</td><td>6</td><td class="c-detailed">0</td><td class="c-inv">3</td><td class="c-none">3</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">SSO</td><td>6</td><td class="c-detailed">6</td><td class="c-inv">0</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:100%"></span></div><span class="pct">100%</span></td></tr>
 <tr><td class="mono">WAFv2</td><td>6</td><td class="c-detailed">4</td><td class="c-inv">1</td><td class="c-none">1</td>
 <td><div class="bar"><span style="width:67%"></span></div><span class="pct">67%</span></td></tr>
 <tr><td class="mono">APS</td><td>5</td><td class="c-detailed">0</td><td class="c-inv">4</td><td class="c-none">1</td>
@@ -4594,10 +4594,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamPolicies</code></div><div class="detail">attachmentCount, defaultVersionDocument, description</div></td>
 <td><span class="badge d-node">node · overview (customer-managed only) + focus</span><div class="detail">off-diagram: path, defaultVersionDocument, description, isAttachable</div></td>
 <td class="pc">7<div class="props">Description, Groups, ManagedPolicyName, Path, PolicyDocument, Roles, Users</div></td></tr>
-<tr data-svc="IAM" data-c="inv-tag" data-d="panel-only" data-props="ClientIdList Tags ThumbprintList Url">
+<tr data-svc="IAM" data-c="detailed" data-d="node" data-props="ClientIdList Tags ThumbprintList Url">
 <td class="mono">AWS::IAM::OIDCProvider</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamOidcProviders</code></div><div class="detail">url, clientIds, thumbprints, createDate, tags</div></td>
+<td><span class="badge d-node">node · overview (Identity &amp; security lane)</span><div class="detail">off-diagram: url (issuer), clientIds (audiences), thumbprints, createDate</div></td>
 <td class="pc">4<div class="props">ClientIdList, Tags, ThumbprintList, Url</div></td></tr>
 <tr data-svc="IAM" data-c="detailed" data-d="node" data-props="Groups PolicyDocument PolicyName Roles Users">
 <td class="mono">AWS::IAM::Policy</td>
@@ -4614,10 +4614,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamRoles</code></div><div class="detail">captured as iamRoles.inlinePolicyNames</div></td>
 <td><span class="badge d-node">node · overview (capped 8) + VPC-detail + focus</span><div class="detail">off-diagram: path, assumeRolePolicyDocument (parsed for trust only), attachedManagedPolicyArns, inlinePolicyNames, maxSessionDuration, lastUsed</div></td>
 <td class="pc">3<div class="props">PolicyDocument, PolicyName, RoleName</div></td></tr>
-<tr data-svc="IAM" data-c="inv-tag" data-d="panel-only" data-props="AddPrivateKey AssertionEncryptionMode Name PrivateKeyList RemovePrivateKey SamlMetadataDocument Tags">
+<tr data-svc="IAM" data-c="detailed" data-d="node" data-props="AddPrivateKey AssertionEncryptionMode Name PrivateKeyList RemovePrivateKey SamlMetadataDocument Tags">
 <td class="mono">AWS::IAM::SAMLProvider</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>iamSamlProviders</code></div><div class="detail">name (from ARN), validUntil, createDate</div></td>
+<td><span class="badge d-node">node · overview (Identity &amp; security lane)</span><div class="detail">off-diagram: validUntil (metadata expiry), createDate</div></td>
 <td class="pc">7<div class="props">AddPrivateKey, AssertionEncryptionMode, Name, PrivateKeyList, RemovePrivateKey, SamlMetadataDocument, Tags</div></td></tr>
 <tr data-svc="IAM" data-c="inv-tag" data-d="panel-only" data-props="CertificateBody CertificateChain Path PrivateKey ServerCertificateName Tags">
 <td class="mono">AWS::IAM::ServerCertificate</td>
@@ -7714,35 +7714,35 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">AutomationDocument, AutomationParameters, ResourceKey, Tags</div></td></tr>
-<tr data-svc="SSO" data-c="inv-tag" data-d="panel-only" data-props="ApplicationProviderArn Description InstanceArn Name PortalOptions Status Tags">
+<tr data-svc="SSO" data-c="detailed" data-d="node" data-props="ApplicationProviderArn Description InstanceArn Name PortalOptions Status Tags">
 <td class="mono">AWS::SSO::Application</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ssoApplications</code></div><div class="detail">applicationProviderArn, status, portal visibility + sign-in origin</div></td>
+<td><span class="badge d-node">node · overview (capped 8, Identity &amp; security lane)</span><div class="detail">off-diagram: applicationProviderArn, status, portal visibility + sign-in origin</div></td>
 <td class="pc">7<div class="props">ApplicationProviderArn, Description, InstanceArn, Name, PortalOptions, Status, Tags</div></td></tr>
-<tr data-svc="SSO" data-c="none" data-d="none" data-props="ApplicationArn PrincipalId PrincipalType">
+<tr data-svc="SSO" data-c="detailed" data-d="node" data-props="ApplicationArn PrincipalId PrincipalType">
 <td class="mono">AWS::SSO::ApplicationAssignment</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ssoApplications</code></div><div class="detail">application-level view only — per-principal app assignments are not enumerated</div></td>
+<td><span class="badge d-node">node · overview (capped 8, Identity &amp; security lane)</span><div class="detail">off-diagram: applicationProviderArn, status, portal visibility + sign-in origin</div></td>
 <td class="pc">3<div class="props">ApplicationArn, PrincipalId, PrincipalType</div></td></tr>
-<tr data-svc="SSO" data-c="none" data-d="none" data-props="InstanceArn PermissionSetArn PrincipalId PrincipalType TargetId TargetType">
+<tr data-svc="SSO" data-c="detailed" data-d="node" data-props="InstanceArn PermissionSetArn PrincipalId PrincipalType TargetId TargetType">
 <td class="mono">AWS::SSO::Assignment</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ssoPermissionSets</code></div><div class="detail">captured as ssoPermissionSets.assignments</div></td>
+<td><span class="badge d-node">node · overview (capped 8, Identity &amp; security lane) + assignment edges to drawn org accounts</span><div class="detail">off-diagram: description, sessionDuration, relayState, managed + customer-managed policy refs, inline policy JSON; assignments (accountId + principal type/id) drive edges and the panel</div></td>
 <td class="pc">6<div class="props">InstanceArn, PermissionSetArn, PrincipalId, PrincipalType, TargetId, TargetType</div></td></tr>
-<tr data-svc="SSO" data-c="inv-tag" data-d="panel-only" data-props="Name Tags">
+<tr data-svc="SSO" data-c="detailed" data-d="node" data-props="Name Tags">
 <td class="mono">AWS::SSO::Instance</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ssoInstances</code></div><div class="detail">identityStoreId, ownerAccountId, status, name; home-region instance only (ListInstances is region-scoped)</div></td>
+<td><span class="badge d-node">node · overview (Identity &amp; security lane)</span><div class="detail">off-diagram: identityStoreId, ownerAccountId, status, createdDate; only the instance homed in the profile's home region is found (ListInstances is region-scoped)</div></td>
 <td class="pc">2<div class="props">Name, Tags</div></td></tr>
-<tr data-svc="SSO" data-c="none" data-d="none" data-props="AccessControlAttributes InstanceArn">
+<tr data-svc="SSO" data-c="detailed" data-d="node" data-props="AccessControlAttributes InstanceArn">
 <td class="mono">AWS::SSO::InstanceAccessControlAttributeConfiguration</td>
-<td><span class="badge none">Not collected</span><div class="detail">not collected (no dedicated collector; not taggable)</div></td>
-<td><span class="badge d-none">Not displayed (not collected)</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ssoInstances</code></div><div class="detail">instance-level view only — the ABAC attribute configuration itself is not fetched</div></td>
+<td><span class="badge d-node">node · overview (Identity &amp; security lane)</span><div class="detail">off-diagram: identityStoreId, ownerAccountId, status, createdDate; only the instance homed in the profile's home region is found (ListInstances is region-scoped)</div></td>
 <td class="pc">2<div class="props">AccessControlAttributes, InstanceArn</div></td></tr>
-<tr data-svc="SSO" data-c="inv-tag" data-d="panel-only" data-props="CustomerManagedPolicyReferences Description InlinePolicy InstanceArn ManagedPolicies Name PermissionsBoundary RelayStateType SessionDuration Tags">
+<tr data-svc="SSO" data-c="detailed" data-d="node" data-props="CustomerManagedPolicyReferences Description InlinePolicy InstanceArn ManagedPolicies Name PermissionsBoundary RelayStateType SessionDuration Tags">
 <td class="mono">AWS::SSO::PermissionSet</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ssoPermissionSets</code></div><div class="detail">description, sessionDuration, relayState, managed+customer-managed policy refs, inline policy, account assignments (accountId + principal type/id)</div></td>
+<td><span class="badge d-node">node · overview (capped 8, Identity &amp; security lane) + assignment edges to drawn org accounts</span><div class="detail">off-diagram: description, sessionDuration, relayState, managed + customer-managed policy refs, inline policy JSON; assignments (accountId + principal type/id) drive edges and the panel</div></td>
 <td class="pc">10<div class="props">CustomerManagedPolicyReferences, Description, InlinePolicy, InstanceArn, ManagedPolicies, Name, PermissionsBoundary, RelayStateType, SessionDuration, Tags</div></td></tr>
 <tr data-svc="SageMaker" data-c="inv-tag" data-d="panel-only" data-props="AlgorithmDescription AlgorithmName CertifyForMarketplace InferenceSpecification Tags TrainingSpecification">
 <td class="mono">AWS::SageMaker::Algorithm</td>

@@ -194,6 +194,9 @@ function addCapped<T>(
 const iamNodeId = (accountId: string, item: { id: string; arn?: string }): string =>
   `iam:${item.arn ?? `${accountId}:${item.id}`}`;
 
+const ssoNodeId = (accountId: string, item: { id: string; arn?: string }): string =>
+  `sso:${item.arn ?? `${accountId}:${item.id}`}`;
+
 /**
  * Account-global resources: an "Identity & security" lane (IAM) and an
  * "Edge & global" lane (CloudFront, Route 53 zones, S3 buckets) per account.
@@ -210,7 +213,9 @@ function addAccountGlobal(
   // --- Identity & security lane ---------------------------------------------
   const identityCount =
     g.iamRoles.length + g.iamUsers.length + g.iamGroups.length +
-    g.iamPolicies.length + g.iamInstanceProfiles.length;
+    g.iamPolicies.length + g.iamInstanceProfiles.length +
+    g.ssoInstances.length + g.ssoPermissionSets.length + g.ssoApplications.length +
+    g.iamSamlProviders.length + g.iamOidcProviders.length;
   if (identityCount > 0) {
     const lane = ensureLane(b, `idn:${account.accountId}`, acctId, 'Identity & security', 'group-security', 'security');
     addCapped(b, g.iamRoles, CAP_IDENTITY, lane, `note:${lane}:roles`, 'IAM roles', (r) =>
@@ -231,6 +236,34 @@ function addAccountGlobal(
     );
     addCapped(b, g.iamInstanceProfiles, CAP_IDENTITY, lane, `note:${lane}:profiles`, 'instance profiles', (ip) =>
       leafNode(b, iamNodeId(account.accountId, ip), lane, 'iam-instance-profile', ip.name ?? ip.id, 'instance profile', ip.arn ?? ip.id),
+    );
+
+    // IAM Identity Center: the instance, its permission sets (assignment
+    // edges to drawn org-account nodes are added in addSsoAssignmentEdges,
+    // after the org tree exists), and access-portal applications.
+    for (const inst of g.ssoInstances) {
+      leafNode(b, ssoNodeId(account.accountId, inst), lane, 'sso-instance',
+        inst.name ?? 'Identity Center',
+        inst.identityStoreId ? `Identity Center · ${inst.identityStoreId}` : 'Identity Center',
+        inst.arn ?? inst.id,
+        inst.status && inst.status !== 'ACTIVE' ? [inst.status.toLowerCase().replace(/_/g, ' ')] : undefined);
+    }
+    addCapped(b, g.ssoPermissionSets, CAP_IDENTITY, lane, `note:${lane}:permsets`, 'permission sets', (ps) =>
+      leafNode(b, ssoNodeId(account.accountId, ps), lane, 'sso-permission-set', ps.name, 'SSO permission set', ps.arn ?? ps.id,
+        ps.assignments.length > 0 ? [`${ps.assignments.length} assignment${ps.assignments.length === 1 ? '' : 's'}`] : undefined),
+    );
+    addCapped(b, g.ssoApplications, CAP_IDENTITY, lane, `note:${lane}:ssoapps`, 'SSO applications', (app) =>
+      leafNode(b, ssoNodeId(account.accountId, app), lane, 'sso-application', app.name ?? app.id, 'Identity Center application', app.arn ?? app.id,
+        app.status && app.status !== 'ENABLED' ? [app.status.toLowerCase()] : undefined),
+    );
+
+    // IAM federation: SAML + OIDC identity providers.
+    addCapped(b, g.iamSamlProviders, CAP_IDENTITY, lane, `note:${lane}:saml`, 'SAML providers', (p) =>
+      leafNode(b, iamNodeId(account.accountId, p), lane, 'saml-provider', p.name ?? p.id, 'SAML identity provider', p.arn ?? p.id),
+    );
+    addCapped(b, g.iamOidcProviders, CAP_IDENTITY, lane, `note:${lane}:oidc`, 'OIDC providers', (p) =>
+      leafNode(b, iamNodeId(account.accountId, p), lane, 'oidc-provider', p.name ?? p.id, 'OIDC identity provider', p.arn ?? p.id,
+        p.clientIds.length > 0 ? [`${p.clientIds.length} audience${p.clientIds.length === 1 ? '' : 's'}`] : undefined),
     );
 
     // user → group membership
@@ -852,6 +885,62 @@ function addDnsAliasEdges(b: Builder, index: AtlasIndex): void {
   }
 }
 
+/**
+ * Identity Center permission-set assignments → the org member accounts they
+ * grant access into. Runs after every account's nodes exist (permission sets
+ * are drawn in addAccountGlobal, org-account leaves in addOrganization), so
+ * both endpoints can be checked; assignments into accounts that are not on
+ * the canvas (capped away, or no org data scanned) stay panel-only rather
+ * than dangling.
+ */
+function addSsoAssignmentEdges(b: Builder, index: AtlasIndex): void {
+  // accountId → its drawn org-account leaf (namespaced by the org-carrying account).
+  const orgAcctNode = new Map<string, string>();
+  for (const account of index.snapshot.accounts) {
+    for (const a of account.global.organizationAccounts) {
+      const nodeId = `orgacct:${account.accountId}:${a.id}`;
+      if (b.leaves.has(nodeId) && !orgAcctNode.has(a.id)) orgAcctNode.set(a.id, nodeId);
+    }
+  }
+  if (orgAcctNode.size === 0) return;
+
+  for (const account of index.snapshot.accounts) {
+    for (const ps of account.global.ssoPermissionSets) {
+      const psNode = ssoNodeId(account.accountId, ps);
+      if (!b.leaves.has(psNode)) continue;
+      // One edge per (permission set, account) pair; principals fold into the label.
+      const byAccount = new Map<string, string[]>();
+      for (const a of ps.assignments) {
+        const principal = a.principalName ?? a.principalType?.toLowerCase();
+        const list = byAccount.get(a.accountId);
+        if (list) {
+          if (principal) list.push(principal);
+        } else {
+          byAccount.set(a.accountId, principal ? [principal] : []);
+        }
+      }
+      for (const [accountId, principals] of byAccount) {
+        const target = orgAcctNode.get(accountId);
+        if (!target) continue;
+        const key = `ssoassign:${psNode}|${accountId}`;
+        b.edges.set(key, {
+          id: `edge:${key}`,
+          source: psNode,
+          target,
+          type: 'annotated',
+          markerEnd: { type: MarkerType.ArrowClosed },
+          data: {
+            edgeKind: 'sso-assign',
+            label: destsLabel([...new Set(principals)], 2) || 'assigned',
+            title: `${ps.name} assigned in ${index.accountLabel(accountId)}`,
+            refId: ps.arn ?? ps.id,
+          },
+        });
+      }
+    }
+  }
+}
+
 /** Cross-account assume-role trust: who can reach into which account. */
 function addTrustEdges(b: Builder, index: AtlasIndex): void {
   for (const account of index.snapshot.accounts) {
@@ -1011,6 +1100,9 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
 
   // --- cross-account IAM trust edges ----------------------------------------
   addTrustEdges(b, index);
+
+  // --- SSO permission-set assignment edges → drawn org-account nodes ---------
+  addSsoAssignmentEdges(b, index);
 
   // --- Route 53 ALIAS records → CloudFront/GA/API GW nodes -------------------
   addDnsAliasEdges(b, index);

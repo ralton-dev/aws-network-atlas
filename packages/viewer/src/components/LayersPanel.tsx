@@ -53,6 +53,11 @@ const NODE_KIND_LABELS: Record<string, string> = {
   'iam-group': 'IAM groups',
   'iam-policy': 'IAM policies',
   'iam-instance-profile': 'Instance profiles',
+  'sso-instance': 'Identity Center instances',
+  'sso-permission-set': 'SSO permission sets',
+  'sso-application': 'SSO applications',
+  'saml-provider': 'SAML providers',
+  'oidc-provider': 'OIDC providers',
   s3: 'S3 buckets',
   zone: 'Route 53 zones',
   note: 'Notes',
@@ -73,6 +78,7 @@ const EDGE_KIND_LABELS: Record<EdgeKind, string> = {
   'edge-service': 'Edge traffic',
   dns: 'DNS',
   governs: 'SCP / policy attachments',
+  'sso-assign': 'SSO assignments',
   placement: 'Placement',
 };
 

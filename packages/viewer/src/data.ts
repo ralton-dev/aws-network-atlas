@@ -254,6 +254,13 @@ export function buildIndex(): AtlasIndex {
       ['iam-group', account.global.iamGroups],
       ['iam-policy', account.global.iamPolicies],
       ['iam-instance-profile', account.global.iamInstanceProfiles],
+      // IAM Identity Center + IAM federation (populated only in the
+      // management / delegated-admin account's snapshot).
+      ['sso-instance', account.global.ssoInstances],
+      ['sso-permission-set', account.global.ssoPermissionSets],
+      ['sso-application', account.global.ssoApplications],
+      ['saml-provider', account.global.iamSamlProviders],
+      ['oidc-provider', account.global.iamOidcProviders],
       ['cloudfront', account.global.cloudFrontDistributions],
       ['cloudfront-vpc-origin', account.global.cloudFrontVpcOrigins],
       ['global-accelerator', account.global.globalAccelerators],

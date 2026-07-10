@@ -47,12 +47,23 @@ const overview = {
   orgContainers: await page.locator('.container-node.style-org').count(),
   orgSandboxOu: await page.locator('.container-node.style-org', { hasText: 'Sandbox' }).count(),
   governsEdges: await page.locator('.edge-label-governs').count(),
+  // IAM Identity Center + federation (Identity & security lane, management account)
+  ssoInstance: await page.locator('.resource-node', { hasText: 'acme-identity-center' }).count(),
+  ssoPermissionSet: await page.locator('.resource-node', { hasText: 'AdministratorAccess' }).count(),
+  samlProvider: await page.locator('.resource-node', { hasText: 'acme-okta' }).count(),
+  oidcProvider: await page.locator('.resource-node', { hasText: 'token.actions.githubusercontent.com' }).count(),
+  ssoAssignEdges: await page.locator('.edge-label-sso-assign').count(),
 };
 console.log('overview:', JSON.stringify(overview));
 if (overview.orgLane === 0) problems.push('overview: Organization container not drawn');
 if (overview.orgContainers < 4) problems.push('overview: org root/OU/policy containers missing (tree not drawn)');
 if (overview.orgSandboxOu === 0) problems.push('overview: Sandbox OU container missing');
 if (overview.governsEdges === 0) problems.push('overview: no SCP `governs` attachment edges drawn');
+if (overview.ssoInstance === 0) problems.push('overview: Identity Center instance node missing');
+if (overview.ssoPermissionSet === 0) problems.push('overview: SSO permission set node missing');
+if (overview.samlProvider === 0) problems.push('overview: SAML provider node missing');
+if (overview.oidcProvider === 0) problems.push('overview: OIDC provider node missing');
+if (overview.ssoAssignEdges === 0) problems.push('overview: no SSO permission-set assignment edges drawn');
 if (overview.securityLanes === 0) problems.push('overview: no Identity & security lane');
 if (overview.internetNode === 0) problems.push('overview: no Internet node');
 if (overview.cloudfront === 0) problems.push('overview: CloudFront distribution missing');
@@ -135,7 +146,7 @@ if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connect
 // The expected numbers come from running the builders directly over the
 // same fixture (npx tsx graph-check.mts, which also asserts every edge
 // endpoint resolves to a node). Update both together on fixture changes.
-const EXPECTED_EDGES = { overview: 32, prodVpc: 72 };
+const EXPECTED_EDGES = { overview: 37, prodVpc: 72 };
 if (overview.edges !== EXPECTED_EDGES.overview)
   problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
 if (detail.edges !== EXPECTED_EDGES.prodVpc)

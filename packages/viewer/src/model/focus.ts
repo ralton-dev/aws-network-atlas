@@ -1001,6 +1001,11 @@ function subtitleFor(index: AtlasIndex, ref: ResourceRef, center: ResourceRef | 
     case 'iam-group': base = 'IAM group'; break;
     case 'iam-policy': base = 'IAM policy'; break;
     case 'iam-instance-profile': base = 'instance profile'; break;
+    case 'sso-instance': base = 'Identity Center instance'; break;
+    case 'sso-permission-set': base = (raw['description'] as string | undefined) ?? 'SSO permission set'; break;
+    case 'sso-application': base = 'Identity Center application'; break;
+    case 'saml-provider': base = 'SAML identity provider'; break;
+    case 'oidc-provider': base = (raw['url'] as string | undefined) ?? 'OIDC identity provider'; break;
     case 'zone': base = `${(raw['privateZone'] as boolean | undefined) ? 'private' : 'public'} zone`; break;
     case 'lambda': base = (raw['runtime'] as string | undefined) ?? 'Lambda function'; break;
     case 'rds':

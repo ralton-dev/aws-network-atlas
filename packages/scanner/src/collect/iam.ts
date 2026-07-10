@@ -4,7 +4,10 @@ import {
   paginateGetAccountAuthorizationDetails,
   ListMFADevicesCommand,
   ListAccessKeysCommand,
+  ListSAMLProvidersCommand,
+  ListOpenIDConnectProvidersCommand,
   GetLoginProfileCommand,
+  GetOpenIDConnectProviderCommand,
   type RoleDetail,
   type UserDetail,
   type GroupDetail,
@@ -18,6 +21,20 @@ import { toTags } from '../util.js';
 type IamInstanceProfileOut = AccountSnapshot['global']['iamInstanceProfiles'][number];
 type IamUserOut = AccountSnapshot['global']['iamUsers'][number];
 
+/**
+ * Cap on federation identity providers recorded (and on the per-provider
+ * GetOpenIDConnectProvider fan-out). The IAM quota is ~100 of each per
+ * account, so this only trips on quota-raised outliers.
+ */
+const MAX_FEDERATION_PROVIDERS = 200;
+
+/** "arn:aws:iam::123:saml-provider/NAME" → "NAME" (also for oidc-provider ARNs). */
+function providerNameFromArn(arn: string, type: 'saml-provider' | 'oidc-provider'): string {
+  const marker = `:${type}/`;
+  const idx = arn.indexOf(marker);
+  return idx >= 0 ? arn.slice(idx + marker.length) : arn;
+}
+
 /** IAM policy documents come back URL-encoded; fall back to raw on bad input. */
 function decodePolicyDocument(doc: string | undefined): string | undefined {
   if (doc === undefined) return undefined;
@@ -29,9 +46,10 @@ function decodePolicyDocument(doc: string | undefined): string | undefined {
 }
 
 /**
- * Collect IAM roles, users, groups, customer-managed policies, and instance
- * profiles (read-only) into the account-global container. IAM is global, so
- * this runs once per account.
+ * Collect IAM roles, users, groups, customer-managed policies, instance
+ * profiles, and federation identity providers (SAML + OIDC) — read-only —
+ * into the account-global container. IAM is global, so this runs once per
+ * account.
  *
  * One paginated GetAccountAuthorizationDetails call returns roles, users,
  * groups, and local (customer-managed) policies with their attached + inline
@@ -164,6 +182,69 @@ export async function collectIam(ctx: AwsContext, out: AccountSnapshot['global']
       description: p.Description,
     });
   }
+
+  // Federation identity providers (independent of the authorization-details
+  // call, so a denied GetAccountAuthorizationDetails doesn't hide them).
+  // Neither List API paginates — each returns the full (quota-bounded) list.
+  await guard(errors, 'iam', 'ListSAMLProviders', async () => {
+    const res = await iam.send(new ListSAMLProvidersCommand({}));
+    const providers = res.SAMLProviderList ?? [];
+    for (const p of providers.slice(0, MAX_FEDERATION_PROVIDERS)) {
+      if (!p.Arn) continue;
+      const name = providerNameFromArn(p.Arn, 'saml-provider');
+      out.iamSamlProviders.push({
+        id: name,
+        arn: p.Arn,
+        name,
+        // ListSAMLProviders does not return tags.
+        tags: {},
+        validUntil: p.ValidUntil?.toISOString(),
+        createDate: p.CreateDate?.toISOString(),
+      });
+    }
+    if (providers.length > MAX_FEDERATION_PROVIDERS) {
+      errors.push({
+        service: 'iam',
+        operation: 'ListSAMLProviders',
+        message: `Account has ${providers.length} SAML providers (cap ${MAX_FEDERATION_PROVIDERS}); the list was truncated.`,
+      });
+    }
+  });
+  await guard(errors, 'iam', 'ListOpenIDConnectProviders', async () => {
+    const res = await iam.send(new ListOpenIDConnectProvidersCommand({}));
+    const arns = (res.OpenIDConnectProviderList ?? [])
+      .map((p) => p.Arn)
+      .filter((arn): arn is string => arn !== undefined);
+    if (arns.length > MAX_FEDERATION_PROVIDERS) {
+      errors.push({
+        service: 'iam',
+        operation: 'ListOpenIDConnectProviders',
+        message: `Account has ${arns.length} OIDC providers (cap ${MAX_FEDERATION_PROVIDERS}); the list was truncated.`,
+      });
+    }
+    const oidcLimit = pLimit(4);
+    await Promise.all(
+      arns.slice(0, MAX_FEDERATION_PROVIDERS).map((arn) =>
+        oidcLimit(() =>
+          guard(errors, 'iam', `GetOpenIDConnectProvider(${arn})`, async () => {
+            const detail = await iam.send(
+              new GetOpenIDConnectProviderCommand({ OpenIDConnectProviderArn: arn }),
+            );
+            out.iamOidcProviders.push({
+              id: providerNameFromArn(arn, 'oidc-provider'),
+              arn,
+              name: providerNameFromArn(arn, 'oidc-provider'),
+              tags: toTags(detail.Tags),
+              url: detail.Url,
+              clientIds: detail.ClientIDList ?? [],
+              thumbprints: detail.ThumbprintList ?? [],
+              createDate: detail.CreateDate?.toISOString(),
+            });
+          }),
+        ),
+      ),
+    );
+  });
 
   // Best-effort per-user enrichment: MFA devices, access keys, console access.
   // Each call is guarded so partial permissions degrade gracefully.
