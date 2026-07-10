@@ -53,6 +53,8 @@ const overview = {
   samlProvider: await page.locator('.resource-node', { hasText: 'acme-okta' }).count(),
   oidcProvider: await page.locator('.resource-node', { hasText: 'token.actions.githubusercontent.com' }).count(),
   ssoAssignEdges: await page.locator('.edge-label-sso-assign').count(),
+  // AWS RAM cross-account resource-share exposure edges
+  ramShareEdges: await page.locator('.edge-label-ram-share').count(),
 };
 console.log('overview:', JSON.stringify(overview));
 if (overview.orgLane === 0) problems.push('overview: Organization container not drawn');
@@ -64,6 +66,7 @@ if (overview.ssoPermissionSet === 0) problems.push('overview: SSO permission set
 if (overview.samlProvider === 0) problems.push('overview: SAML provider node missing');
 if (overview.oidcProvider === 0) problems.push('overview: OIDC provider node missing');
 if (overview.ssoAssignEdges === 0) problems.push('overview: no SSO permission-set assignment edges drawn');
+if (overview.ramShareEdges === 0) problems.push('overview: no RAM resource-share edges drawn');
 if (overview.securityLanes === 0) problems.push('overview: no Identity & security lane');
 if (overview.internetNode === 0) problems.push('overview: no Internet node');
 if (overview.cloudfront === 0) problems.push('overview: CloudFront distribution missing');
@@ -146,7 +149,7 @@ if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connect
 // The expected numbers come from running the builders directly over the
 // same fixture (npx tsx graph-check.mts, which also asserts every edge
 // endpoint resolves to a node). Update both together on fixture changes.
-const EXPECTED_EDGES = { overview: 37, prodVpc: 72 };
+const EXPECTED_EDGES = { overview: 40, prodVpc: 72 };
 if (overview.edges !== EXPECTED_EDGES.overview)
   problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
 if (detail.edges !== EXPECTED_EDGES.prodVpc)

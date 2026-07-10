@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-10 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">220</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">895</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">221</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">894</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">507</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -484,8 +484,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">QLDB</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">RAM</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">0</td>
-<td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
+<tr><td class="mono">RAM</td><td>2</td><td class="c-detailed">1</td><td class="c-inv">1</td><td class="c-none">0</td>
+<td><div class="bar"><span style="width:50%"></span></div><span class="pct">50%</span></td></tr>
 <tr><td class="mono">ResilienceHub</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">2</td><td class="c-none">0</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">ResourceGroups</td><td>2</td><td class="c-detailed">0</td><td class="c-inv">1</td><td class="c-none">1</td>
@@ -6779,10 +6779,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">4<div class="props">Name, PolicyTemplate, ResourceType, Tags</div></td></tr>
-<tr data-svc="RAM" data-c="inv-tag" data-d="panel-only" data-props="AllowExternalPrincipals Name PermissionArns Principals ResourceArns ResourceShareConfiguration Sources Tags">
+<tr data-svc="RAM" data-c="detailed" data-d="edge" data-props="AllowExternalPrincipals Name PermissionArns Principals ResourceArns ResourceShareConfiguration Sources Tags">
 <td class="mono">AWS::RAM::ResourceShare</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>ramResourceShares</code></div><div class="detail">status, owningAccountId, allowExternalPrincipals, principals[] (account/OU/organization), resources[] (arn + type + status), creationTime, tags; SELF-owned shares only (received shares are the owning account’s record)</div></td>
+<td><span class="badge d-edge">edge · overview (owning account → each shared-with principal)</span><div class="detail">the share entity itself is edge/panel-only: status, allowExternalPrincipals, full principal + shared-resource lists in the details panel; principals that resolve to no drawn node (OU/org without scanned org data) stay panel-only rather than dangling</div></td>
 <td class="pc">8<div class="props">AllowExternalPrincipals, Name, PermissionArns, Principals, ResourceArns, ResourceShareConfiguration, Sources, Tags</div></td></tr>
 <tr data-svc="RDS" data-c="inv-tag" data-d="panel-only" data-props="DatabaseInstallationFiles DatabaseInstallationFilesS3BucketName DatabaseInstallationFilesS3Prefix Description Engine EngineVersion ImageId KMSKeyId Manifest SourceCustomDbEngineVersionIdentifier Status Tags UseAwsProvidedLatestImage">
 <td class="mono">AWS::RDS::CustomDBEngineVersion</td>

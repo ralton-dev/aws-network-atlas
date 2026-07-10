@@ -249,6 +249,7 @@ const DETAILED = {
   'AWS::SSO::Application': { field: 'ssoApplications', attrs: 'applicationProviderArn, status, portal visibility + sign-in origin' },
   'AWS::IAM::SAMLProvider': { field: 'iamSamlProviders', attrs: 'name (from ARN), validUntil, createDate' },
   'AWS::IAM::OIDCProvider': { field: 'iamOidcProviders', attrs: 'url, clientIds, thumbprints, createDate, tags' },
+  'AWS::RAM::ResourceShare': { field: 'ramResourceShares', attrs: 'status, owningAccountId, allowExternalPrincipals, principals[] (account/OU/organization), resources[] (arn + type + status), creationTime, tags; SELF-owned shares only (received shares are the owning account’s record)' },
   // Sub-resources whose data we capture on the parent collection (nested).
   'AWS::EC2::ClientVpnAuthorizationRule': { field: 'clientVpnEndpoints', attrs: 'captured as clientVpnEndpoints.authorizationRules' },
   'AWS::EC2::ClientVpnRoute': { field: 'clientVpnEndpoints', attrs: 'captured as clientVpnEndpoints.routes' },

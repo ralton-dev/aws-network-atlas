@@ -970,6 +970,88 @@ function addTrustEdges(b: Builder, index: AtlasIndex): void {
   }
 }
 
+/**
+ * AWS RAM resource shares: what each scanned account EXPOSES cross-account.
+ * One edge per (share, principal), from the owning account's container to the
+ * principal — a drawn account container, an org-account leaf, an org OU
+ * container / organization lane, or a ghost account (resolved exactly like
+ * addTrustEdges resolves trust principals). A principal that resolves to no
+ * drawn node (an OU/organization when no org data was scanned, a service
+ * principal) is skipped rather than drawn dangling — React Flow silently
+ * drops dangling edges — and stays visible in the share's details panel.
+ */
+function addRamShareEdges(b: Builder, index: AtlasIndex): void {
+  // Org-tree nodes are namespaced by the account whose snapshot carries the
+  // org data (`orgou:<carrier>:<ou-id>`); build reverse lookups so OU / org /
+  // member-account principals resolve regardless of which account drew them.
+  const ouNode = new Map<string, string>(); // ou-… id → orgou container
+  const orgNode = new Map<string, string>(); // o-… id → org lane container
+  const orgAcctNode = new Map<string, string>(); // account id → orgacct leaf
+  for (const account of index.snapshot.accounts) {
+    for (const ou of account.global.organizationalUnits) {
+      const nodeId = `orgou:${account.accountId}:${ou.id}`;
+      if (b.regions.has(nodeId) && !ouNode.has(ou.id)) ouNode.set(ou.id, nodeId);
+    }
+    for (const org of account.global.organizations) {
+      const nodeId = `org:${account.accountId}:${org.id}`;
+      if (b.regions.has(nodeId) && !orgNode.has(org.id)) orgNode.set(org.id, nodeId);
+    }
+    for (const a of account.global.organizationAccounts) {
+      const nodeId = `orgacct:${account.accountId}:${a.id}`;
+      if (b.leaves.has(nodeId) && !orgAcctNode.has(a.id)) orgAcctNode.set(a.id, nodeId);
+    }
+  }
+
+  const resolvePrincipal = (p: { id: string; type: string }): string | undefined => {
+    if (p.type === 'account') {
+      if (!/^\d{12}$/.test(p.id)) return undefined; // malformed — panel-only
+      const acctId = `acct:${p.id}`;
+      if (b.accounts.has(acctId)) return acctId;
+      return orgAcctNode.get(p.id) ?? ensureGhostAccount(b, p.id);
+    }
+    // OU / organization principals arrive as ARNs (…:ou/o-…/ou-…, …:organization/o-…).
+    const last = p.id.split('/').pop() ?? p.id;
+    if (p.type === 'ou') return ouNode.get(last);
+    if (p.type === 'organization') return orgNode.get(last);
+    return undefined;
+  };
+
+  for (const account of index.snapshot.accounts) {
+    for (const region of account.regions) {
+      for (const share of region.ramResourceShares) {
+        // Only SELF-owned shares are scanned, but stay defensive: a received
+        // copy is the owning account's story, not this one's.
+        const owner = share.owningAccountId ?? account.accountId;
+        if (owner !== account.accountId) continue;
+        const src = b.accounts.has(`acct:${owner}`) ? `acct:${owner}` : ensureGhostAccount(b, owner);
+        // "subnet", "subnet, transit-gateway +1" — from the shared types.
+        const typeSummary = destsLabel(
+          share.resources.map((r) => (r.type ?? r.arn.split(':')[2] ?? 'resource').split(':').pop() ?? 'resource'),
+          2,
+        );
+        for (const principal of share.principals) {
+          const target = resolvePrincipal(principal);
+          if (!target || target === src) continue;
+          const key = `ramshare:${share.id}|${principal.type}:${principal.id}`;
+          b.edges.set(key, {
+            id: `edge:${key}`,
+            source: src,
+            target: target,
+            type: 'annotated',
+            markerEnd: { type: MarkerType.ArrowClosed },
+            data: {
+              edgeKind: 'ram-share',
+              label: typeSummary ? `${share.name} · ${typeSummary}` : share.name,
+              title: `RAM share ${share.name}: ${index.accountLabel(owner)} → ${principal.id}${share.allowExternalPrincipals ? ' (external principals allowed)' : ''}`,
+              refId: share.arn ?? share.id,
+            },
+          });
+        }
+      }
+    }
+  }
+}
+
 /** Build the global multi-account overview graph. */
 export function buildOverview(index: AtlasIndex): AtlasGraph {
   const b: Builder = {
@@ -1100,6 +1182,9 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
 
   // --- cross-account IAM trust edges ----------------------------------------
   addTrustEdges(b, index);
+
+  // --- cross-account RAM resource-share exposure edges -----------------------
+  addRamShareEdges(b, index);
 
   // --- SSO permission-set assignment edges → drawn org-account nodes ---------
   addSsoAssignmentEdges(b, index);

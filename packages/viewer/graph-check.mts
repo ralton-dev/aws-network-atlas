@@ -299,6 +299,32 @@ function adversarialAccount(): AccountSnapshot {
     id: 'rslvr-rr-adv00000001', name: 'adv-fwd', tags: {}, domainName: 'onprem.adv.', ruleType: 'FORWARD',
     targetIps: ['192.0.2.1'], vpcAssociationIds: [vpc, 'vpc-neverscanned0001'],
   });
+  // RAM shares: an external-account principal (must become a ghost-account
+  // edge), OU/organization principals with NO org tree drawn (must be skipped,
+  // not dangling), a malformed account id, and a received share owned by an
+  // unscanned account (must draw nothing from this snapshot).
+  r.ramResourceShares.push(
+    {
+      id: 'arn:aws:ram:eu-west-1:555555555555:resource-share/adv-share-0001',
+      arn: 'arn:aws:ram:eu-west-1:555555555555:resource-share/adv-share-0001',
+      name: 'adv-share', tags: {}, status: 'ACTIVE', owningAccountId: '555555555555',
+      allowExternalPrincipals: true,
+      principals: [
+        { id: '666666666666', type: 'account' },
+        { id: 'arn:aws:organizations::555555555555:ou/o-adv00000001/ou-adv0-noorg0001', type: 'ou' },
+        { id: 'arn:aws:organizations::555555555555:organization/o-adv00000001', type: 'organization' },
+        { id: 'not-an-account-id', type: 'account' },
+      ],
+      resources: [{ arn: 'arn:aws:ec2:eu-west-1:555555555555:subnet/subnet-adv00000000001', type: 'ec2:subnet', status: 'ASSOCIATED' }],
+    },
+    {
+      id: 'arn:aws:ram:eu-west-1:999999999999:resource-share/adv-received-01',
+      arn: 'arn:aws:ram:eu-west-1:999999999999:resource-share/adv-received-01',
+      name: 'adv-received', tags: {}, status: 'ACTIVE', owningAccountId: '999999999999',
+      principals: [{ id: '555555555555', type: 'account' }],
+      resources: [],
+    },
+  );
 
   return {
     accountId: '555555555555',

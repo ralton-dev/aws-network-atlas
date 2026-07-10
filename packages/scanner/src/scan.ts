@@ -44,6 +44,7 @@ import { collectGlue } from './collect/glue.js';
 import { collectDms } from './collect/dms.js';
 import { collectDataSync } from './collect/datasync.js';
 import { collectFirehose } from './collect/firehose.js';
+import { collectRam } from './collect/ram.js';
 import { collectConfig } from './collect/config-service.js';
 import { collectCloudTrail } from './collect/cloudtrail.js';
 import { collectGuardDuty } from './collect/guardduty.js';
@@ -133,6 +134,7 @@ export async function scanAccount(
           collectDms(ctx, region, out),
           collectDataSync(ctx, region, out),
           collectFirehose(ctx, region, out),
+          collectRam(ctx, region, out),
           collectConfig(ctx, region, out),
           collectCloudTrail(ctx, region, out),
           collectGuardDuty(ctx, region, out),

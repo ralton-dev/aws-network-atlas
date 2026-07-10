@@ -180,6 +180,7 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.dataSyncLocations.length === 0 &&
     out.dataSyncTasks.length === 0 &&
     out.firehoseDeliveryStreams.length === 0 &&
+    out.ramResourceShares.length === 0 &&
     out.configRecorders.length === 0 &&
     out.configRules.length === 0 &&
     out.configConformancePacks.length === 0 &&
@@ -587,6 +588,11 @@ export function deriveRegion(out: RegionSnapshot): void {
   for (const ds of out.firehoseDeliveryStreams) {
     ds.subnetIds.sort();
     ds.securityGroupIds.sort();
+  }
+  sortById(out.ramResourceShares);
+  for (const share of out.ramResourceShares) {
+    share.principals.sort((a, b) => `${a.type}|${a.id}`.localeCompare(`${b.type}|${b.id}`));
+    share.resources.sort((a, b) => a.arn.localeCompare(b.arn));
   }
   sortById(out.configRecorders);
   for (const rec of out.configRecorders) rec.recordedResourceTypes.sort();

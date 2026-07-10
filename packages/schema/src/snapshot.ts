@@ -1919,6 +1919,35 @@ export interface IamOidcProvider extends BaseResource {
 }
 
 // ---------------------------------------------------------------------------
+// AWS RAM (Resource Access Manager) — cross-account resource sharing (regional)
+// ---------------------------------------------------------------------------
+
+/**
+ * A RAM resource share OWNED by the scanned account (resourceOwner=SELF):
+ * what THIS account exposes to other accounts / OUs / the whole organization
+ * — a top cross-account security signal. Shares received FROM other accounts
+ * are deliberately not collected (the owning account's scan draws that edge).
+ */
+export interface RamResourceShare extends BaseResource {
+  /** id = resourceShareArn (RAM shares have no short id). */
+  name: string;
+  /** ACTIVE | PENDING | FAILED | DELETING | DELETED. */
+  status?: string;
+  owningAccountId?: string;
+  /** True when the share may include principals outside the organization. */
+  allowExternalPrincipals?: boolean;
+  /**
+   * Who the share is shared WITH. id is a 12-digit account id (type
+   * "account" — IAM user/role principals are folded to their account), an
+   * OU ARN (type "ou"), or an organization ARN (type "organization").
+   */
+  principals: Array<{ id: string; type: 'account' | 'ou' | 'organization' }>;
+  /** The resources the share exposes. type is service:resource, e.g. "ec2:subnet". */
+  resources: Array<{ arn: string; type?: string; status?: string }>;
+  creationTime?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Global (non-regional) resources
 // ---------------------------------------------------------------------------
 
@@ -2137,6 +2166,9 @@ export interface RegionSnapshot {
   // Kinesis Data Firehose (regional)
   firehoseDeliveryStreams: FirehoseDeliveryStream[];
 
+  // AWS RAM cross-account resource shares (regional, SELF-owned only)
+  ramResourceShares: RamResourceShare[];
+
   // AWS Config posture (regional)
   configRecorders: ConfigRecorder[];
   configRules: ConfigRule[];
@@ -2331,6 +2363,7 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     dataSyncLocations: [],
     dataSyncTasks: [],
     firehoseDeliveryStreams: [],
+    ramResourceShares: [],
     configRecorders: [],
     configRules: [],
     configConformancePacks: [],

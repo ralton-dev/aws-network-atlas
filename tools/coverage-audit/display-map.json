@@ -96,6 +96,7 @@
 "dataSyncLocations":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"EFS/FSx locations are VPC-attached (subnet+SG) — candidate to draw"},
 "dataSyncTasks":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"source→destination transfer; could later be edges"},
 "firehoseDeliveryStreams":{"render":"node","label":"node · VPC-detail (subnet-placed) + focus","note":"drawn in the drill-down when destination is in-VPC OpenSearch/Elasticsearch, with sg-attach edges"},
+"ramResourceShares":{"render":"edge","label":"edge · overview (owning account → each shared-with principal)","note":"the share entity itself is edge/panel-only: status, allowExternalPrincipals, full principal + shared-resource lists in the details panel; principals that resolve to no drawn node (OU/org without scanned org data) stay panel-only rather than dangling"},
 "configRecorders":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"whether Config recording is on, what it records, and where it delivers — governance posture"},
 "configRules":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"Config rules (managed/custom) + state"},
 "configConformancePacks":{"render":"panel-only","label":"panel-only — searchable inventory + details","note":"conformance packs"},

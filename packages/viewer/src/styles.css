@@ -213,6 +213,7 @@ html, body, #root { margin: 0; height: 100%; }
 .edge-label-edge-service { border-color: var(--accent); color: var(--accent); }
 .edge-label-dns { border-color: #1f7a4d; color: #1f7a4d; }
 .edge-label-sso-assign { border-color: #7a5195; color: #7a5195; }
+.edge-label-ram-share { border-color: #0e7490; color: #0e7490; }
 .edge-label-placement { font-weight: 400; color: var(--muted); }
 
 /* ---------- details panel ---------- */

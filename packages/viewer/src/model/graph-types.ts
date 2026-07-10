@@ -79,6 +79,8 @@ export type EdgeKind =
   | 'governs'
   /** Identity Center permission set assigned into an org member account. */
   | 'sso-assign'
+  /** AWS RAM resource share: owning account → the principal it shares with. */
+  | 'ram-share'
   /** Focus view: where a resource lives (instance → subnet, subnet → VPC…). */
   | 'placement';
 

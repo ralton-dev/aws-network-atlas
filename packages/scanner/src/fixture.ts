@@ -980,6 +980,47 @@ function sharedAccount(): AccountSnapshot {
     status: 'active',
   });
 
+  // RAM: what the network hub exposes to the rest of the org. The TGW hub is
+  // shared to the Workloads OU; the shared-services subnets go directly to
+  // prod and dev — each (share, principal) pair draws an exposure edge on the
+  // overview from this account to the principal.
+  r.ramResourceShares.push(
+    {
+      id: `arn:aws:ram:${EU}:${ACCT.shared}:resource-share/11aa22bb-1111-2222-3333-tgwshare0001`,
+      arn: `arn:aws:ram:${EU}:${ACCT.shared}:resource-share/11aa22bb-1111-2222-3333-tgwshare0001`,
+      name: 'core-tgw-share',
+      tags: { 'managed-by': 'terraform', team: 'network' },
+      status: 'ACTIVE',
+      owningAccountId: ACCT.shared,
+      allowExternalPrincipals: false,
+      principals: [
+        { id: `arn:aws:organizations::${ACCT.shared}:ou/o-acmecorp01ab/ou-ac1e-workload1`, type: 'ou' },
+      ],
+      resources: [
+        { arn: `arn:aws:ec2:${EU}:${ACCT.shared}:transit-gateway/${TGW_EU}`, type: 'ec2:transit-gateway', status: 'ASSOCIATED' },
+      ],
+      creationTime: '2024-02-01T10:00:00.000Z',
+    },
+    {
+      id: `arn:aws:ram:${EU}:${ACCT.shared}:resource-share/33cc44dd-5555-6666-7777-subnets00001`,
+      arn: `arn:aws:ram:${EU}:${ACCT.shared}:resource-share/33cc44dd-5555-6666-7777-subnets00001`,
+      name: 'shared-services-subnets',
+      tags: { team: 'network' },
+      status: 'ACTIVE',
+      owningAccountId: ACCT.shared,
+      allowExternalPrincipals: false,
+      principals: [
+        { id: ACCT.prod, type: 'account' },
+        { id: ACCT.dev, type: 'account' },
+      ],
+      resources: [
+        { arn: `arn:aws:ec2:${EU}:${ACCT.shared}:subnet/subnet-0shr0000000001`, type: 'ec2:subnet', status: 'ASSOCIATED' },
+        { arn: `arn:aws:ec2:${EU}:${ACCT.shared}:subnet/subnet-0shr0000000101`, type: 'ec2:subnet', status: 'ASSOCIATED' },
+      ],
+      creationTime: '2024-02-01T10:05:00.000Z',
+    },
+  );
+
   r.generic.push({ arn: `arn:aws:route53resolver:${EU}:${ACCT.shared}:resolver-endpoint/rslvr-in-abc`, service: 'route53resolver', resourceType: 'resolver-endpoint', name: 'shared-inbound', tags: {} });
 
   return {

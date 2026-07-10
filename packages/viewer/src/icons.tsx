@@ -55,6 +55,8 @@ import GlobalAccelerator from 'aws-icons/icons/architecture-service/AWSGlobalAcc
 import CloudWan from 'aws-icons/icons/architecture-service/AWSCloudWAN.svg?react';
 // AWS Organizations (panel-only)
 import Organizations from 'aws-icons/icons/architecture-service/AWSOrganizations.svg?react';
+// AWS RAM cross-account resource shares (edge/panel-only)
+import ResourceAccessManager from 'aws-icons/icons/architecture-service/AWSResourceAccessManager.svg?react';
 import OrganizationsAccount from 'aws-icons/icons/resource/AWSOrganizationsAccount.svg?react';
 import OrganizationsOu from 'aws-icons/icons/resource/AWSOrganizationsOrganizationalUnit.svg?react';
 import VpcLattice from 'aws-icons/icons/architecture-service/AmazonVPCLattice.svg?react';
@@ -171,6 +173,8 @@ export const ICONS: Record<string, IconComponent> = {
   'org-ou': OrganizationsOu,
   'org-account': OrganizationsAccount,
   'org-policy': Organizations,
+  // AWS RAM resource shares (drawn as cross-account edges; icon for the panel)
+  'ram-share': ResourceAccessManager,
   'lattice-service-network': VpcLattice,
   'lattice-service': VpcLattice,
   'flow-log': FlowLogs,

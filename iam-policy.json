@@ -170,6 +170,17 @@
       "Resource": "*"
     },
     {
+      "Sid": "ResourceAccessManager",
+      "Effect": "Allow",
+      "Action": [
+        "ram:GetResourceShares",
+        "ram:GetResourceShareAssociations",
+        "ram:ListResources",
+        "ram:ListPrincipals"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "MigrationAndTransfer",
       "Effect": "Allow",
       "Action": [
