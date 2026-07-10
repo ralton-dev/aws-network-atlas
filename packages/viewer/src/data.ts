@@ -129,6 +129,9 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   add('apigw-domain', region.apiGatewayDomainNames as unknown as Array<Record<string, unknown>>);
   add('lattice-service-network', region.latticeServiceNetworks as unknown as Array<Record<string, unknown>>);
   add('lattice-service', region.latticeServices as unknown as Array<Record<string, unknown>>);
+  add('lattice-target-group', region.latticeTargetGroups as unknown as Array<Record<string, unknown>>);
+  add('lattice-resource-gateway', region.latticeResourceGateways as unknown as Array<Record<string, unknown>>);
+  add('lattice-resource-configuration', region.latticeResourceConfigurations as unknown as Array<Record<string, unknown>>);
   add('log-group', region.logGroups as unknown as Array<Record<string, unknown>>);
   // identity services
   add('cognito-user-pool', region.cognitoUserPools as unknown as Array<Record<string, unknown>>);

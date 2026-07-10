@@ -168,6 +168,7 @@ function collectRelations(index: AtlasIndex): Relation[] {
       for (const c of region.elastiCacheServerlessCaches) for (const s of c.subnetIds) place(c.id, s, 'in subnet');
       for (const ice of region.instanceConnectEndpoints) place(ice.id, ice.subnetId, 'in subnet');
       for (const link of region.apiGatewayVpcLinks) for (const s of link.subnetIds) place(link.id, s, 'in subnet');
+      for (const gw of region.latticeResourceGateways) for (const s of gw.subnetIds) place(gw.id, s, 'in subnet');
 
       // --- subnet routing (grouped per subnet|target, like the VPC detail) ---
       for (const vpc of region.vpcs) {
@@ -230,6 +231,7 @@ function collectRelations(index: AtlasIndex): Relation[] {
         ...region.elastiCacheServerlessCaches.map((c) => ({ id: c.id, sgIds: c.securityGroupIds })),
         ...region.instanceConnectEndpoints.map((e) => ({ id: e.id, sgIds: e.securityGroupIds })),
         ...region.apiGatewayVpcLinks.map((link) => ({ id: link.id, sgIds: link.securityGroupIds })),
+        ...region.latticeResourceGateways.map((gw) => ({ id: gw.id, sgIds: gw.securityGroupIds })),
       ];
       for (const { id, sgIds } of sgAttach) {
         for (const sgId of sgIds) {
@@ -664,6 +666,37 @@ function collectRelations(index: AtlasIndex): Relation[] {
           });
         }
       }
+      // Lattice target groups sit BEHIND a service (like ELB target groups
+      // behind a load balancer): service → target group → registered targets.
+      for (const tg of region.latticeTargetGroups) {
+        for (const svcArn of tg.serviceArns) {
+          add(`lattg:${svcArn}|${tg.id}`, svcArn, tg.id, {
+            edgeKind: 'assoc',
+            label: tg.port ? `${tg.protocol ?? ''} ${tg.port}`.trim() : 'target group',
+            title: `${nameOf(svcArn)} routes to target group ${tg.name ?? tg.id}`,
+            refId: tg.id,
+          });
+        }
+        for (const target of tg.targets ?? []) {
+          add(`lattgt:${tg.id}|${target.id}`, tg.id, target.id, {
+            edgeKind: 'assoc',
+            label: 'target',
+            title: `${tg.name ?? tg.id} targets ${nameOf(target.id)}`,
+            refId: tg.id,
+          });
+        }
+      }
+      // The Lattice resource model: a resource configuration is published for
+      // cross-VPC access through its (VPC-attached) resource gateway.
+      for (const rc of region.latticeResourceConfigurations) {
+        if (!rc.resourceGatewayId) continue;
+        add(`latrc:${rc.id}`, rc.id, rc.resourceGatewayId, {
+          edgeKind: 'edge-service',
+          label: 'via resource gateway',
+          title: `${rc.name ?? rc.id} published through ${nameOf(rc.resourceGatewayId)}`,
+          refId: rc.id,
+        });
+      }
     }
 
     // --- account-global: Route 53, CloudFront, IAM, Direct Connect -----------
@@ -1057,6 +1090,9 @@ function subtitleFor(index: AtlasIndex, ref: ResourceRef, center: ResourceRef | 
     case 'apigw-vpc-link': base = 'API GW VPC link'; break;
     case 'lattice-service-network': base = 'Lattice service network'; break;
     case 'lattice-service': base = (raw['dnsEntry'] as string | undefined) ?? 'Lattice service'; break;
+    case 'lattice-target-group': base = `Lattice target group${raw['type'] !== undefined ? ` · ${String(raw['type']).toLowerCase()}` : ''}`; break;
+    case 'lattice-resource-gateway': base = 'Lattice resource gateway'; break;
+    case 'lattice-resource-configuration': base = `Lattice resource config${raw['type'] !== undefined ? ` · ${String(raw['type']).toLowerCase()}` : ''}`; break;
     case 'tgw-connect-peer': base = 'TGW Connect peer'; break;
     default: base = ref.kind; break;
   }
@@ -1126,6 +1162,16 @@ export function buildFocus(index: AtlasIndex, centerKey: string): AtlasGraph {
       case 'lb':
         return via === 'assoc'
           ? incoming(key).filter((r) => r.data.edgeKind === 'edge-service')
+          : [];
+      case 'lattice-target-group':
+        // A target group reached along the Lattice data path continues the
+        // chain both ways: its registered targets and its Lattice service
+        // (both `lattg…` relations).
+        return via === 'assoc' ? incident(key).filter((r) => r.key.startsWith('lattg')) : [];
+      case 'lattice-service':
+        // A service reached from its target group exposes its service network.
+        return via === 'assoc'
+          ? incident(key).filter((r) => r.data.edgeKind === 'edge-service')
           : [];
       case 'cloudfront':
         return incoming(key).filter((r) => r.data.edgeKind === 'edge-service');

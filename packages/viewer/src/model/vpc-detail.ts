@@ -393,6 +393,20 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
       eb.name ?? eb.id, eb.tier ?? 'Beanstalk', eb.id,
     ));
   }
+  for (const rg of region.latticeResourceGateways) {
+    // VPC Lattice resource gateway — VPC-attached like the data-store
+    // collectors: placed in the first of its subnets that belongs to this
+    // VPC, falling back to the VPC box when the subnets weren't scanned.
+    const parent =
+      subnetNode(rg.subnetIds.find((s) => subnets.some((x) => x.id === s))) ??
+      (rg.vpcId === vpcId ? vpcNodeId : undefined);
+    if (!parent) continue;
+    leaves.set(`res:${rg.id}`, leaf(
+      `res:${rg.id}`, parent, 'lattice-resource-gateway',
+      rg.name ?? rg.id, 'Lattice resource gateway', rg.id,
+      rg.status && rg.status !== 'ACTIVE' ? [rg.status] : undefined,
+    ));
+  }
 
   // --- external connectivity nodes + route-derived edges ---------------------
   const ensureExt = (id: string, kind: string, label: string, subtitle?: string, refId?: string): string => {
@@ -674,6 +688,7 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
     ...region.memoryDbClusters.map((c) => ({ nodeId: `res:${c.id}`, sgIds: c.securityGroupIds })),
     ...region.transferServers.map((t) => ({ nodeId: `res:${t.id}`, sgIds: t.securityGroupIds })),
     ...region.beanstalkEnvironments.map((e) => ({ nodeId: `res:${e.id}`, sgIds: e.securityGroupIds })),
+    ...region.latticeResourceGateways.map((rg) => ({ nodeId: `res:${rg.id}`, sgIds: rg.securityGroupIds })),
   ];
   for (const { nodeId, sgIds } of sgAttachSources) {
     if (!leaves.has(nodeId)) continue;
@@ -907,6 +922,48 @@ export function buildVpcDetail(index: AtlasIndex, vpcId: string): AtlasGraph {
         });
       }
     }
+  }
+
+  // --- VPC Lattice: service → registered-target edges (mirrors the LB block:
+  // the Lattice service appears in the Connectivity lane, its target-group
+  // membership becomes association edges onto the in-VPC targets) -------------
+  for (const tg of region.latticeTargetGroups) {
+    if (tg.vpcId !== vpcId) continue;
+    for (const svcArn of tg.serviceArns) {
+      const svc = region.latticeServices.find((s) => s.arn === svcArn || s.id === svcArn);
+      const svcNode = ensureExt(
+        `latsvc:${svcArn}`, 'lattice-service',
+        svc?.name ?? svcArn.split('/').pop() ?? svcArn,
+        svc?.dnsEntry ?? 'Lattice service', svc?.id ?? svcArn,
+      );
+      for (const target of tg.targets ?? []) {
+        const tgtNode = `res:${target.id}`;
+        if (!leaves.has(tgtNode)) continue;
+        addEdge(`lattgt:${svcArn}|${target.id}`, svcNode, tgtNode, {
+          edgeKind: 'assoc',
+          label: tg.port ? `${tg.protocol ?? ''} ${tg.port}`.trim() : 'Lattice target',
+          title: `${svc?.name ?? svcArn} → ${target.id} (${tg.name ?? 'target group'})`,
+          refId: tg.id,
+        });
+      }
+    }
+  }
+
+  // Resource configurations published through a resource gateway drawn here.
+  for (const rc of region.latticeResourceConfigurations) {
+    if (!rc.resourceGatewayId) continue;
+    const gwNode = `res:${rc.resourceGatewayId}`;
+    if (!leaves.has(gwNode)) continue;
+    const rcNode = ensureExt(
+      `latrc:${rc.id}`, 'lattice-resource-configuration', rc.name ?? rc.id,
+      `Lattice resource config${rc.type ? ` · ${rc.type.toLowerCase()}` : ''}`, rc.id,
+    );
+    addEdge(`latrcgw:${rc.id}`, rcNode, gwNode, {
+      edgeKind: 'edge-service',
+      label: 'via resource gateway',
+      title: `${rc.name ?? rc.id} published through ${leaves.get(gwNode)?.data.label ?? rc.resourceGatewayId}`,
+      refId: rc.id,
+    });
   }
 
   // --- VPN edges from VGWs in this VPC --------------------------------------

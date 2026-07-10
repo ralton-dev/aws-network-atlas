@@ -144,6 +144,21 @@ const detail = {
     .count(),
   dnsFirewall: await page.locator('.resource-node', { hasText: 'prod-dns-firewall' }).count(),
   flowLog: await page.locator('.resource-node', { hasText: 'prod-vpc-flow' }).count(),
+  // VPC Lattice: the service node in the Connectivity lane with its
+  // service → registered-target edge, the subnet-placed resource gateway
+  // (+ SG-attach edge), and the resource configuration published through it.
+  latticeService: await page.locator('.resource-node', { hasText: 'prod-api-lattice' }).count(),
+  latticeTargetEdge: await page
+    .locator('.react-flow__edge[data-id="edge:lattgt:arn:aws:vpc-lattice:eu-west-1:111111111111:service/svc-0prodapi0000001|i-0prodapp0000000001"]')
+    .count(),
+  latticeResourceGateway: await page.locator('.resource-node', { hasText: 'prod-resource-gw' }).count(),
+  latticeResourceGatewaySgEdge: await page
+    .locator('.react-flow__edge[data-id="edge:sgatt:sg-0proddb0000000001|res:rgw-0prod000000001"]')
+    .count(),
+  latticeResourceConfig: await page.locator('.resource-node', { hasText: 'prod-aurora-share' }).count(),
+  latticeResourceConfigEdge: await page
+    .locator('.react-flow__edge[data-id="edge:latrcgw:rcfg-0prodaurora001"]')
+    .count(),
 };
 console.log('vpc-detail:', JSON.stringify(detail));
 if (detail.fwPolicy === 0) problems.push('vpc: Network Firewall policy node missing');
@@ -159,6 +174,12 @@ if (detail.directoryService === 0) problems.push('vpc: Directory Service directo
 if (detail.directoryServiceSgEdge === 0) problems.push('vpc: Directory Service SG-attach edge (db-sg → directory) missing');
 if (detail.dnsFirewall === 0) problems.push('vpc: DNS Firewall rule group node missing');
 if (detail.flowLog === 0) problems.push('vpc: flow log node missing');
+if (detail.latticeService === 0) problems.push('vpc: Lattice service node missing from Connectivity');
+if (detail.latticeTargetEdge === 0) problems.push('vpc: Lattice service → target edge missing');
+if (detail.latticeResourceGateway === 0) problems.push('vpc: Lattice resource gateway node missing');
+if (detail.latticeResourceGatewaySgEdge === 0) problems.push('vpc: Lattice resource gateway SG-attach edge (db-sg → gateway) missing');
+if (detail.latticeResourceConfig === 0) problems.push('vpc: Lattice resource configuration node missing');
+if (detail.latticeResourceConfigEdge === 0) problems.push('vpc: Lattice resource config → gateway edge missing');
 if (detail.sgNodes === 0) problems.push('vpc: no security group nodes');
 if (detail.sgRuleLabels === 0) problems.push('vpc: no SG rule edges');
 if (detail.exposureLabels === 0) problems.push('vpc: no internet-exposure edges');
@@ -172,7 +193,7 @@ if (detail.cloudfront === 0) problems.push('vpc: CloudFront missing from Connect
 // The expected numbers come from running the builders directly over the
 // same fixture (npx tsx graph-check.mts, which also asserts every edge
 // endpoint resolves to a node). Update both together on fixture changes.
-const EXPECTED_EDGES = { overview: 40, prodVpc: 74 };
+const EXPECTED_EDGES = { overview: 40, prodVpc: 78 };
 if (overview.edges !== EXPECTED_EDGES.overview)
   problems.push(`overview: ${overview.edges} edges rendered but the builder produced ${EXPECTED_EDGES.overview} — dangling edges dropped?`);
 if (detail.edges !== EXPECTED_EDGES.prodVpc)

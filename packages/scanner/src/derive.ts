@@ -152,6 +152,9 @@ export function deriveRegion(out: RegionSnapshot): void {
     out.apiGatewayDomainNames.length === 0 &&
     out.latticeServiceNetworks.length === 0 &&
     out.latticeServices.length === 0 &&
+    out.latticeTargetGroups.length === 0 &&
+    out.latticeResourceGateways.length === 0 &&
+    out.latticeResourceConfigurations.length === 0 &&
     out.logGroups.length === 0 &&
     out.flowLogs.length === 0 &&
     out.instanceConnectEndpoints.length === 0 &&
@@ -499,6 +502,17 @@ export function deriveRegion(out: RegionSnapshot): void {
   }
   sortById(out.latticeServiceNetworks);
   sortById(out.latticeServices);
+  sortById(out.latticeTargetGroups);
+  for (const tg of out.latticeTargetGroups) {
+    tg.serviceArns.sort();
+    tg.targets?.sort((a, b) => a.id.localeCompare(b.id));
+  }
+  sortById(out.latticeResourceGateways);
+  for (const gw of out.latticeResourceGateways) {
+    gw.subnetIds.sort();
+    gw.securityGroupIds.sort();
+  }
+  sortById(out.latticeResourceConfigurations);
   sortById(out.logGroups);
   sortById(out.cognitoUserPools);
   for (const pool of out.cognitoUserPools) {

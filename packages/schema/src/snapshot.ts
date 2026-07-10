@@ -1572,6 +1572,52 @@ export interface LatticeService extends BaseResource {
   authType?: string;
 }
 
+/**
+ * VPC Lattice target group — what actually sits behind a Lattice service
+ * (instances / IPs / Lambdas / ALBs in a VPC). serviceArns comes straight off
+ * the ListTargetGroups summary and is the service → target-group linkage the
+ * diagram draws.
+ */
+export interface LatticeTargetGroup extends BaseResource {
+  /** INSTANCE | IP | LAMBDA | ALB */
+  type?: string;
+  status?: string;
+  vpcId?: string;
+  port?: number;
+  protocol?: string;
+  ipAddressType?: string;
+  /** Lattice services routing to this target group. */
+  serviceArns: string[];
+  /** Registered targets (instance ids / IPs / ARNs by type); capped per group. */
+  targets?: Array<{ id: string; status?: string }>;
+}
+
+/**
+ * VPC Lattice resource gateway — the VPC-ATTACHED ingress point of the newer
+ * Lattice "resource" model: it lives in subnets behind security groups, so it
+ * is placed on the VPC drill-down like the data-store collectors.
+ */
+export interface LatticeResourceGateway extends BaseResource {
+  vpcId?: string;
+  subnetIds: string[];
+  securityGroupIds: string[];
+  status?: string;
+}
+
+/**
+ * VPC Lattice resource configuration — a specific resource (RDS endpoint,
+ * IP:port, ARN…) published for cross-VPC/account access through a resource
+ * gateway. Port ranges are only on GetResourceConfiguration (N+1 fan-out) and
+ * are deliberately not fetched.
+ */
+export interface LatticeResourceConfiguration extends BaseResource {
+  /** SINGLE | GROUP | CHILD | ARN */
+  type?: string;
+  resourceGatewayId?: string;
+  status?: string;
+  amazonManaged?: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Observability plumbing
 // ---------------------------------------------------------------------------
@@ -2206,6 +2252,9 @@ export interface RegionSnapshot {
   apiGatewayDomainNames: ApiGatewayDomainName[];
   latticeServiceNetworks: LatticeServiceNetwork[];
   latticeServices: LatticeService[];
+  latticeTargetGroups: LatticeTargetGroup[];
+  latticeResourceGateways: LatticeResourceGateway[];
+  latticeResourceConfigurations: LatticeResourceConfiguration[];
   logGroups: LogGroup[];
 
   // identity services (regional)
@@ -2438,6 +2487,9 @@ export function emptyRegionSnapshot(region: string): RegionSnapshot {
     apiGatewayDomainNames: [],
     latticeServiceNetworks: [],
     latticeServices: [],
+    latticeTargetGroups: [],
+    latticeResourceGateways: [],
+    latticeResourceConfigurations: [],
     logGroups: [],
     cognitoUserPools: [],
     cognitoIdentityPools: [],

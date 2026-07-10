@@ -809,6 +809,66 @@ function prodEuWest1(): RegionSnapshot {
     elbScheme: 'public',
   });
 
+  // VPC Lattice: a service network associated with the prod VPC, a service in
+  // it, the INSTANCE target group behind that service (two app-tier instances,
+  // so the service → target edges land inside this VPC), and the newer
+  // resource model — a resource gateway in the db subnets (VPC-attached,
+  // dbSg draws the SG-attach edge) publishing the Aurora endpoint as a
+  // resource configuration.
+  const latticeSvcArn = `arn:aws:vpc-lattice:${EU}:${ACCT.prod}:service/svc-0prodapi0000001`;
+  r.latticeServiceNetworks.push({
+    id: 'sn-0prodmesh000001',
+    arn: `arn:aws:vpc-lattice:${EU}:${ACCT.prod}:servicenetwork/sn-0prodmesh000001`,
+    name: 'acme-mesh',
+    tags: { env: 'prod' },
+    numberOfAssociatedServices: 1,
+    numberOfAssociatedVpcs: 1,
+    vpcAssociations: [{ vpcId: vpc, status: 'ACTIVE' }],
+    serviceAssociations: [{ serviceArn: latticeSvcArn, serviceName: 'prod-api-lattice', status: 'ACTIVE' }],
+  });
+  r.latticeServices.push({
+    id: 'svc-0prodapi0000001',
+    arn: latticeSvcArn,
+    name: 'prod-api-lattice',
+    tags: { env: 'prod' },
+    dnsEntry: 'prod-api-lattice-0abc123.7d67968.vpc-lattice-svcs.eu-west-1.on.aws',
+    status: 'ACTIVE',
+  });
+  r.latticeTargetGroups.push({
+    id: 'tg-0prodlattice0001',
+    arn: `arn:aws:vpc-lattice:${EU}:${ACCT.prod}:targetgroup/tg-0prodlattice0001`,
+    name: 'prod-api-lattice-tg',
+    tags: { env: 'prod' },
+    type: 'INSTANCE',
+    status: 'ACTIVE',
+    vpcId: vpc,
+    port: 8080,
+    protocol: 'HTTP',
+    ipAddressType: 'IPV4',
+    serviceArns: [latticeSvcArn],
+    targets: appInstanceIds.slice(0, 2).map((id) => ({ id, status: 'HEALTHY' })),
+  });
+  r.latticeResourceGateways.push({
+    id: 'rgw-0prod000000001',
+    arn: `arn:aws:vpc-lattice:${EU}:${ACCT.prod}:resourcegateway/rgw-0prod000000001`,
+    name: 'prod-resource-gw',
+    tags: { env: 'prod' },
+    vpcId: vpc,
+    subnetIds: ['subnet-0proddb00000001', 'subnet-0proddb00000101'],
+    securityGroupIds: [dbSg],
+    status: 'ACTIVE',
+  });
+  r.latticeResourceConfigurations.push({
+    id: 'rcfg-0prodaurora001',
+    arn: `arn:aws:vpc-lattice:${EU}:${ACCT.prod}:resourceconfiguration/rcfg-0prodaurora001`,
+    name: 'prod-aurora-share',
+    tags: { env: 'prod' },
+    type: 'SINGLE',
+    resourceGatewayId: 'rgw-0prod000000001',
+    status: 'ACTIVE',
+    amazonManaged: false,
+  });
+
   r.generic.push(
     { arn: `arn:aws:dynamodb:${EU}:${ACCT.prod}:table/prod-sessions`, service: 'dynamodb', resourceType: 'table', name: 'prod-sessions', tags: { env: 'prod' }, source: 'tagging' },
     { arn: `arn:aws:sqs:${EU}:${ACCT.prod}:prod-jobs`, service: 'sqs', resourceType: '', name: 'prod-jobs', tags: { env: 'prod' }, source: 'tagging' },

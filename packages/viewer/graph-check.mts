@@ -211,6 +211,24 @@ expectFocus(
 );
 // An Elastic IP held by a NAT gateway (association only visible on the NAT).
 expectFocus('eipalloc-0prod00000001', ['nat-0prod00000000001'], ['198.51.100.10']);
+// A Lattice service: its service network, the target group behind it, and the
+// registered instance targets — the whole Lattice data path.
+expectFocus(
+  'svc-0prodapi0000001',
+  [
+    'sn-0prodmesh000001', // service network membership
+    'tg-0prodlattice0001', // the target group behind the service
+    'i-0prodapp0000000001', // a registered target
+  ],
+  ['Lattice service', 'HTTP 8080', 'target'],
+);
+// A Lattice resource gateway: subnet placement, its security group, and the
+// resource configuration published through it.
+expectFocus(
+  'rgw-0prod000000001',
+  ['subnet-0proddb00000001', 'sg-0proddb0000000001', 'rcfg-0prodaurora001'],
+  ['in subnet', 'applies to', 'via resource gateway'],
+);
 
 // --- 2. adversarial snapshot — exercises every ghost/cap/malformed path ------
 function adversarialAccount(): AccountSnapshot {

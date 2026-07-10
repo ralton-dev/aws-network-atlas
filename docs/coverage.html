@@ -59,8 +59,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <p class="meta">Generated 2026-07-10 &middot; CloudFormation spec v255.0.0 &middot; 1622 resource types &middot; 281 services. Regenerate with <code>npm run coverage</code>.</p>
 <div class="cards">
 <div class="kpi"><div class="n">1622</div><div class="l">Resource types</div></div>
-<div class="kpi det"><div class="n">226</div><div class="l">Detailed collectors</div></div>
-<div class="kpi inv"><div class="n">890</div><div class="l">Inventory only</div></div>
+<div class="kpi det"><div class="n">229</div><div class="l">Detailed collectors</div></div>
+<div class="kpi inv"><div class="n">887</div><div class="l">Inventory only</div></div>
 <div class="kpi non"><div class="n">506</div><div class="l">Not collected at all</div></div>
 </div>
 <div class="note"><b>How to read &ldquo;Collected&rdquo;:</b>
@@ -122,8 +122,8 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><div class="bar"><span style="width:43%"></span></div><span class="pct">43%</span></td></tr>
 <tr><td class="mono">QuickSight</td><td>14</td><td class="c-detailed">0</td><td class="c-inv">12</td><td class="c-none">2</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
-<tr><td class="mono">VpcLattice</td><td>14</td><td class="c-detailed">2</td><td class="c-inv">10</td><td class="c-none">2</td>
-<td><div class="bar"><span style="width:14%"></span></div><span class="pct">14%</span></td></tr>
+<tr><td class="mono">VpcLattice</td><td>14</td><td class="c-detailed">5</td><td class="c-inv">7</td><td class="c-none">2</td>
+<td><div class="bar"><span style="width:36%"></span></div><span class="pct">36%</span></td></tr>
 <tr><td class="mono">AppStream</td><td>13</td><td class="c-detailed">0</td><td class="c-inv">6</td><td class="c-none">7</td>
 <td><div class="bar"><span style="width:0%"></span></div><span class="pct">0%</span></td></tr>
 <tr><td class="mono">DataSync</td><td>13</td><td class="c-detailed">7</td><td class="c-inv">6</td><td class="c-none">0</td>
@@ -8414,15 +8414,15 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">6<div class="props">DefaultAction, Name, Port, Protocol, ServiceIdentifier, Tags</div></td></tr>
-<tr data-svc="VpcLattice" data-c="inv-tag" data-d="panel-only" data-props="AllowAssociationToSharableServiceNetwork CustomDomainName DomainVerificationId GroupDomain Name PortRanges ProtocolType ResourceConfigurationAuthType ResourceConfigurationDefinition ResourceConfigurationGroupId ResourceConfigurationType ResourceGatewayId Tags">
+<tr data-svc="VpcLattice" data-c="detailed" data-d="node" data-props="AllowAssociationToSharableServiceNetwork CustomDomainName DomainVerificationId GroupDomain Name PortRanges ProtocolType ResourceConfigurationAuthType ResourceConfigurationDefinition ResourceConfigurationGroupId ResourceConfigurationType ResourceGatewayId Tags">
 <td class="mono">AWS::VpcLattice::ResourceConfiguration</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>latticeResourceConfigurations</code></div><div class="detail">type (SINGLE/GROUP/CHILD/ARN), resourceGatewayId, status, amazonManaged (portRanges only on Get — not fetched)</div></td>
+<td><span class="badge d-node">node · VPC-detail (Connectivity lane) + focus</span><div class="detail">drawn with a via-resource-gateway edge onto its gateway; type, amazonManaged only in panel (portRanges not collected — Get-only)</div></td>
 <td class="pc">13<div class="props">AllowAssociationToSharableServiceNetwork, CustomDomainName, DomainVerificationId, GroupDomain, Name, PortRanges, ProtocolType, ResourceConfigurationAuthType, ResourceConfigurationDefinition, ResourceConfigurationGroupId, ResourceConfigurationType, ResourceGatewayId, Tags</div></td></tr>
-<tr data-svc="VpcLattice" data-c="inv-tag" data-d="panel-only" data-props="IpAddressType Ipv4AddressesPerEni Name ResourceConfigDnsResolution SecurityGroupIds SubnetIds Tags VpcIdentifier">
+<tr data-svc="VpcLattice" data-c="detailed" data-d="node" data-props="IpAddressType Ipv4AddressesPerEni Name ResourceConfigDnsResolution SecurityGroupIds SubnetIds Tags VpcIdentifier">
 <td class="mono">AWS::VpcLattice::ResourceGateway</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>latticeResourceGateways</code></div><div class="detail">VPC-attached: vpcId, subnetIds, securityGroupIds; status</div></td>
+<td><span class="badge d-node">node · VPC-detail (subnet-placed) + focus</span><div class="detail">VPC-attached like the data-store collectors: placed in its subnet with an sg-attach edge; non-ACTIVE status as badge</div></td>
 <td class="pc">8<div class="props">IpAddressType, Ipv4AddressesPerEni, Name, ResourceConfigDnsResolution, SecurityGroupIds, SubnetIds, Tags, VpcIdentifier</div></td></tr>
 <tr data-svc="VpcLattice" data-c="none" data-d="none" data-props="Policy ResourceArn">
 <td class="mono">AWS::VpcLattice::ResourcePolicy</td>
@@ -8437,7 +8437,7 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <tr data-svc="VpcLattice" data-c="detailed" data-d="node" data-props="AuthType CertificateArn CustomDomainName DnsEntry Name Tags">
 <td class="mono">AWS::VpcLattice::Service</td>
 <td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>latticeServices</code></div><div class="detail">dnsEntry, customDomainName, authType, status</div></td>
-<td><span class="badge d-node">node · focus only (as edge endpoint)</span><div class="detail">customDomainName, status, authType only in panel</div></td>
+<td><span class="badge d-node">node · VPC-detail (Connectivity lane) + focus</span><div class="detail">drawn in the drill-down when an INSTANCE/IP target group lands in the VPC; customDomainName, status, authType only in panel</div></td>
 <td class="pc">6<div class="props">AuthType, CertificateArn, CustomDomainName, DnsEntry, Name, Tags</div></td></tr>
 <tr data-svc="VpcLattice" data-c="detailed" data-d="node" data-props="AuthType Name SharingConfig Tags">
 <td class="mono">AWS::VpcLattice::ServiceNetwork</td>
@@ -8459,10 +8459,10 @@ details.rollup{margin:10px 0}summary{cursor:pointer;font-weight:600}summary:focu
 <td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
 <td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
 <td class="pc">6<div class="props">DnsOptions, PrivateDnsEnabled, SecurityGroupIds, ServiceNetworkIdentifier, Tags, VpcIdentifier</div></td></tr>
-<tr data-svc="VpcLattice" data-c="inv-tag" data-d="panel-only" data-props="Config Name Tags Targets Type">
+<tr data-svc="VpcLattice" data-c="detailed" data-d="edge" data-props="Config Name Tags Targets Type">
 <td class="mono">AWS::VpcLattice::TargetGroup</td>
-<td><span class="badge inv-tag">Inventory — if tagged</span><div class="detail">ARN + name + tags — ONLY if tagged (Resource Groups Tagging API sweep)</div></td>
-<td><span class="badge d-panel-only">Inventory panel only — searchable list, never on graph</span></td>
+<td><span class="badge detailed">Detailed</span><div class="sub">&rarr; <code>latticeTargetGroups</code></div><div class="detail">type (INSTANCE/IP/LAMBDA/ALB), status, vpcId, port, protocol, ipAddressType, serviceArns, targets[] (capped)</div></td>
+<td><span class="badge d-edge">edge · VPC-detail (service → targets) · node in focus</span><div class="detail">drill-down draws Lattice-service → registered-target assoc edges (refId = the target group, mirroring ELB targetGroups); the target group is a node with its service/target chain in focus; ipAddressType, target health only in panel</div></td>
 <td class="pc">5<div class="props">Config, Name, Tags, Targets, Type</div></td></tr>
 <tr data-svc="WAF" data-c="none" data-d="none" data-props="ByteMatchTuples Name">
 <td class="mono">AWS::WAF::ByteMatchSet</td>
