@@ -316,6 +316,7 @@ export function App(): React.ReactElement {
           {showLayers && (
             <LayersPanel
               graph={graph}
+              index={index}
               hidden={hidden}
               onToggleNodeKind={toggleNodeKind}
               onToggleEdgeKind={toggleEdgeKind}

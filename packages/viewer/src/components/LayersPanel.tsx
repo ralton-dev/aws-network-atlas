@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { AtlasIndex, ResourceRef } from '../data.js';
 import type { AtlasGraph, EdgeKind } from '../model/graph-types.js';
+import { copyToClipboard, importBlocksFor } from '../model/tf-import.js';
 import { hiddenCount, type HiddenState, type TfFilter } from '../model/view-state.js';
 import { TerraformMark } from './nodes.js';
 
@@ -88,6 +90,8 @@ const nodeKindLabel = (kind: string): string => NODE_KIND_LABELS[kind] ?? kind;
 
 export interface LayersPanelProps {
   graph: AtlasGraph;
+  /** Needed to turn the view's unmanaged nodes back into resources to import. */
+  index: AtlasIndex;
   hidden: HiddenState;
   onToggleNodeKind(kind: string): void;
   onToggleEdgeKind(kind: EdgeKind): void;
@@ -106,7 +110,7 @@ export interface LayersPanelProps {
  * nodes from right-click / the details panel).
  */
 export function LayersPanel(props: LayersPanelProps): React.ReactElement {
-  const { graph, hidden } = props;
+  const { graph, hidden, index } = props;
 
   const nodeKinds = useMemo(() => {
     const counts = new Map<string, number>();
@@ -143,6 +147,64 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
     { value: 'unmanaged', label: 'Unmanaged only', count: tf.unmanaged },
   ];
 
+  // Every unmanaged node in this view, back to the resource it draws.
+  // `tfManaged === false` is stamped through this exact lookup by
+  // `applyTerraformBadges`, so a node carrying the flag resolves by
+  // construction — the guards are for a view rebuilt without re-badging.
+  //
+  // Deduped by ref identity, not by node: `index.byKey` holds the same
+  // `ResourceRef` object under both its id and its ARN, so one resource drawn
+  // twice in a view would otherwise yield two import blocks that both adopt
+  // it. That is a worse outcome than an undercount, because the second block
+  // would be silently renamed `_2` by the dedupe and read as a second
+  // resource.
+  const unmanagedRefs = useMemo(() => {
+    const seen = new Set<ResourceRef>();
+    const refs: ResourceRef[] = [];
+    for (const n of graph.nodes) {
+      if (n.data.tfManaged !== false || n.data.refId === undefined) continue;
+      const ref = index.byKey.get(n.data.refId);
+      if (ref === undefined || seen.has(ref)) continue;
+      seen.add(ref);
+      refs.push(ref);
+    }
+    return refs;
+  }, [graph.nodes, index]);
+
+  // The bulk form, not the single form in a loop: dedupe of synthesised
+  // addresses is a whole-file property (two `default` security groups, two
+  // ECS services called `web`) and has to run across the batch before it is
+  // split into per-account sections, or the collisions land in different
+  // sections un-suffixed and Terraform rejects the paste.
+  const bulk = useMemo(
+    () => importBlocksFor(unmanagedRefs, { accountLabel: index.accountLabel }),
+    [unmanagedRefs, index],
+  );
+
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const copyBulk = (): void => {
+    void copyToClipboard(bulk.text).then((ok) => {
+      setCopyState(ok ? 'copied' : 'failed');
+      window.setTimeout(() => setCopyState('idle'), 1800);
+    });
+  };
+
+  // One block per unmanaged resource — but a resource whose Terraform type
+  // could not be determined is emitted commented out (decision 5), so the
+  // number you can actually paste is smaller than the number on the button.
+  // Both are shown rather than picking one and letting the other surprise
+  // someone mid-paste.
+  const blockCount = bulk.blocks.length;
+  const commentedOut = bulk.blocks.filter((b) => b.type === '').length;
+  const bulkNote =
+    copyState === 'copied'
+      ? `${blockCount} block${blockCount === 1 ? '' : 's'} copied, grouped by account and region.`
+      : copyState === 'failed'
+        ? 'The browser refused the clipboard — nothing was copied.'
+        : commentedOut === 0
+          ? 'One per unmanaged resource in this view. Addresses are suggestions — rename them to suit your module.'
+          : `One per unmanaged resource in this view; ${commentedOut} paste commented out, having no Terraform type. Addresses are suggestions.`;
+
   return (
     <aside className="layers-panel">
       <header>
@@ -165,6 +227,21 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
               {count !== undefined && <span className="count">{count}</span>}
             </label>
           ))}
+          <button
+            className={copyState === 'copied' ? 'tf-bulk-btn is-copied' : 'tf-bulk-btn'}
+            onClick={copyBulk}
+            disabled={blockCount === 0}
+            title="Copy an import block for every unmanaged resource in this view"
+          >
+            {copyState === 'copied'
+              ? 'Copied'
+              : copyState === 'failed'
+                ? 'Copy failed'
+                : blockCount === 0
+                  ? 'Nothing unmanaged to copy'
+                  : `Copy ${blockCount} import block${blockCount === 1 ? '' : 's'}`}
+          </button>
+          {blockCount > 0 && <p className="tf-bulk-note">{bulkNote}</p>}
         </>
       )}
 
