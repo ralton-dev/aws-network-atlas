@@ -84,12 +84,46 @@ someone else's `terraform plan`, or worse succeeds against the wrong resource.
 
 ## Fixtures — the standing weakness
 
-`packages/scanner/src/fixture.ts` is the dev estate. It is fabricated and
-tidy: two Terraform stacks with round numbers, no duplicate names, no
-EC2-classic EIP, no resource whose region disagrees with its ARN. Any
-acceptance criterion about collisions, malformed ids or cross-account
-awkwardness **cannot be checked against it as shipped**. Make the agent build
-the awkward case rather than accept the tidy one as sufficient.
+`packages/scanner/src/fixture.ts` is the dev estate, and it is fabricated.
+Historically it was tidy in exactly the ways real estates are not, so any
+acceptance criterion about collisions or malformed ids could not be checked
+against it. The import-blocks plan (2026-08) fixed part of that: it now
+carries an unmanaged SQS queue, **two unmanaged ECS services both named
+`web`** (clusters built as `` `dev-${colour}` `` — grep for the literal
+`dev-blue` and you will wrongly conclude it is absent), two `default`
+security groups across two VPCs, and an unmanaged no-rule `generic` resource.
 
-This is the failure this repo keeps having: every fixture avoids some shape,
-and that shape is where the defect lives.
+The habit that matters is unchanged: **make the agent build the awkward case
+rather than accept the tidy one as sufficient**, and have it say which shapes
+its fixture still avoids. Every fixture avoids some shape, and that shape is
+where the defect lives. In this plan every package that found a serious bug
+found it by refusing to test only against the fixture — the state parser's
+worst defect surfaced only against a hand-built state with provider aliases,
+a deposed instance and a legacy flatmap resource.
+
+## Committed build artifacts
+
+`site/index.html` is a **committed build output** bundling the viewer *and*
+`packages/tf-import-blocks/src/emit.ts` and `rules/registry.ts`
+(`from-state.ts` is tree-shaken out). Any package that changes a bundled
+source leaves it stale, and no package naturally owns rebuilding it — assign
+the rebuild to the **last** package in the wave and verify it took.
+
+The minified diff is unreadable, so do not eyeball it. Grep the bundle for a
+string that only exists after the change, and grep for a string from a
+tree-shaken module as a control that the rebuild did not quietly pull in more
+than expected. A logic-only change with no new strings is not grep-provable —
+say so rather than claiming a probe you do not have.
+
+## Seams worth designing before you fan out
+
+The one that cost the most here: a rule keyed by a single `type` string could
+not express an atlas kind that maps to several terraform types depending on a
+collected field. Two agents hit it independently in the same wave and
+mitigated it in **opposite** directions — one emitted a confidently wrong
+type, one emitted none. Neither was wrong to; the seam was.
+
+When several agents build against one interface concurrently, they cannot
+renegotiate it. Ask the package that defines it to write its doc comment
+*aimed at* the packages that will implement against it, and expect to spend a
+serial package fixing the seam once real rules have exercised it.
