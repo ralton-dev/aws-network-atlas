@@ -1,0 +1,132 @@
+{
+  "_note": [
+    "The other half of the pin. awkward.tfstate.json covers the state-move path;",
+    "this covers the drift-adoption path, where only the atlas snapshot exists.",
+    "",
+    "Every `subject.id` here is what the atlas collectors actually store — for",
+    "several types that is an ARN, which is the whole defect:",
+    "  sqs-queue    collect/messaging.ts:142  id: queueArn ?? queueUrl",
+    "  lambda       collect/compute.ts:90     id: fn.FunctionArn ?? fn.FunctionName",
+    "  ecs          collect/containers.ts:66  id: s.serviceArn!",
+    "  waf-web-acl  collect/waf.ts:162        id: detail?.Id ?? acl.id  (bare id)",
+    "  vpc          native id (the control — must never move)",
+    "  iam-role     collect/iam.ts:87         id: r.RoleName",
+    "",
+    "expectedId is the value the provider documents for `terraform import`,",
+    "read off website/docs/r/<type>.html.markdown on 2026-08-07. WP-B and WP-C",
+    "are free to reuse this file; they are not free to change an expectedId",
+    "without re-reading the doc page it cites."
+  ],
+  "subjects": [
+    {
+      "why": "control — the native id really is the import id",
+      "expectedType": "aws_vpc",
+      "expectedId": "vpc-0a1b2c3d4e5f60718",
+      "doc": "r/vpc.html.markdown — import VPCs using the VPC `id`",
+      "subject": {
+        "kind": "vpc",
+        "id": "vpc-0a1b2c3d4e5f60718",
+        "arn": "arn:aws:ec2:eu-west-1:111122223333:vpc/vpc-0a1b2c3d4e5f60718",
+        "name": "core",
+        "region": "eu-west-1",
+        "accountId": "111122223333",
+        "raw": { "id": "vpc-0a1b2c3d4e5f60718", "cidrBlock": "10.0.0.0/16" }
+      }
+    },
+    {
+      "why": "atlas stores the queue ARN; the import id is the queue URL, derivable from it",
+      "expectedType": "aws_sqs_queue",
+      "expectedId": "https://sqs.eu-west-1.amazonaws.com/111122223333/orders",
+      "doc": "r/sqs_queue.html.markdown — import SQS Queues using the queue `url`",
+      "subject": {
+        "kind": "sqs-queue",
+        "id": "arn:aws:sqs:eu-west-1:111122223333:orders",
+        "arn": "arn:aws:sqs:eu-west-1:111122223333:orders",
+        "name": "orders",
+        "region": "eu-west-1",
+        "accountId": "111122223333",
+        "raw": {
+          "id": "arn:aws:sqs:eu-west-1:111122223333:orders",
+          "arn": "arn:aws:sqs:eu-west-1:111122223333:orders",
+          "name": "orders",
+          "fifoQueue": false
+        }
+      }
+    },
+    {
+      "why": "atlas stores the function ARN; the import id is the bare function name",
+      "expectedType": "aws_lambda_function",
+      "expectedId": "orders-worker",
+      "doc": "r/lambda_function.html.markdown — import Lambda Functions using the `function_name`",
+      "subject": {
+        "kind": "lambda",
+        "id": "arn:aws:lambda:eu-west-1:111122223333:function:orders-worker",
+        "arn": "arn:aws:lambda:eu-west-1:111122223333:function:orders-worker",
+        "name": "orders-worker",
+        "region": "eu-west-1",
+        "accountId": "111122223333",
+        "raw": {
+          "id": "arn:aws:lambda:eu-west-1:111122223333:function:orders-worker",
+          "arn": "arn:aws:lambda:eu-west-1:111122223333:function:orders-worker",
+          "name": "orders-worker",
+          "runtime": "nodejs20.x"
+        }
+      }
+    },
+    {
+      "why": "atlas stores the service ARN; the import id is <cluster>/<service>",
+      "expectedType": "aws_ecs_service",
+      "expectedId": "prod-cluster/web",
+      "doc": "r/ecs_service.html.markdown — id = \"cluster-name/service-name\"",
+      "subject": {
+        "kind": "ecs",
+        "id": "arn:aws:ecs:eu-west-1:111122223333:service/prod-cluster/web",
+        "arn": "arn:aws:ecs:eu-west-1:111122223333:service/prod-cluster/web",
+        "name": "web",
+        "region": "eu-west-1",
+        "accountId": "111122223333",
+        "raw": {
+          "id": "arn:aws:ecs:eu-west-1:111122223333:service/prod-cluster/web",
+          "arn": "arn:aws:ecs:eu-west-1:111122223333:service/prod-cluster/web",
+          "name": "web",
+          "clusterArn": "arn:aws:ecs:eu-west-1:111122223333:cluster/prod-cluster",
+          "clusterName": "prod-cluster"
+        }
+      }
+    },
+    {
+      "why": "atlas stores the bare ACL id; the import id is <id>/<name>/<scope>, and scope must come from the record not from region emptiness",
+      "expectedType": "aws_wafv2_web_acl",
+      "expectedId": "a1b2c3d4-d5f6-7777-8888-9999aaaabbbbcccc/edge-acl/REGIONAL",
+      "doc": "r/wafv2_web_acl.html.markdown — import WAFv2 Web ACLs using `ID/Name/Scope`",
+      "subject": {
+        "kind": "waf-web-acl",
+        "id": "a1b2c3d4-d5f6-7777-8888-9999aaaabbbbcccc",
+        "arn": "arn:aws:wafv2:eu-west-1:111122223333:regional/webacl/edge-acl/a1b2c3d4-d5f6-7777-8888-9999aaaabbbbcccc",
+        "name": "edge-acl",
+        "region": "eu-west-1",
+        "accountId": "111122223333",
+        "raw": {
+          "id": "a1b2c3d4-d5f6-7777-8888-9999aaaabbbbcccc",
+          "name": "edge-acl",
+          "scope": "REGIONAL"
+        }
+      }
+    },
+    {
+      "why": "second control — an account-global kind whose stored id is already the import id",
+      "expectedType": "aws_iam_role",
+      "expectedId": "app-task",
+      "doc": "r/iam_role.html.markdown — import IAM Roles using the `name`",
+      "subject": {
+        "kind": "iam-role",
+        "id": "app-task",
+        "arn": "arn:aws:iam::111122223333:role/app-task",
+        "name": "app-task",
+        "region": "",
+        "accountId": "111122223333",
+        "raw": { "id": "app-task", "name": "app-task", "path": "/" }
+      }
+    }
+  ]
+}

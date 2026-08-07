@@ -1,0 +1,17 @@
+{
+  "name": "tf-import-blocks",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Terraform import-block generation from a state file or from a scanned resource, driven by a per-type import-id rule table",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}
