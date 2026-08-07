@@ -26,12 +26,20 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { emitBlocks, importsFromState, parseStateFile } from '../src/index.js';
+import { emitBlocks, importsFromState, parseStateFile, type ResolvedImport } from '../src/index.js';
 
 const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
 
 function fixture(name: string): unknown {
   return JSON.parse(readFileSync(path.join(FIXTURES, name), 'utf8')) as unknown;
+}
+
+/** One resolved block by address; fails loudly rather than returning undefined. */
+function blockAt(file: string, address: string): ResolvedImport {
+  const items = importsFromState(fixture(file), file);
+  const found = items.find((i) => i.address === address);
+  assert.ok(found !== undefined, `${file}: no block at ${address}`);
+  return found;
 }
 
 /** Addresses appearing more than once — the thing that makes HCL invalid. */
@@ -96,4 +104,43 @@ test('show -json: every emitted address is unique across the whole document', ()
       'module.net.aws_subnet.private["eu-west-1a"]',
     ],
   );
+});
+
+// ── legacy flatmap instances ───────────────────────────────────────────────
+//
+// version4.go:708-709 — an instance object carries EITHER `attributes` (raw
+// JSON, every provider since 0.12) OR `attributes_flat` (map[string]string, the
+// pre-0.12 flatmap a legacy SDK provider wrote and terraform still round-trips
+// until the resource is next written). They are mutually exclusive.
+//
+// Reading only `attributes` yielded `{}` for a flatmap instance, so the block
+// emitted `id = ""` and explained itself with "falling back to the state id" —
+// while the state id was sitting one key away in `attributes_flat`. Both the id
+// and the explanation were wrong, which is the pair that makes a defect
+// expensive: the reader is told where to look and it is the wrong place.
+
+test('a flatmap instance resolves from attributes_flat, not to an empty id', () => {
+  // Every part of a route53 record id is a top-level flatmap key, so the
+  // composite rule computes exactly what it computes from a modern instance.
+  const record = blockAt('two-account.tfstate.json', 'aws_route53_record.legacy');
+  assert.equal(record.id, 'Z4KAPRWWNC7JR_www.example.com_A');
+  assert.equal(record.verified, true);
+  assert.deepEqual(
+    record.comments.filter((c) => c.startsWith('VERIFY')),
+    [],
+  );
+});
+
+test('a flatmap instance a rule cannot read says so, and still carries its id', () => {
+  // Flatmap flattens lists: `cidr_blocks` is `cidr_blocks.#` / `cidr_blocks.0`,
+  // which the security-group-rule resolver cannot read, so it declines. That is
+  // the honest outcome — the fallback id `sgrule-<hash>` is not importable and
+  // the block is flagged — but the comment must name the real reason, because
+  // "could not compute an import id from this state" sends a reader to check a
+  // rule that is working correctly.
+  const rule = blockAt('two-account.tfstate.json', 'aws_security_group_rule.legacy_ingress');
+  assert.equal(rule.id, 'sgrule-1859128000');
+  assert.equal(rule.verified, false);
+  const verify = rule.comments.filter((c) => c.startsWith('VERIFY')).join(' ');
+  assert.match(verify, /flatmap/);
 });

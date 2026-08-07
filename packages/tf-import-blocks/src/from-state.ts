@@ -22,6 +22,14 @@ export interface StateResource {
   readonly address: string;
   readonly type: string;
   readonly attributes: StateAttributes;
+  /**
+   * True when `attributes` came from the pre-0.12 `attributes_flat` map rather
+   * than from `attributes`. Every value is then a string and every list or
+   * nested block has been flattened to `key.#` / `key.0` keys, which a rule
+   * expecting a real list cannot read — so a rule that declines on one of these
+   * has a reason worth reporting rather than a defect worth chasing.
+   */
+  readonly legacyFlatmap?: boolean | undefined;
 }
 
 export interface StateSkipCounts {
@@ -91,6 +99,34 @@ function deposedKey(entry: Record<string, unknown>): string | undefined {
   return str(entry['deposed']) ?? str(entry['deposed_key']);
 }
 
+/**
+ * A raw-v4 instance carries **either** `attributes` (raw JSON, written by every
+ * provider since 0.12) **or** `attributes_flat` (`map[string]string`, the
+ * pre-0.12 flatmap that terraform still round-trips until the resource is next
+ * written) — `version4.go:708-709`, and they are mutually exclusive.
+ *
+ * Reading only `attributes` therefore saw `{}` for a legacy instance and
+ * emitted `id = ""` with a comment blaming the *rule*, while the state id sat
+ * one key away. Most import ids survive the flatmap intact, because ids and
+ * names are scalars and a flatmap's scalars are top-level keys; what does not
+ * survive is a list, which is why the fact is carried forward rather than
+ * silently normalised away.
+ */
+function instanceAttributes(inst: Record<string, unknown>): {
+  attributes: StateAttributes;
+  legacyFlatmap: boolean;
+} {
+  const attributes = inst['attributes'];
+  if (attributes !== null && typeof attributes === 'object' && !Array.isArray(attributes)) {
+    return { attributes: attributes as StateAttributes, legacyFlatmap: false };
+  }
+  const flat = inst['attributes_flat'];
+  if (flat !== null && typeof flat === 'object' && !Array.isArray(flat)) {
+    return { attributes: flat as StateAttributes, legacyFlatmap: true };
+  }
+  return { attributes: {}, legacyFlatmap: false };
+}
+
 /** Raw state v4 — the *.tfstate format, also what `terraform state pull` emits. */
 function parseRawState(state: Record<string, unknown>): ParsedStateFile {
   const resources: StateResource[] = [];
@@ -110,10 +146,12 @@ function parseRawState(state: Record<string, unknown>): ParsedStateFile {
         skipped.deposed += 1;
         continue;
       }
+      const { attributes, legacyFlatmap } = instanceAttributes(inst);
       resources.push({
         address: base + indexSuffix(inst['index_key']),
         type,
-        attributes: (inst['attributes'] as Record<string, unknown> | undefined) ?? {},
+        attributes,
+        legacyFlatmap,
       });
     }
   }
@@ -212,7 +250,15 @@ export function resolveStateResource(res: StateResource): ResolvedImport {
     } else {
       comments.push(
         `VERIFY: the ${res.type} rule could not compute an import id from this state — ` +
-          'falling back to the state id',
+          'falling back to the state id' +
+          // Name the real reason. "The rule could not compute an id" sends a
+          // reader to check a rule that is working correctly; the flatmap is
+          // what withheld the list it needed.
+          (res.legacyFlatmap === true
+            ? ' (this instance is stored in the pre-0.12 flatmap format, which ' +
+              'flattens every list and nested block to `key.#`/`key.0` entries a ' +
+              'rule cannot read)'
+            : ''),
       );
     }
   } else {
