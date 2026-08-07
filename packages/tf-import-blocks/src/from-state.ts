@@ -394,6 +394,18 @@ export function resolveStateResource(res: StateResource): ResolvedImport {
     comments.push(`VERIFY: no rule for ${res.type} — import id may not be the state id`);
   }
 
+  // The residue of the same assumption the rule table exists to relax — "a
+  // resource's import id is its id" also quietly assumes there *is* an id. Every
+  // route to an empty one already carries a VERIFY explaining which rule fell
+  // short, but none of them says the outcome out loud, and `id = ""` is easy to
+  // skim past in a hundred-block paste.
+  if (id === '') {
+    comments.push(
+      `VERIFY: no id for ${res.address} in the source state — the block below cannot apply as ` +
+        'written and is emitted only so the resource is not lost from the move',
+    );
+  }
+
   return {
     type: res.type,
     address: res.address,

@@ -402,3 +402,25 @@ test('the real rule tables agree with each other', () => {
   // every field, an empty CONFLICTS is a statement about all five of them.
   assert.deepEqual(CONFLICTS, []);
 });
+
+test('a resource with no id at all says so rather than emitting a bare id = ""', () => {
+  // The residue of the assumption the whole package relaxes: "the import id is
+  // the id" also assumes there is one. `terraform show -json` omits `values`
+  // entirely for a resource whose state could not be read, and the flatmap
+  // defect produced the same shape from the other direction — a block reading
+  // `id = ""` under a comment about a rule, which is easy to skim past.
+  const items = importsFromState(
+    {
+      format_version: '1.0',
+      values: {
+        root_module: {
+          resources: [{ address: 'aws_vpc.main', mode: 'managed', type: 'aws_vpc' }],
+        },
+      },
+    },
+    'inline',
+  );
+  assert.equal(items[0]?.id, '');
+  assert.equal(items[0]?.verified, false);
+  assert.match(items[0]?.comments.join(' ') ?? '', /no id for aws_vpc\.main/);
+});
