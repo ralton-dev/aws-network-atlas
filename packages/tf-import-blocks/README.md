@@ -1,0 +1,346 @@
+# tf-import-blocks
+
+Terraform `import` blocks for resources you have but your configuration does not.
+
+**A resource's Terraform identity is a `(type, import-id)` pair produced by a
+per-type rule — not its AWS id.** `aws_sqs_queue` imports by queue URL,
+`aws_lambda_function` by function name, `aws_ecs_service` by
+`cluster-name/service-name`, and `aws_route`'s state id is a synthetic hash that
+is never a valid import id at all. Enough types work by accident that a naive
+"use the `id`" generator looks correct on a demo and silently emits garbage for
+the composite and attachment resources that make up the bulk of a real state.
+
+The rule table in `src/rules/` is this package's asset. The two entry points are
+thin adapters onto it that differ only in what they can feed it.
+
+| entry point | source | what it has |
+| --- | --- | --- |
+| `importsFromState(json, label)` | a Terraform state file | real attributes, so composite ids are computable exactly |
+| `resolveScanned(subject)` | a scanned AWS resource | only a snapshot, so composite ids must be reconstructed |
+
+Where a type supports both, the two **must produce the same string**.
+`test/golden.test.ts` asserts it.
+
+## Deliberately atlas-free
+
+This package imports nothing from `@atlas/*` and has **no runtime dependencies**
+— not an HCL library, not a YAML parser. It is expected to move to its own
+repository, and lifting it out is `git mv packages/tf-import-blocks` plus a
+`package.json`. Do not "simplify" it by reaching into `@atlas/schema`; the
+structural `ScannedSubject` in `src/types.ts` exists precisely so the viewer's
+`ResourceRef` satisfies it without a converter.
+
+## Only identifiers leave the state file
+
+Rules may **read** any attribute to compute an import id. The emitter writes
+only the computed id, the Terraform address, and the account and region the
+resource's own ARN disclosed. No attribute value is ever copied into output
+unless it *is* the import id. Reading a state to compute an import id does not
+put state values in the generated `.tf`.
+
+There is no `provider =` argument in the output — we cannot know your alias
+names. Each block carries a `# account <id> · region <region>` comment instead,
+because importing into the wrong provider is silent and expensive.
+
+## Unknown types are emitted, never dropped
+
+A type with no rule still gets a block, built from the state's own `id` and
+flagged:
+
+```hcl
+# VERIFY: no rule for aws_s3_object — import id may not be the state id
+import {
+  to = aws_s3_object.weird
+  id = "acme-assets-eu-west-1/reports/\"q1\"/$${env}/summary.txt"
+}
+```
+
+Silently skipping a resource during a state move is the worst possible failure;
+a wrong-but-flagged block is recoverable. The same applies when a rule exists
+but cannot compute an id from the attributes it was given — it says so rather
+than guessing.
+
+Escaping is the emitter's job and is not optional: `\` → `\\`, `"` → `\"`,
+`${` → `$${` and `%{` → `%%{`. S3 keys, tag values and Route 53 record names all
+contain these in the wild, and an unescaped `${` is interpolated by Terraform at
+parse time.
+
+## The two shapes of state rule, and why they differ
+
+`src/rules/state.ts` writes rules in one of two shapes, and the difference is
+load-bearing:
+
+- **Single-attribute imports** read the documented attribute and fall back to
+  the state `id`. The fallback is safe because for these types the provider's
+  own `SetId` *is* that attribute — `sqs/queue.go` is `SetId(QueueUrl)` and
+  `lambda/function.go` is `SetId(functionName)`, so on the state path plain
+  passthrough was already right for both. Naming `url` and `function_name`
+  documents *why* it works rather than leaving it to luck. (On the **scanned**
+  path those two are wrong, because atlas stores the ARN. That is the other
+  half of the rule table's job.)
+- **Composite imports** compose strictly and return `undefined` when a part is
+  missing — **no `id` fallback at all**. For `aws_route`,
+  `aws_security_group_rule`, `aws_ecs_service` and the `aws_wafv2_*` family the
+  state id is a synthetic hash or an ARN, a different string entirely, so
+  falling back would emit a confident wrong answer. An honest `# VERIFY` is
+  recoverable; a plausible wrong id is not.
+
+Three attribute readers exist for reasons worth knowing before you write a rule:
+
+| helper | why |
+| --- | --- |
+| `str()` (exported from `types.ts`) | the default: a non-empty string |
+| `scalar()` | `from_port` is a number and `egress` a boolean, and both are parts of documented ids. `0` and `false` are values, not absences |
+| `text()` | `str()` rejects `''`, and a Route 53 apex record imports as `Z4KAPRWWNC7JR__NS` — double underscore and all |
+| `bareName()` | `aws_ecs_service.cluster` holds the cluster **ARN** while the import id wants `prod-cluster`. Applied to IAM attachment principals for the same reason |
+
+## Coverage
+
+215 terraform types: **211 resolve** and **4 carry an explicit not-importable
+note**. Every format was read off
+`https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/main/website/docs/r/<page>.html.markdown`
+on 2026-08-07, and each rule records its page in `doc`.
+
+> **Re-verifying:** those pages now print the `identity = { … }` form **first**
+> and the `id = "…"` form second. This package emits the `id` form only
+> (Terraform ≥ 1.5; the identity form needs ≥ 1.12 *and* a provider that
+> publishes an identity schema for that resource, and coverage is uneven).
+> Scroll past the first `import {` block or read the `terraform import` console
+> line underneath it.
+
+### Not importable — 4 types
+
+These are not "we could not work it out". The provider publishes no import for
+them. They still get a block, loudly flagged, so a state move cannot lose the
+resource.
+
+| type | what the provider says | what to do instead |
+| --- | --- | --- |
+| `aws_autoscaling_attachment` | no `## Import` section on the page at all | re-declare the attachment in the target configuration and apply — it is a pure association, so creating it again is not destructive |
+| `aws_iam_group_membership` | no `## Import` section on the page at all | `aws_iam_user_group_membership` *does* import (`user/group[/group…]`) and is the per-user replacement |
+| `aws_vpn_connection_route` | no `## Import` section on the page at all | re-declare the static route in the target configuration and apply |
+| `aws_vpn_gateway_attachment` | states it outright: "You cannot import this resource." | attach from the target configuration, or use `aws_vpn_gateway`'s own `vpc_id` argument |
+
+### Deliberately not registered — 1 type
+
+`aws_s3_object` has no rule **on purpose**. It is `awkward.expected.tf`'s
+no-rule case, exercising both the `# VERIFY` fallback and the `${`/quote
+escaping above. Registering a rule for it — here or in either scanned rule
+module — silently invalidates a golden file that no package owns.
+`test/state-rules.test.ts` asserts it stays ruleless.
+
+### Composite ids — 68 types
+
+The ones a naive generator gets wrong. Separators are not interchangeable:
+EKS uses `:` where ECS uses `/`, Backup uses `|`, RAM uses `,`, and transit
+gateway routes use `_`.
+
+| type | import id |
+| --- | --- |
+| `aws_route` | `<route_table_id>_<destination>` — CIDR, IPv6 CIDR or prefix-list id |
+| `aws_route_table_association` | `<subnet_id\|gateway_id>/<route_table_id>` |
+| `aws_security_group_rule` | `<sg_id>_<type>_<protocol>_<from_port>_<to_port>_<source>[_<source>…]` |
+| `aws_network_acl_rule` | `<network_acl_id>:<rule_number>:<protocol>:<egress>` |
+| `aws_vpc_endpoint_route_table_association` | `<vpc_endpoint_id>/<route_table_id>` |
+| `aws_vpc_endpoint_subnet_association` | `<vpc_endpoint_id>/<subnet_id>` |
+| `aws_ec2_managed_prefix_list_entry` | `<prefix_list_id>,<cidr>` |
+| `aws_ec2_transit_gateway_route` | `<transit_gateway_route_table_id>_<destination_cidr_block>` |
+| `aws_ec2_transit_gateway_route_table_association` | `<transit_gateway_route_table_id>_<transit_gateway_attachment_id>` |
+| `aws_ec2_transit_gateway_route_table_propagation` | `<transit_gateway_route_table_id>_<transit_gateway_attachment_id>` |
+| `aws_ec2_client_vpn_network_association` | `<client_vpn_endpoint_id>,<association_id>` |
+| `aws_dx_gateway_association` | `<dx_gateway_id>/<associated_gateway_id>` |
+| `aws_volume_attachment` | `<device_name>:<volume_id>:<instance_id>` |
+| `aws_lb_listener_certificate` | `<listener_arn>_<certificate_arn>` |
+| `aws_lb_target_group_attachment` | `<target_group_arn>,<target_id>[,<port>][,<availability_zone>]` |
+| `aws_route53_record` | `<zone_id>_<name>_<type>[_<set_identifier>]` — an empty name gives `Z…__NS` |
+| `aws_route53_zone_association` | `<zone_id>:<vpc_id>[:<vpc_region>]` |
+| `aws_wafv2_web_acl` | `<id>/<name>/<scope>` — scope from the resource, never from region emptiness |
+| `aws_wafv2_ip_set` | `<id>/<name>/<scope>` |
+| `aws_wafv2_rule_group` | `<id>/<name>/<scope>` |
+| `aws_wafv2_web_acl_association` | `<web_acl_arn>,<resource_arn>` |
+| `aws_api_gateway_resource` | `<rest_api_id>/<id>` |
+| `aws_api_gateway_deployment` | `<rest_api_id>/<id>` |
+| `aws_api_gateway_authorizer` | `<rest_api_id>/<id>` |
+| `aws_api_gateway_request_validator` | `<rest_api_id>/<id>` |
+| `aws_api_gateway_model` | `<rest_api_id>/<name>` |
+| `aws_api_gateway_stage` | `<rest_api_id>/<stage_name>` |
+| `aws_api_gateway_gateway_response` | `<rest_api_id>/<response_type>` |
+| `aws_api_gateway_usage_plan_key` | `<usage_plan_id>/<key_id>` |
+| `aws_api_gateway_method` | `<rest_api_id>/<resource_id>/<http_method>` |
+| `aws_api_gateway_integration` | `<rest_api_id>/<resource_id>/<http_method>` |
+| `aws_api_gateway_method_response` | `<rest_api_id>/<resource_id>/<http_method>/<status_code>` |
+| `aws_api_gateway_integration_response` | `<rest_api_id>/<resource_id>/<http_method>/<status_code>` |
+| `aws_api_gateway_base_path_mapping` | `<domain_name>/<base_path>` — an empty base path leaves the trailing slash |
+| `aws_apigatewayv2_route` | `<api_id>/<id>` |
+| `aws_apigatewayv2_integration` | `<api_id>/<id>` |
+| `aws_apigatewayv2_stage` | `<api_id>/<name>` |
+| `aws_iam_role_policy_attachment` | `<role>/<policy_arn>` |
+| `aws_iam_user_policy_attachment` | `<user>/<policy_arn>` |
+| `aws_iam_group_policy_attachment` | `<group>/<policy_arn>` |
+| `aws_iam_role_policy` | `<role>:<name>` — colon, not the attachment's slash |
+| `aws_iam_user_policy` | `<user>:<name>` |
+| `aws_iam_group_policy` | `<group>:<name>` |
+| `aws_iam_user_group_membership` | `<user>/<group>[/<group>…]` |
+| `aws_ssoadmin_permission_set` | `<arn>,<instance_arn>` |
+| `aws_ssoadmin_managed_policy_attachment` | `<managed_policy_arn>,<permission_set_arn>,<instance_arn>` |
+| `aws_ssoadmin_account_assignment` | `<principal_id>,<principal_type>,<target_id>,<target_type>,<permission_set_arn>,<instance_arn>` |
+| `aws_identitystore_group` | `<identity_store_id>/<group_id>` |
+| `aws_identitystore_user` | `<identity_store_id>/<user_id>` |
+| `aws_organizations_policy_attachment` | `<target_id>:<policy_id>` |
+| `aws_organizations_delegated_administrator` | `<account_id>/<service_principal>` |
+| `aws_s3_bucket_versioning` | `<bucket>[,<expected_bucket_owner>]` |
+| `aws_s3_bucket_lifecycle_configuration` | `<bucket>[,<expected_bucket_owner>]` |
+| `aws_s3_bucket_server_side_encryption_configuration` | `<bucket>[,<expected_bucket_owner>]` |
+| `aws_ecs_service` | `<cluster-name>/<service-name>` — **both halves derived**; see below |
+| `aws_eks_node_group` | `<cluster_name>:<node_group_name>` — colon, not slash |
+| `aws_eks_addon` | `<cluster_name>:<addon_name>` |
+| `aws_lambda_alias` | `<function_name>/<name>` |
+| `aws_lambda_permission` | `<function_name>[:<qualifier>]/<statement_id>` — the qualifier is glued to the function name, not appended |
+| `aws_appautoscaling_target` | `<service_namespace>/<resource_id>/<scalable_dimension>` |
+| `aws_appautoscaling_policy` | `<service_namespace>/<resource_id>/<scalable_dimension>/<name>` |
+| `aws_dynamodb_table_item` | `<table_name>,<hash-key-value>[,<range-key-value>]` — the values come from the `item` JSON |
+| `aws_secretsmanager_secret_version` | `<secret_id>\|<version_id>` |
+| `aws_cloudwatch_event_rule` | `<event_bus_name>/<name>` |
+| `aws_cloudwatch_event_target` | `<event_bus_name>/<rule>/<target_id>` |
+| `aws_glue_catalog_database` | `<catalog_id>:<name>` |
+| `aws_glue_catalog_table` | `<catalog_id>:<database_name>:<name>` |
+| `aws_cognito_user_pool_client` | `<user_pool_id>/<id>` |
+| `aws_ram_resource_association` | `<resource_share_arn>,<resource_arn>` |
+| `aws_ram_principal_association` | `<resource_share_arn>,<principal>` |
+| `aws_backup_selection` | `<plan_id>\|<id>` — pipe, not slash or comma |
+
+**`aws_ecs_service` is the one to watch.** The state id is the *service* ARN
+(`ecs/service.go`: `SetId(Service.ServiceArn)`) and the `cluster` attribute is
+the *cluster* ARN, so neither half of `prod-cluster/web` is present as written.
+The rule takes the last segment of the cluster ARN, and when `cluster` is absent
+falls back to the long-form service ARN `…:service/<cluster>/<service>`. The
+pre-2019 short form `…:service/<service>` names no cluster, so it resolves to
+`undefined` and a `# VERIFY` rather than a guessed `default`.
+
+### One named attribute — 80 types
+
+The import id is the documented attribute in parentheses, with the state `id` as
+a fallback.
+
+`aws_accessanalyzer_analyzer` (analyzer_name), `aws_acm_certificate` (arn),
+`aws_api_gateway_domain_name` (domain_name), `aws_api_gateway_rest_api_policy`
+(rest_api_id), `aws_autoscaling_group` (name), `aws_backup_vault` (name),
+`aws_cloudtrail` (arn), `aws_cloudwatch_event_bus` (name),
+`aws_cloudwatch_log_group` (name), `aws_cloudwatch_metric_alarm` (alarm_name),
+`aws_cognito_user_pool_domain` (domain), `aws_config_config_rule` (name),
+`aws_config_configuration_recorder` (name), `aws_datasync_task` (arn),
+`aws_db_instance` (identifier), `aws_db_parameter_group` (name),
+`aws_db_subnet_group` (name), `aws_dms_endpoint` (endpoint_id),
+`aws_docdb_cluster` (cluster_identifier), `aws_dynamodb_table` (name),
+`aws_ecr_lifecycle_policy` (repository), `aws_ecr_repository` (name),
+`aws_ecr_repository_policy` (repository), `aws_ecs_cluster` (name),
+`aws_ecs_task_definition` (arn), `aws_eip` (allocation_id), `aws_eks_cluster`
+(name), `aws_elasticache_cluster` (cluster_id), `aws_elasticache_parameter_group`
+(name), `aws_elasticache_replication_group` (replication_group_id),
+`aws_elasticache_serverless_cache` (name), `aws_elasticache_subnet_group` (name),
+`aws_elasticache_user` (user_id), `aws_elasticache_user_group` (user_group_id),
+`aws_globalaccelerator_accelerator` (arn), `aws_glue_crawler` (name),
+`aws_glue_job` (name), `aws_iam_account_alias` (account_alias), `aws_iam_group`
+(name), `aws_iam_instance_profile` (name), `aws_iam_openid_connect_provider`
+(arn), `aws_iam_policy` (arn), `aws_iam_role` (name), `aws_iam_saml_provider`
+(arn), `aws_iam_user` (name), `aws_kinesis_firehose_delivery_stream` (arn),
+`aws_kinesis_stream` (name), `aws_kms_alias` (name), `aws_lambda_event_source_mapping`
+(uuid), `aws_lambda_function` (function_name), `aws_lambda_layer_version` (arn),
+`aws_lb` (arn), `aws_lb_listener` (arn), `aws_lb_listener_rule` (arn),
+`aws_lb_target_group` (arn), `aws_memorydb_cluster` (name), `aws_msk_cluster`
+(arn), `aws_neptune_cluster` (cluster_identifier), `aws_networkfirewall_firewall`
+(arn), `aws_networkfirewall_firewall_policy` (arn), `aws_networkfirewall_rule_group`
+(arn), `aws_opensearch_domain` (domain_name), `aws_ram_resource_share` (arn),
+`aws_rds_cluster` (cluster_identifier), `aws_rds_cluster_instance` (identifier),
+`aws_redshift_cluster` (cluster_identifier), `aws_s3_bucket` (bucket),
+`aws_s3_bucket_notification` (bucket), `aws_s3_bucket_policy` (bucket),
+`aws_s3_bucket_public_access_block` (bucket), `aws_secretsmanager_secret` (arn),
+`aws_sfn_state_machine` (arn), `aws_sns_topic` (arn), `aws_sns_topic_subscription`
+(arn), `aws_sqs_queue` (url), `aws_sqs_queue_policy` (queue_url),
+`aws_vpc_dhcp_options_association` (vpc_id), `aws_vpc_security_group_egress_rule`
+(security_group_rule_id), `aws_vpc_security_group_ingress_rule`
+(security_group_rule_id), `aws_wafv2_web_acl_logging_configuration` (resource_arn).
+
+Note that `aws_iam_role`, `aws_iam_user`, `aws_iam_group` and
+`aws_iam_instance_profile` import by **name** while `aws_iam_policy`,
+`aws_iam_saml_provider` and `aws_iam_openid_connect_provider` import by **ARN**.
+They are not the same rule.
+
+`aws_eip` deserves a note of its own: the import id is the **allocation id**, so
+the rule reads `allocation_id` rather than `id`. An EC2-Classic address whose id
+is a bare public IP therefore cannot leak into the output.
+
+### Native id — 60 types
+
+The AWS-native id really is the import id. Verified per type, not assumed.
+
+`aws_api_gateway_api_key`, `aws_api_gateway_rest_api`, `aws_api_gateway_usage_plan`,
+`aws_apigatewayv2_api`, `aws_backup_plan`, `aws_cloudfront_distribution`,
+`aws_cognito_identity_pool`, `aws_cognito_user_pool`, `aws_customer_gateway`,
+`aws_directory_service_directory`, `aws_dx_connection`, `aws_dx_gateway`,
+`aws_ebs_volume`, `aws_ec2_client_vpn_endpoint`, `aws_ec2_instance_connect_endpoint`,
+`aws_ec2_managed_prefix_list`, `aws_ec2_transit_gateway`,
+`aws_ec2_transit_gateway_route_table`, `aws_ec2_transit_gateway_vpc_attachment`,
+`aws_efs_access_point`, `aws_efs_file_system`, `aws_efs_mount_target`,
+`aws_egress_only_internet_gateway`, `aws_eip_association`,
+`aws_elastic_beanstalk_environment`, `aws_emr_cluster`, `aws_flow_log`,
+`aws_guardduty_detector`, `aws_instance`, `aws_internet_gateway`, `aws_kms_key`,
+`aws_launch_template`, `aws_macie2_account`, `aws_mq_broker`, `aws_nat_gateway`,
+`aws_network_acl`, `aws_network_acl_association`, `aws_network_interface`,
+`aws_network_interface_attachment`, `aws_networkmanager_core_network`,
+`aws_organizations_account`, `aws_organizations_organization`,
+`aws_organizations_organizational_unit`, `aws_organizations_policy`,
+`aws_route53_resolver_endpoint`, `aws_route53_resolver_rule`,
+`aws_route53_resolver_rule_association`, `aws_route53_zone`, `aws_route_table`,
+`aws_securityhub_account`, `aws_security_group`, `aws_subnet`,
+`aws_transfer_server`, `aws_vpc`, `aws_vpc_dhcp_options`, `aws_vpc_endpoint`,
+`aws_vpc_endpoint_service`, `aws_vpc_peering_connection`, `aws_vpn_connection`,
+`aws_vpn_gateway`.
+
+## What a state file has that the fixture does not
+
+`test/fixtures/awkward.tfstate.json` is synthetic, and every synthetic state is
+tidier than a real one. Known gaps, so nobody has to rediscover them:
+
+- **Deposed instances** are skipped and counted (`ParsedStateFile.skipped.deposed`).
+  A `deposed` object is the old half of an interrupted create-before-destroy: it
+  shares an address with the live instance and is scheduled for destruction, so
+  importing it would both collide and adopt something Terraform is about to
+  delete. Note that `packages/scanner/src/terraform.ts` does **not** make this
+  distinction — the divergence is deliberate, because that path is matching
+  rather than importing.
+- **Provider aliases** are mitigated by the `# account · region` comment, not
+  solved. A state spanning two accounts is where a careless paste does damage.
+- **Non-ASCII and shell-hostile names** are escaped where decision 9 covers them
+  (`\`, `"`, `${`, `%{`) and not otherwise normalised.
+
+## Adding a rule
+
+1. Fetch
+   `https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/main/website/docs/r/<type_sans_aws_prefix>.html.markdown`.
+   **Do not write an id format from memory** — a wrong one compiles, renders,
+   copies to the clipboard, and fails hours later inside someone else's
+   `terraform plan`, or worse succeeds against the wrong resource.
+2. Read the `id = "…"` block, not the `identity = { … }` block above it.
+3. Add the rule to the right module — `rules/state.ts` for `fromState`,
+   `rules/scanned-network.ts` / `rules/scanned-workload.ts` for `fromScanned` —
+   and set `doc` to the page. `rules/registry.ts` merges by type and needs no
+   edit; if you think it does, the module boundary is wrong.
+4. Add a case to that module's test. `test/state-rules.test.ts` asserts its case
+   table is **complete**, so a resolver with no case fails the build.
+5. If the type has no documented import, give it `notImportable` with a reason a
+   user can act on — not silence, and not the generic fallback, which implies
+   the id might work.
+
+## Tests
+
+```
+npm test          # tsx --test "packages/*/test/**/*.test.ts", from the repo root
+```
+
+| file | what it pins |
+| --- | --- |
+| `test/emit.test.ts` | escaping, address sanitising, collision dedupe, state parsing |
+| `test/state-rules.test.ts` | every `fromState` resolver, and that the table is complete |
+| `test/scanned-network.test.ts`, `test/scanned-workload.test.ts` | every `fromScanned` resolver |
+| `test/golden.test.ts` | the whole thing, both paths, and that they agree |
