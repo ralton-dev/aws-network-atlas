@@ -144,3 +144,48 @@ test('a flatmap instance a rule cannot read says so, and still carries its id', 
   const verify = rule.comments.filter((c) => c.startsWith('VERIFY')).join(' ');
   assert.match(verify, /flatmap/);
 });
+
+// ── tainted objects ────────────────────────────────────────────────────────
+//
+// version4.go:704 spells it `instances[].status: "tainted"`; jsonstate/state.go
+// :111 spells it `"tainted": true` on the resource entry. Same hazard class as
+// deposed — terraform is going to destroy and recreate the object — and far
+// more common, since any failed provisioner or interrupted apply leaves one.
+//
+// The decision is deliberately NOT the deposed one, because the two differ in
+// the only way that matters. A deposed object is the old half of a replace: it
+// has a live sibling at the same address, so emitting it is both invalid HCL
+// and an adoption of something scheduled for destruction, and there is a
+// correct block to emit in its place. A tainted object is the ONLY object at
+// its address, it exists in AWS right now, and its id is the real id. Skipping
+// it would drop a resource from a state move with no substitute — precisely
+// what decision 5 forbids.
+//
+// So it is emitted, flagged, and counted. Counted apart from `skipped`, because
+// it is not skipped and pooling the two would make both numbers lies.
+
+test('a tainted instance is emitted and flagged, not skipped (raw v4)', () => {
+  const parsed = parseStateFile(fixture('two-account.tfstate.json'), 'two-account.tfstate.json');
+  assert.equal(parsed.tainted, 1);
+  assert.equal(parsed.skipped.deposed, 0);
+
+  const web = blockAt('two-account.tfstate.json', 'aws_instance.web');
+  assert.equal(web.id, 'i-0f9e8d7c6b5a40312');
+  // The id is real and the block is usable: taint is state metadata, it does
+  // not travel through an import, and the adopting state gets a clean entry.
+  assert.equal(web.verified, true);
+  assert.equal(web.comments.filter((c) => c.startsWith('TAINTED')).length, 1);
+});
+
+test('a tainted resource entry is flagged on the show -json path too', () => {
+  const parsed = parseStateFile(fixture('awkward-show.json'), 'awkward-show.json');
+  // Three entries carry taint in that fixture — but one of them is the deposed
+  // aws_lb, which is skipped, and a skipped instance must not also be counted
+  // as emitted-and-flagged. Deposed wins; the count is of blocks in the output.
+  assert.equal(parsed.tainted, 1);
+  const bastion = blockAt('awkward-show.json', 'aws_instance.bastion');
+  assert.equal(bastion.comments.filter((c) => c.startsWith('TAINTED')).length, 1);
+
+  const hcl = emitBlocks(importsFromState(fixture('awkward-show.json'), 'awkward-show.json'));
+  assert.equal(hcl.match(/^# TAINTED/gm)?.length, 1);
+});

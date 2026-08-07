@@ -30,6 +30,24 @@ export interface StateResource {
    * has a reason worth reporting rather than a defect worth chasing.
    */
   readonly legacyFlatmap?: boolean | undefined;
+  /**
+   * The source state marks this object tainted, so Terraform will destroy and
+   * recreate it on the next apply *there*.
+   *
+   * Unlike a deposed object this one is **emitted**, and the difference is the
+   * whole of the reasoning. A deposed object has a live sibling at the same
+   * address, so emitting it is both invalid HCL and the adoption of something
+   * scheduled for destruction — and there is a correct block to emit instead. A
+   * tainted object is the only object at its address, it exists right now, and
+   * its id is the real id. Dropping it would lose a resource from a state move
+   * with nothing put in its place, which decision 5 forbids outright.
+   *
+   * Taint is state metadata rather than a property of the remote object, so it
+   * does not travel through an import: the adopting state gets a clean entry.
+   * The reader still has to be told, because the *source* configuration will
+   * replace the object on its next apply.
+   */
+  readonly tainted?: boolean | undefined;
 }
 
 export interface StateSkipCounts {
@@ -49,6 +67,13 @@ export interface ParsedStateFile {
   readonly resources: StateResource[];
   readonly terraformVersion?: string | undefined;
   readonly skipped: StateSkipCounts;
+  /**
+   * Resources emitted carrying a tainted flag. Deliberately **not** a member of
+   * `skipped`: nothing was skipped, and pooling an emitted-and-flagged resource
+   * with a dropped one would make both numbers lies. Counts blocks in the
+   * output, so a tainted object that is also deposed counts only as deposed.
+   */
+  readonly tainted: number;
 }
 
 /** `[0]` / `["blue"]` suffix for for_each/count instances, TF-address style. */
@@ -131,6 +156,7 @@ function instanceAttributes(inst: Record<string, unknown>): {
 function parseRawState(state: Record<string, unknown>): ParsedStateFile {
   const resources: StateResource[] = [];
   const skipped = { deposed: 0, dataSources: 0, nonAws: 0 };
+  let taintedCount = 0;
   for (const res of (state['resources'] as Array<Record<string, unknown>> | undefined) ?? []) {
     if (!isManagedAws(res['mode'], res['type'])) {
       const bucket = classifySkip(res['mode'], res['type']);
@@ -147,21 +173,33 @@ function parseRawState(state: Record<string, unknown>): ParsedStateFile {
         continue;
       }
       const { attributes, legacyFlatmap } = instanceAttributes(inst);
+      // `status: "tainted"` — version4.go:704. The only other status is the
+      // empty one, so anything else is a terraform we do not know and is left
+      // unflagged rather than guessed at.
+      const tainted = inst['status'] === 'tainted';
+      if (tainted) taintedCount += 1;
       resources.push({
         address: base + indexSuffix(inst['index_key']),
         type,
         attributes,
         legacyFlatmap,
+        tainted,
       });
     }
   }
-  return { resources, terraformVersion: str(state['terraform_version']), skipped };
+  return {
+    resources,
+    terraformVersion: str(state['terraform_version']),
+    skipped,
+    tainted: taintedCount,
+  };
 }
 
 /** `terraform show -json` — values.root_module with nested child_modules. */
 function parseShowJson(state: Record<string, unknown>): ParsedStateFile {
   const resources: StateResource[] = [];
   const skipped = { deposed: 0, dataSources: 0, nonAws: 0 };
+  let taintedCount = 0;
   const walk = (mod: Record<string, unknown> | undefined): void => {
     if (!mod) return;
     for (const res of (mod['resources'] as Array<Record<string, unknown>> | undefined) ?? []) {
@@ -176,10 +214,16 @@ function parseShowJson(state: Record<string, unknown>): ParsedStateFile {
         skipped.deposed += 1;
         continue;
       }
+      // `"tainted": true` on the resource entry — jsonstate/state.go:111. Read
+      // after the deposed check, so a deposed object that is also tainted (
+      // terraform sets both, state.go ~526) counts once, as deposed.
+      const tainted = res['tainted'] === true;
+      if (tainted) taintedCount += 1;
       resources.push({
         address: String(res['address']),
         type: res['type'] as string,
         attributes: (res['values'] as Record<string, unknown> | undefined) ?? {},
+        tainted,
       });
     }
     for (const child of (mod['child_modules'] as Array<Record<string, unknown>> | undefined) ?? []) {
@@ -191,7 +235,12 @@ function parseShowJson(state: Record<string, unknown>): ParsedStateFile {
       | Record<string, unknown>
       | undefined,
   );
-  return { resources, terraformVersion: str(state['terraform_version']), skipped };
+  return {
+    resources,
+    terraformVersion: str(state['terraform_version']),
+    skipped,
+    tainted: taintedCount,
+  };
 }
 
 export function parseStateFile(raw: unknown, sourceLabel: string): ParsedStateFile {
@@ -236,6 +285,13 @@ export function resolveStateResource(res: StateResource): ResolvedImport {
   const comments: string[] = [];
   const context = contextComment(accountId, region);
   if (context !== undefined) comments.push(context);
+  if (res.tainted === true) {
+    comments.push(
+      'TAINTED in the source state — the object exists and the id below is the real one, so ' +
+        'this import is sound (taint is state metadata and does not travel with it), but the ' +
+        'source configuration will destroy and recreate it on its next apply',
+    );
+  }
 
   let id = stateId;
   let verified = false;
