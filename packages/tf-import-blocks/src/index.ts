@@ -24,12 +24,20 @@ export type {
 } from './types.js';
 export { parseArn, str } from './types.js';
 
+// `ProviderProvenance` is reachable through `StateResource.provider` below, so
+// leaving it unexported meant a consumer could hold the value and had no way to
+// write down its type. `providerComment` is the only thing the package does
+// with one, and is the counterpart to the already-exported `contextComment`:
+// exporting the type without it would hand callers a value they can name and
+// still not use.
+export type { ProviderProvenance } from './emit.js';
 export {
   contextComment,
   dedupeAddresses,
   emitBlock,
   emitBlocks,
   escapeHcl,
+  providerComment,
   sanitizeLabel,
   suggestAddress,
 } from './emit.js';
