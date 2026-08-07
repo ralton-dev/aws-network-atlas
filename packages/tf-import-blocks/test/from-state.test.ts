@@ -424,3 +424,40 @@ test('a resource with no id at all says so rather than emitting a bare id = ""',
   assert.equal(items[0]?.verified, false);
   assert.match(items[0]?.comments.join(' ') ?? '', /no id for aws_vpc\.main/);
 });
+
+test('a scanned-only type is not reported as having no rule', () => {
+  // 31 of 246 rules carry `fromScanned` and no `fromState`. Their state blocks
+  // said "no rule for aws_db_proxy", which is false — the type is covered, and
+  // a reader who believes it goes hunting for a rule module that already has
+  // the type in it. The two cases also need different work: one wants a
+  // `fromState` resolver added, the other wants the type researched at all.
+  const items = importsFromState(
+    {
+      version: 4,
+      resources: [
+        {
+          mode: 'managed',
+          type: 'aws_db_proxy',
+          name: 'app',
+          instances: [{ attributes: { id: 'app-proxy' } }],
+        },
+        {
+          mode: 'managed',
+          type: 'aws_totally_made_up_thing',
+          name: 'x',
+          instances: [{ attributes: { id: 'made-up-1' } }],
+        },
+      ],
+    },
+    'inline',
+  );
+  const comments = (address: string): string =>
+    items.find((i) => i.address === address)?.comments.join(' ') ?? '';
+  assert.match(comments('aws_db_proxy.app'), /no state rule for aws_db_proxy/);
+  // The genuinely unknown type keeps the original wording — the golden file and
+  // the scanner's CLI test both pin it, and for that case it is exactly right.
+  assert.match(
+    comments('aws_totally_made_up_thing.x'),
+    /no rule for aws_totally_made_up_thing — import id may not be the state id/,
+  );
+});

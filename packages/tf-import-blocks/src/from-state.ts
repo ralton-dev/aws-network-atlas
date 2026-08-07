@@ -390,6 +390,16 @@ export function resolveStateResource(res: StateResource): ResolvedImport {
             : ''),
       );
     }
+  } else if (rule?.fromScanned !== undefined) {
+    // 31 of 246 rules are scanned-only, and telling their state blocks "no rule
+    // for aws_db_proxy" is simply false — the type is covered, and a reader who
+    // believes the comment goes looking for a rule module that already has it.
+    // The remedy is different too: this one needs a `fromState` resolver added,
+    // not a type researched from scratch.
+    comments.push(
+      `VERIFY: no state rule for ${res.type} — the type is covered for scanned resources but ` +
+        'nothing computes its import id from state attributes, so this is the state id',
+    );
   } else {
     comments.push(`VERIFY: no rule for ${res.type} — import id may not be the state id`);
   }
