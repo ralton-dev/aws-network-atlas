@@ -27,6 +27,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { emitBlocks, importsFromState, parseStateFile, type ResolvedImport } from '../src/index.js';
+import { CONFLICTS, mergeRules } from '../src/rules/registry.js';
 
 const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
 
@@ -334,4 +335,70 @@ test('the 0.12 spelling of a provider config address is read too', () => {
   assert.match(prov('aws_vpc.dr')[0] ?? '', /source provider aws\.usw2/);
   assert.deepEqual(prov('aws_vpc.main'), []);
   assert.deepEqual(prov('aws_vpc.odd'), []);
+});
+
+// ── the rule registry's merge ──────────────────────────────────────────────
+//
+// Not state parsing, and it lives here only because there is nowhere else: the
+// registry is this package's file and every other test file in it is owned
+// elsewhere. It is tested at all because with one module declaring each type,
+// every branch of the merge is unreachable from the real tables — a defect in
+// it is invisible until the day a second module declares a type, which is the
+// worst possible moment to find one.
+
+test('the merge carries every field a second declaration adds', () => {
+  // `typeFromScanned` and `typeChoices` were not in the per-field loop, so a
+  // second module declaring the same type with one had it dropped — silently,
+  // and with no CONFLICTS entry to show for it. The type would then resolve
+  // through `ImportRule.type`, which for an ambiguous kind is explicitly an
+  // arbitrary member of the set rather than a claim (see types.ts) — a
+  // confidently wrong `to =`, arrived at by omission.
+  const merged = mergeRules([
+    [{ type: 'aws_lb', kinds: ['lb'], fromScanned: (s) => s.id }],
+    [
+      {
+        type: 'aws_lb',
+        typeFromScanned: () => 'aws_elb',
+        typeChoices: ['aws_lb', 'aws_elb'],
+        fromState: (a) => (typeof a['id'] === 'string' ? a['id'] : undefined),
+      },
+    ],
+  ]);
+  const rule = merged.byType.get('aws_lb');
+  assert.ok(rule !== undefined);
+  assert.equal(rule.fromScanned?.({ kind: 'lb', id: 'x', region: '', accountId: '', raw: {} }), 'x');
+  assert.equal(rule.fromState?.({ id: 'y' }), 'y');
+  assert.deepEqual(rule.typeChoices, ['aws_lb', 'aws_elb']);
+  assert.equal(
+    rule.typeFromScanned?.({ kind: 'lb', id: 'x', region: '', accountId: '', raw: {} }),
+    'aws_elb',
+  );
+  assert.deepEqual(merged.conflicts, []);
+});
+
+test('two declarations of one field are a conflict, first wins', () => {
+  const merged = mergeRules([
+    [{ type: 'aws_lb', typeFromScanned: () => 'aws_lb', typeChoices: ['aws_lb', 'aws_elb'] }],
+    [{ type: 'aws_lb', typeFromScanned: () => 'aws_elb', typeChoices: ['aws_elb'] }],
+  ]);
+  assert.deepEqual(merged.conflicts, [
+    { type: 'aws_lb', field: 'typeFromScanned' },
+    { type: 'aws_lb', field: 'typeChoices' },
+  ]);
+  assert.equal(
+    merged.byType.get('aws_lb')?.typeFromScanned?.({
+      kind: 'lb',
+      id: 'x',
+      region: '',
+      accountId: '',
+      raw: {},
+    }),
+    'aws_lb',
+  );
+});
+
+test('the real rule tables agree with each other', () => {
+  // The guard the above exists to make meaningful: with the merge now covering
+  // every field, an empty CONFLICTS is a statement about all five of them.
+  assert.deepEqual(CONFLICTS, []);
 });
