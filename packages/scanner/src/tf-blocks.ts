@@ -55,6 +55,15 @@ export interface TfBlocksSummary {
    * separately so it can be acted on differently.
    */
   readonly notImportable: number;
+  /**
+   * Blocks whose source object is tainted. Emitted and counted as resolved —
+   * taint is state metadata, so the id is real and the import is sound — but
+   * the source configuration destroys and recreates the object on its next
+   * apply, which is worth knowing before a move rather than after. Counted over
+   * the blocks actually emitted, not over the parse, because unlike a skip a
+   * tainted object *is* in the output and `--filter` can remove it.
+   */
+  readonly tainted: number;
   /** Distinct types among fallbacks that have no state rule. */
   readonly noRuleTypes: readonly string[];
   /** Distinct types whose rule ran but could not compute an id from this state. */
@@ -120,6 +129,13 @@ function sorted(values: Iterable<string>): string[] {
  */
 export async function tfBlocks(opts: TfBlocksOptions): Promise<TfBlocksResult> {
   const resolved: ResolvedImport[] = [];
+  // `ResolvedImport` carries no tainted flag — the state parser exposes the
+  // count as `ParsedStateFile.tainted` and the taint itself only reaches the
+  // output as a comment. Identity is the honest join: `resolveStateResource`
+  // returns a fresh object per resource, so this set survives the sort and the
+  // filter without matching on comment text or on an address that two states
+  // can share.
+  const taintedItems = new Set<ResolvedImport>();
   let skippedDeposed = 0;
   let skippedDataSources = 0;
   let skippedNonAws = 0;
@@ -131,7 +147,11 @@ export async function tfBlocks(opts: TfBlocksOptions): Promise<TfBlocksResult> {
     skippedDeposed += parsed.skipped.deposed;
     skippedDataSources += parsed.skipped.dataSources;
     skippedNonAws += parsed.skipped.nonAws;
-    for (const res of parsed.resources) resolved.push(resolveStateResource(res));
+    for (const res of parsed.resources) {
+      const item = resolveStateResource(res);
+      if (res.tainted === true) taintedItems.add(item);
+      resolved.push(item);
+    }
   }
   resolved.sort((a, b) => a.address.localeCompare(b.address));
 
@@ -145,9 +165,11 @@ export async function tfBlocks(opts: TfBlocksOptions): Promise<TfBlocksResult> {
   const notImportableTypes: string[] = [];
   const seen = new Set<string>();
   const duplicates: string[] = [];
+  let tainted = 0;
   for (const item of kept) {
     const bucket = classify(item);
     counts[bucket] += 1;
+    if (taintedItems.has(item)) tainted += 1;
     if (bucket === 'noRule') noRuleTypes.push(item.type);
     else if (bucket === 'unresolved') unresolvedTypes.push(item.type);
     else if (bucket === 'notImportable') notImportableTypes.push(item.type);
@@ -165,6 +187,7 @@ export async function tfBlocks(opts: TfBlocksOptions): Promise<TfBlocksResult> {
       viaRule: counts.viaRule,
       fallback: counts.noRule + counts.unresolved,
       notImportable: counts.notImportable,
+      tainted,
       noRuleTypes: sorted(noRuleTypes),
       unresolvedTypes: sorted(unresolvedTypes),
       notImportableTypes: sorted(notImportableTypes),
@@ -203,6 +226,18 @@ export function formatSummary(s: TfBlocksSummary): string[] {
     lines.push(
       `  ${s.notImportable} not importable at all — emitted but will not apply: ` +
         s.notImportableTypes.join(', '),
+    );
+  }
+  if (s.tainted > 0) {
+    // The opposite conclusion to the deposed line below, and they read as a
+    // pair when a state has both: deposed is skipped because the object is
+    // already doomed and duplicated, tainted is emitted because it is the only
+    // object at its address and its id is real.
+    lines.push(
+      `  ${plural(s.tainted, 'tainted object')} in the source state — emitted, not skipped`,
+      '    taint is state metadata and does not travel with the resource, so the id is',
+      '    real and the import is sound; the source configuration will still destroy',
+      '    and recreate the object on its next apply unless it is removed there first',
     );
   }
   if (s.filteredOut > 0) lines.push(`  ${s.filteredOut} withheld by --filter`);
