@@ -21,14 +21,20 @@
  *    rather than a plausible-looking wrong answer; `from-scanned.ts` then
  *    flags the block `# VERIFY` (decision 5) instead of claiming it is right.
  *
- * **One kind, several terraform types.** `ImportRule.type` is a single string
- * that is both the merge key and the type emitted, so a kind that spans two
- * provider resources can only register the dominant one. Six do: `lb`
- * (`aws_lb` / `aws_elb`), `tgw-attachment` (vpc / peering / connect), `dx-vif`
- * (private / public / transit), `apigw` (REST / v2), `apigw-vpc-link` (v1/v2)
- * and `apigw-domain` (v1/v2). Each guards on the snapshot field that
- * discriminates them and yields `undefined` for the variants it cannot
- * represent, so the wrong type is always accompanied by a `# VERIFY`.
+ * **One kind, several terraform types.** Six kinds here span more than one
+ * provider resource: `lb` (`aws_lb` / `aws_elb`), `tgw-attachment` (vpc /
+ * peering / connect), `dx-vif` (private / public / transit), `apigw` (REST /
+ * v2), `apigw-vpc-link` (v1 / v2) and `apigw-domain` (v1 / v2). Each resolves
+ * its type per subject through `typeFromScanned`, off the collected field that
+ * discriminates.
+ *
+ * They used to register the dominant type and decline the *id* to signal the
+ * mismatch, which emitted `aws_api_gateway_rest_api` for an HTTP API under a
+ * comment blaming the id — and the id (`abc123`) was exactly right. The guard
+ * has moved to where the ambiguity actually is: `fromScanned` now returns the
+ * id these variants share, and `typeFromScanned` returns the type or
+ * `undefined`. A subject it cannot place emits no type at all rather than the
+ * dominant one.
  */
 import { parseArn, str, type ImportRule, type ScannedSubject } from '../types.js';
 
@@ -142,20 +148,41 @@ export const RULES: ImportRule[] = [
   nativeId('aws_ec2_transit_gateway', ['tgw'], 'ec2_transit_gateway'),
 
   /**
-   * All attachment kinds share the `tgw-attach-…` id, but each is a different
-   * terraform resource: `_vpc_attachment`, `_peering_attachment`, `_connect`.
-   * VPC is far and away the common case and is the one registered;
-   * `TransitGatewayAttachment.resourceType` discriminates, so a peering or
-   * connect attachment declines rather than claiming to be a VPC attachment.
-   * A `vpn` or `direct-connect-gateway` attachment has no attachment resource
-   * of its own at all — it is created by the VPN connection or the DX gateway
-   * association — so those decline too.
+   * All attachment kinds share the `tgw-attach-…` id — verified identical on
+   * all three pages — but each is a different terraform resource.
+   * `TransitGatewayAttachment.resourceType` (`TgwAttachmentResourceType` in
+   * `schema/src/snapshot.ts`) selects it.
+   *
+   * `vpn` and `direct-connect-gateway` attachments have no attachment resource
+   * of their own at all: they are created by `aws_vpn_connection` and
+   * `aws_dx_gateway_association` respectively, so there is no type to name and
+   * the subject declines. `other` is the collector's catch-all and declines for
+   * the same reason.
    */
   {
     type: 'aws_ec2_transit_gateway_vpc_attachment',
     kinds: ['tgw-attachment'],
     doc: doc('ec2_transit_gateway_vpc_attachment'),
-    fromScanned: (s) => (rawStr(s, 'resourceType') === 'vpc' ? str(s.id) : undefined),
+    typeChoices: [
+      'aws_ec2_transit_gateway_vpc_attachment',
+      'aws_ec2_transit_gateway_peering_attachment',
+      'aws_ec2_transit_gateway_connect',
+    ],
+    typeFromScanned: (s) => {
+      switch (rawStr(s, 'resourceType')) {
+        case 'vpc':
+          return 'aws_ec2_transit_gateway_vpc_attachment';
+        // The collector emits both spellings; they are the same resource.
+        case 'peering':
+        case 'tgw-peering':
+          return 'aws_ec2_transit_gateway_peering_attachment';
+        case 'connect':
+          return 'aws_ec2_transit_gateway_connect';
+        default:
+          return undefined;
+      }
+    },
+    fromScanned: (s) => str(s.id),
   },
 
   nativeId('aws_ec2_transit_gateway_route_table', ['tgw-rt'], 'ec2_transit_gateway_route_table'),
@@ -174,39 +201,97 @@ export const RULES: ImportRule[] = [
   nativeId('aws_dx_connection', ['dx-connection'], 'dx_connection'),
   nativeId('aws_dx_lag', ['dx-lag'], 'dx_lag'),
   /**
-   * All three VIF flavours import by the same `dxvif-…` id but are three
-   * terraform types (plus three `_hosted_` variants for VIFs allocated to
-   * another account). `DxVirtualInterface.vifType` is `private | public |
-   * transit`; only `private` is claimed, and the other two decline so the
-   * mismatch is flagged rather than pasted.
+   * All three VIF flavours import by the same `dxvif-…` id — the three doc
+   * pages print the identical `id = "dxvif-33cc44dd"` example — and
+   * `DxVirtualInterface.vifType` is `private | public | transit`, so the type
+   * resolves exactly.
+   *
+   * The three `aws_dx_hosted_*_virtual_interface` variants are deliberately not
+   * modelled. Those describe a VIF *allocated to another account*, which is a
+   * property of the relationship rather than of the interface, and the snapshot
+   * has no field that distinguishes an owned VIF from an allocated one
+   * (`ownerAccount` is the VIF's owner, which is the scanned account in both
+   * cases). Scanning the account that owns the VIF — the only case the atlas
+   * sees — the plain type is the right one.
    */
   {
     type: 'aws_dx_private_virtual_interface',
     kinds: ['dx-vif'],
     doc: doc('dx_private_virtual_interface'),
-    fromScanned: (s) => (rawStr(s, 'vifType') === 'private' ? str(s.id) : undefined),
+    typeChoices: [
+      'aws_dx_private_virtual_interface',
+      'aws_dx_public_virtual_interface',
+      'aws_dx_transit_virtual_interface',
+    ],
+    typeFromScanned: (s) => {
+      switch (rawStr(s, 'vifType')) {
+        case 'private':
+          return 'aws_dx_private_virtual_interface';
+        case 'public':
+          return 'aws_dx_public_virtual_interface';
+        case 'transit':
+          return 'aws_dx_transit_virtual_interface';
+        default:
+          return undefined;
+      }
+    },
+    fromScanned: (s) => str(s.id),
   },
   // Account-global: `collect/global.ts:192` stores `directConnectGatewayId`.
   nativeId('aws_dx_gateway', ['dxgw'], 'dx_gateway'),
 
   // --- Load balancing ------------------------------------------------------
   /**
-   * `aws_lb` imports by ARN, and `collect/elb.ts:81` stores the ARN in `id` —
-   * one of the fifteen ARN-in-`id` cases in the tree that happens to be right.
+   * The only one of these six where the two variants disagree about the *id* as
+   * well as the type, so it is the only one whose `fromScanned` still branches.
    *
-   * Classic ELBs share the `lb` kind but are `aws_elb`, a different type that
-   * imports by *name*; `collect/elb.ts:250` stores the name in `id` and no
-   * `arn` at all. Emitting `to = aws_lb.<name>` with `id = "<name>"` would be
-   * two errors that cancel into a block that looks plausible, so `classic`
-   * declines.
+   * `aws_lb` (application / network / gateway) imports by ARN, and
+   * `collect/elb.ts:85` stores the ARN in `id` — one of the ARN-in-`id` cases
+   * that happens to be right. `aws_elb` (classic) imports by **name**
+   * (`r/elb.html.markdown`: `id = "elb-production-12345"`), and
+   * `collect/elb.ts:253` stores the name in `id` with no `arn` at all.
+   *
+   * Registering only `aws_lb` used to emit `to = aws_lb.my-classic-elb` with
+   * `id = "my-classic-elb"` under a comment blaming the id — but the name *is*
+   * the right id, for `aws_elb`. Both halves are now answered from `lbType`.
    */
   {
     type: 'aws_lb',
     kinds: ['lb'],
     doc: doc('lb'),
+    typeChoices: ['aws_lb', 'aws_elb'],
+    typeFromScanned: (s) => {
+      switch (rawStr(s, 'lbType')) {
+        case 'classic':
+          return 'aws_elb';
+        case 'application':
+        case 'network':
+        case 'gateway':
+          return 'aws_lb';
+        default:
+          return undefined;
+      }
+    },
     fromScanned: (s) => {
-      if (rawStr(s, 'lbType') === 'classic') return undefined;
-      return str(s.arn) ?? (parseArn(s.id) !== undefined ? s.id : undefined);
+      switch (rawStr(s, 'lbType')) {
+        case 'classic': {
+          // The name, never an ARN: a classic ELB carries none, so an ARN here
+          // means the field is not what this rule thinks it is.
+          const name = str(s.name) ?? str(s.id);
+          return name !== undefined && parseArn(name) === undefined ? name : undefined;
+        }
+        case 'application':
+        case 'network':
+        case 'gateway':
+          return str(s.arn) ?? (parseArn(s.id) !== undefined ? s.id : undefined);
+        default:
+          // `lb` is the one kind here whose variants disagree about the *id*
+          // form as well as the type, so an unknown `lbType` leaves both
+          // unknown. Returning the ARN would let `from-scanned.ts` tell the
+          // reader the id is right whichever candidate this is — and for
+          // `aws_elb` it would not be.
+          return undefined;
+      }
     },
   },
   // `collect/elb.ts:208` stores the ARN in `id`; aws_lb_target_group imports by ARN.
@@ -267,43 +352,95 @@ export const RULES: ImportRule[] = [
     type: 'aws_api_gateway_rest_api',
     kinds: ['apigw'],
     doc: doc('api_gateway_rest_api'),
-    fromScanned: (s) => (rawStr(s, 'protocolType') === 'REST' ? str(s.id) : undefined),
+    typeChoices: ['aws_api_gateway_rest_api', 'aws_apigatewayv2_api'],
+    typeFromScanned: (s) => {
+      switch (rawStr(s, 'protocolType')) {
+        case 'REST':
+          return 'aws_api_gateway_rest_api';
+        case 'HTTP':
+        case 'WEBSOCKET':
+          return 'aws_apigatewayv2_api';
+        default:
+          return undefined;
+      }
+    },
+    // `r/apigatewayv2_api.html.markdown` prints `id = "aabbccddee"`, the same
+    // bare API identifier the v1 page does — the id was never the ambiguity.
+    fromScanned: (s) => str(s.id),
   },
-  /** `ApiGatewayVpcLink.version` is an explicit `'v1' | 'v2'` discriminator. */
+  /**
+   * `ApiGatewayVpcLink.version` is an explicit `'v1' | 'v2'` discriminator —
+   * one of the few places the snapshot says outright which API family a record
+   * came from — and both pages import by the bare link id
+   * (`aws_apigatewayv2_vpc_link`: `id = "aabbccddee"`).
+   */
   {
     type: 'aws_api_gateway_vpc_link',
     kinds: ['apigw-vpc-link'],
     doc: doc('api_gateway_vpc_link'),
-    fromScanned: (s) => (rawStr(s, 'version') === 'v1' ? str(s.id) : undefined),
+    typeChoices: ['aws_api_gateway_vpc_link', 'aws_apigatewayv2_vpc_link'],
+    typeFromScanned: (s) => {
+      switch (rawStr(s, 'version')) {
+        case 'v1':
+          return 'aws_api_gateway_vpc_link';
+        case 'v2':
+          return 'aws_apigatewayv2_vpc_link';
+        default:
+          return undefined;
+      }
+    },
+    fromScanned: (s) => str(s.id),
   },
   /**
-   * Both `aws_api_gateway_domain_name` and `aws_apigatewayv2_domain_name`
-   * import by the domain name, so the *id* is never in doubt — the *type* is.
-   * `ApiGatewayDomainName` carries no version discriminator (unlike
-   * `ApiGatewayVpcLink`, which does), and `collect/edge-network.ts:725` / `:766`
+   * The one kind here that is **genuinely unresolvable** for its commonest
+   * variant, and the reason `typeFromScanned` had to be allowed to answer
+   * `undefined` rather than being required to pick.
+   *
+   * `ApiGatewayDomainName` carries no version discriminator — unlike
+   * `ApiGatewayVpcLink`, which does — and `collect/edge-network.ts:717` / `:756`
    * merge v1 and v2 domains into one collection behind a shared `seenDomains`
-   * set. `endpointTypes` is the only signal, and only `EDGE` is usable:
+   * set, so provenance is gone by the time the snapshot is written.
+   * `endpointTypes` is the only signal left, and it separates the three cases
+   * unevenly:
    *
-   *  - `EDGE` exists on REST custom domains alone, so it confirms v1 *and* the
-   *    plain `dev.example.com` id form.
-   *  - `PRIVATE` also confirms v1, but a private custom domain imports by
-   *    `<name>/<domain_name_id>` — a second form the same doc page documents —
-   *    and `ApiGatewayDomainName` carries no `domainNameId` field, so the
-   *    composite cannot be built. Declining beats emitting half of it.
-   *  - `REGIONAL` could be either API family and declines too.
-   *
-   * Declining costs nothing here: the fallback id is the domain name either
-   * way (`id: d.domainName`), so all a decline changes is that the block gains
-   * an honest `# VERIFY` about the one thing that is genuinely uncertain.
+   *  - `EDGE` exists on REST custom domains alone, so it confirms
+   *    `aws_api_gateway_domain_name` *and* the plain `dev.example.com` id.
+   *  - `PRIVATE` also confirms v1 —
+   *    `r/apigatewayv2_domain_name.html.markdown` documents `endpoint_type`
+   *    with valid values `REGIONAL` only, so v2 cannot be private. The **type**
+   *    therefore resolves; the **id** does not, because a private custom domain
+   *    imports by `<name>/<domain_name_id>` (second example on the v1 page) and
+   *    the snapshot has no `domainNameId` field. This subject gets a real
+   *    `to =` and a flagged id, which is the honest split.
+   *  - `REGIONAL` is valid on both, so the type is unknowable from a snapshot.
+   *    The id is the domain name for either type, so the emitted block is
+   *    commented out with a correct id and a named shortlist.
    */
   {
     type: 'aws_api_gateway_domain_name',
     kinds: ['apigw-domain'],
     doc: doc('api_gateway_domain_name'),
-    fromScanned: (s) => {
+    typeChoices: ['aws_api_gateway_domain_name', 'aws_apigatewayv2_domain_name'],
+    typeFromScanned: (s) => {
       const types = s.raw['endpointTypes'];
       if (!Array.isArray(types)) return undefined;
-      if (!types.includes('EDGE') || types.includes('PRIVATE')) return undefined;
+      // PRIVATE and EDGE are both v1-exclusive; PRIVATE is checked first
+      // because it also changes the id form.
+      if (types.includes('PRIVATE') || types.includes('EDGE')) {
+        return 'aws_api_gateway_domain_name';
+      }
+      return undefined;
+    },
+    fromScanned: (s) => {
+      const types = s.raw['endpointTypes'];
+      // With no endpoint types at all a private domain cannot be ruled out, so
+      // neither half is knowable — decline both rather than let the caller
+      // report the bare name as right whichever candidate this is.
+      if (!Array.isArray(types) || types.length === 0) return undefined;
+      // A private domain's id is `<name>/<domain_name_id>` and `domainNameId`
+      // is not collected. Emitting the bare name would produce a block that
+      // parses and adopts the wrong thing — decline the id, keep the type.
+      if (types.includes('PRIVATE')) return undefined;
       return rawStr(s, 'domainName') ?? str(s.id);
     },
   },

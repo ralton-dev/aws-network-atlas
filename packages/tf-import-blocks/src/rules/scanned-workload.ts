@@ -105,6 +105,80 @@ function sqsQueueUrl(s: ScannedSubject): string | undefined {
 }
 
 /**
+ * `FsxFileSystem.fileSystemType` → terraform type. All four import by the same
+ * `fs-…` id, so this decides the type and nothing else.
+ */
+const FSX_TYPES: Readonly<Record<string, string>> = {
+  LUSTRE: 'aws_fsx_lustre_file_system',
+  WINDOWS: 'aws_fsx_windows_file_system',
+  ONTAP: 'aws_fsx_ontap_file_system',
+  OPENZFS: 'aws_fsx_openzfs_file_system',
+};
+
+/**
+ * `DataSyncLocation.locationType` → terraform type. The keys are matched after
+ * `normalizeLocationType` strips separators and case, because the value is the
+ * raw `LocationUri` scheme passed through by `collect/datasync.ts:40` for
+ * everything except the four FSx schemes it renames — and the exact spelling
+ * AWS returns for the two multi-word schemes could not be verified against a
+ * real snapshot. Both spellings of each map to the same type, so the
+ * normalisation removes the risk instead of guessing at it.
+ */
+const DATASYNC_LOCATION_TYPES: Readonly<Record<string, string>> = {
+  s3: 'aws_datasync_location_s3',
+  nfs: 'aws_datasync_location_nfs',
+  smb: 'aws_datasync_location_smb',
+  efs: 'aws_datasync_location_efs',
+  hdfs: 'aws_datasync_location_hdfs',
+  objectstorage: 'aws_datasync_location_object_storage',
+  azureblob: 'aws_datasync_location_azure_blob',
+  fsxwindows: 'aws_datasync_location_fsx_windows_file_system',
+  fsxlustre: 'aws_datasync_location_fsx_lustre_file_system',
+  fsxontap: 'aws_datasync_location_fsx_ontap_file_system',
+  fsxopenzfs: 'aws_datasync_location_fsx_openzfs_file_system',
+};
+
+/** The four whose import id is a composite the snapshot cannot supply. */
+const DATASYNC_COMPOSITE_ID_TYPES: ReadonlySet<string> = new Set([
+  'aws_datasync_location_fsx_windows_file_system',
+  'aws_datasync_location_fsx_lustre_file_system',
+  'aws_datasync_location_fsx_ontap_file_system',
+  'aws_datasync_location_fsx_openzfs_file_system',
+]);
+
+const normalizeLocationType = (value: string): string =>
+  value.toLowerCase().replace(/[-_]/g, '');
+
+function dataSyncLocationType(s: ScannedSubject): string | undefined {
+  const raw = str(s.raw['locationType']);
+  return raw === undefined ? undefined : DATASYNC_LOCATION_TYPES[normalizeLocationType(raw)];
+}
+
+/**
+ * The location ARN — **except** for the four FSx-backed locations, whose id is
+ * `<location-arn>#<fsx-arn>` (`DataSync-ARN#FSx-Windows-ARN` on the doc pages;
+ * ONTAP wants the storage-virtual-machine ARN, not the file system's).
+ *
+ * `collect/datasync.ts:91` calls `DescribeLocationFsx*` and keeps only
+ * `SecurityGroupArns`, so the FSx ARN is not in the snapshot at all, and
+ * decision 14 forbids adding it. Nor can it be rebuilt from `locationUri`: the
+ * doc example puts the FSx file system in a *different account* from the
+ * DataSync location, so the account field is not ours to assume.
+ *
+ * These therefore resolve their type and decline their id — the reverse of the
+ * usual split, and the case that proves the two really are independent.
+ */
+function dataSyncLocationId(s: ScannedSubject): string | undefined {
+  const type = dataSyncLocationType(s);
+  // An unrecognised `locationType` leaves the id form unknown as well as the
+  // type — these eleven do not agree on one — so decline both rather than let
+  // the caller report the ARN as right whichever candidate this is.
+  if (type === undefined) return undefined;
+  if (DATASYNC_COMPOSITE_ID_TYPES.has(type)) return undefined;
+  return arnOf(s);
+}
+
+/**
  * `<cluster-name>/<service-name>`. `EcsService` carries `clusterName`, derived
  * from `clusterArn` at `collect/containers.ts:71`; when an older snapshot
  * lacks it, take the tail of `clusterArn` rather than emitting a bare ARN.
@@ -349,6 +423,15 @@ export const RULES: ImportRule[] = [
   // `agent-0123…`), but every DataSync resource imports by full ARN.
   byArn('aws_datasync_agent', 'datasync-agent', 'datasync_agent'),
   byArn('aws_datasync_task', 'datasync-task', 'datasync_task'),
+  {
+    // Merge key only — `typeFromScanned` decides, and s3 is not a default.
+    type: 'aws_datasync_location_s3',
+    kinds: ['datasync-location'],
+    doc: doc('datasync_location_s3'),
+    typeChoices: [...new Set(Object.values(DATASYNC_LOCATION_TYPES))],
+    typeFromScanned: dataSyncLocationType,
+    fromScanned: dataSyncLocationId,
+  },
 
   // ---- streaming ----------------------------------------------------------
   // `collect/firehose.ts:87` stores the delivery-stream *name*; the provider
@@ -402,6 +485,18 @@ export const RULES: ImportRule[] = [
 
   // ---- storage ------------------------------------------------------------
   passthrough('aws_s3_bucket', 's3', 's3_bucket'),
+  {
+    // Merge key only — `typeFromScanned` decides, and lustre is not a default.
+    type: 'aws_fsx_lustre_file_system',
+    kinds: ['fsx'],
+    doc: doc('fsx_lustre_file_system'),
+    typeChoices: Object.values(FSX_TYPES),
+    typeFromScanned: (s) => FSX_TYPES[str(s.raw['fileSystemType']) ?? ''],
+    // All four pages print the identical `id = "fs-543ab12b1ca672f33"`, and
+    // `collect/fsx.ts:48` stores `fs.FileSystemId`. The type was the only
+    // thing ever in doubt here.
+    fromScanned: (s) => (s.id.startsWith('fs-') ? str(s.id) : undefined),
+  },
 
   // ---- IAM ----------------------------------------------------------------
   // Roles, users, groups and instance profiles import by NAME…
@@ -443,21 +538,14 @@ export const RULES: ImportRule[] = [
  * fallback. A silent omission and a deliberate one look identical in a diff,
  * so they are named here and asserted in `test/scanned-workload.test.ts`.
  *
- * The first two are a limitation of the seam, not of AWS: `ImportRule.type` is
- * a constant and `ruleForKind` returns one rule per kind, so a kind whose
- * terraform *type* depends on a collected field cannot be expressed. Guessing
- * one variant would emit a confidently wrong `type`, which is worse than the
- * fallback — the fallback comments the block out.
+ * `fsx` and `datasync-location` used to be here too, declined because
+ * `ImportRule.type` was a constant and a kind whose terraform *type* depends on
+ * a collected field could not be expressed. `typeFromScanned` expresses it, so
+ * both are now real rules. What is left is the honest case: an atlas kind that
+ * models something the provider has **no resource for at all**, where the
+ * fallback's commented-out block is the right and final answer.
  */
 export const NO_RULE_KINDS: Readonly<Record<string, string>> = {
-  // FsxFileSystem.fileSystemType selects between aws_fsx_lustre_file_system,
-  // _windows_, _ontap_ and _openzfs_file_system. All four import by the `fs-…`
-  // id, so only the type is unknown — but the type is what a block needs most.
-  fsx: 'terraform type depends on FsxFileSystem.fileSystemType (LUSTRE | WINDOWS | ONTAP | OPENZFS)',
-  // DataSyncLocation.locationType selects between aws_datasync_location_s3,
-  // _nfs, _smb, _efs, _fsx_windows_file_system and friends. All import by ARN.
-  'datasync-location':
-    'terraform type depends on DataSyncLocation.locationType (s3 | nfs | smb | efs | fsx…)',
   // The ECR registry is an account-level singleton with no managed resource of
   // its own — only aws_ecr_registry_policy / _scanning_configuration /
   // _replication_configuration, which are configuration, not the registry.

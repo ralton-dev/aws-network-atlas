@@ -550,84 +550,436 @@ test('WAFv2 declines rather than guessing when scope or name is missing', () => 
 // --- Kinds that cover more than one terraform type -------------------------
 
 /**
- * `ImportRule.type` is one string, so a kind spanning two provider resources
- * can register only the dominant one. Each of these guards on the snapshot
- * field that discriminates, and declines for the variants it cannot represent
- * — a `# VERIFY` beside a wrong `to =` is recoverable; a confident block is
- * not.
+ * WP-I's pin, and the defect that produced it.
+ *
+ * Six kinds here span more than one provider resource. They used to register
+ * the dominant type and decline the *id* to signal a variant they could not
+ * represent, which emitted exactly this for an HTTP API:
+ *
+ *     # VERIFY: the aws_api_gateway_rest_api rule could not build an import id
+ *     #   from the scanned fields — falling back to the scanned id
+ *     import {
+ *       to = aws_api_gateway_rest_api.orders
+ *       id = "abc123"
+ *     }
+ *
+ * `abc123` is exactly the right import id — for `aws_apigatewayv2_api`. The
+ * comment blamed the half that was right, so a reader who checked the id found
+ * it correct and pasted a block importing an HTTP API as a REST API. `lb` ran
+ * the same way: `my-classic-elb` is exactly right for `aws_elb`.
+ *
+ * The guard now sits where the ambiguity is. `typeFromScanned` answers the
+ * type per subject and `fromScanned` answers the id, and the table below pins
+ * **every** variant of all six — including the ones that must emit no type at
+ * all. `type: ''` is the assertion that matters: an empty type is what makes
+ * `emitBlock` comment the whole stanza out, and a wrong type is unrecoverable
+ * where a commented-out block is not.
  */
-test('a classic ELB declines rather than being emitted as an aws_lb', () => {
+interface Variant {
+  /** Reads as the test name. */
+  readonly what: string;
+  readonly subject: ScannedSubject;
+  /** `''` asserts that no terraform type may be emitted for this subject. */
+  readonly type: string;
+  readonly id: string;
+  /** Only a block with both halves is pasteable, so only it is verified. */
+  readonly verified: boolean;
+}
+
+const ALB_ARN =
+  'arn:aws:elasticloadbalancing:eu-west-1:111122223333:loadbalancer/app/web/50dc6c495c0c9188';
+const NLB_ARN =
+  'arn:aws:elasticloadbalancing:eu-west-1:111122223333:loadbalancer/net/ingest/f2710a2d3e1c5b44';
+const GWLB_ARN =
+  'arn:aws:elasticloadbalancing:eu-west-1:111122223333:loadbalancer/gwy/inspect/a1b2c3d4e5f60718';
+const TGW_ATTACH = 'tgw-attach-0a1b2c3d4e5f6789';
+
+const VARIANTS: readonly Variant[] = [
+  // --- lb — the only pair here that disagrees about the id as well ----------
+  {
+    what: 'an application load balancer',
+    subject: subject('lb', ALB_ARN, { arn: ALB_ARN, name: 'web', raw: { lbType: 'application' } }),
+    type: 'aws_lb',
+    id: ALB_ARN,
+    verified: true,
+  },
+  {
+    what: 'a network load balancer',
+    subject: subject('lb', NLB_ARN, { arn: NLB_ARN, name: 'ingest', raw: { lbType: 'network' } }),
+    type: 'aws_lb',
+    id: NLB_ARN,
+    verified: true,
+  },
+  {
+    what: 'a gateway load balancer',
+    subject: subject('lb', GWLB_ARN, { arn: GWLB_ARN, name: 'inspect', raw: { lbType: 'gateway' } }),
+    type: 'aws_lb',
+    id: GWLB_ARN,
+    verified: true,
+  },
+  {
+    // The headline case. `collect/elb.ts:253` stores the name and no ARN, and
+    // `r/elb.html.markdown` imports by `name` — both halves were available all
+    // along, under a type the rule could not name.
+    what: 'a classic ELB',
+    subject: subject('lb', 'my-classic-elb', {
+      name: 'my-classic-elb',
+      raw: { lbType: 'classic' },
+    }),
+    type: 'aws_elb',
+    id: 'my-classic-elb',
+    verified: true,
+  },
+  {
+    what: 'a classic ELB with no name field',
+    subject: subject('lb', 'legacy-web-elb', { raw: { lbType: 'classic' } }),
+    type: 'aws_elb',
+    id: 'legacy-web-elb',
+    verified: true,
+  },
+  {
+    // A classic ELB has no ARN, so an ARN in `name` means the field is not what
+    // the rule thinks it is: `aws_elb` imports by name and an ARN is not one.
+    what: 'a classic ELB whose name is an ARN',
+    subject: subject('lb', ALB_ARN, { name: ALB_ARN, raw: { lbType: 'classic' } }),
+    type: 'aws_elb',
+    id: ALB_ARN,
+    verified: false,
+  },
+  {
+    what: 'a load balancer with no lbType',
+    subject: subject('lb', ALB_ARN, { arn: ALB_ARN, name: 'web' }),
+    type: '',
+    id: ALB_ARN,
+    verified: false,
+  },
+
+  // --- tgw-attachment — one id, three types, two non-resources -------------
+  {
+    what: 'a VPC transit gateway attachment',
+    subject: subject('tgw-attachment', TGW_ATTACH, { raw: { resourceType: 'vpc' } }),
+    type: 'aws_ec2_transit_gateway_vpc_attachment',
+    id: TGW_ATTACH,
+    verified: true,
+  },
+  {
+    what: 'a peering transit gateway attachment',
+    subject: subject('tgw-attachment', TGW_ATTACH, { raw: { resourceType: 'peering' } }),
+    type: 'aws_ec2_transit_gateway_peering_attachment',
+    id: TGW_ATTACH,
+    verified: true,
+  },
+  {
+    // `TgwAttachmentResourceType` carries both spellings for the same resource.
+    what: 'a tgw-peering transit gateway attachment',
+    subject: subject('tgw-attachment', TGW_ATTACH, { raw: { resourceType: 'tgw-peering' } }),
+    type: 'aws_ec2_transit_gateway_peering_attachment',
+    id: TGW_ATTACH,
+    verified: true,
+  },
+  {
+    what: 'a connect transit gateway attachment',
+    subject: subject('tgw-attachment', TGW_ATTACH, { raw: { resourceType: 'connect' } }),
+    type: 'aws_ec2_transit_gateway_connect',
+    id: TGW_ATTACH,
+    verified: true,
+  },
+  {
+    // Created by `aws_vpn_connection`; there is no attachment resource to name.
+    what: 'a VPN transit gateway attachment',
+    subject: subject('tgw-attachment', TGW_ATTACH, { raw: { resourceType: 'vpn' } }),
+    type: '',
+    id: TGW_ATTACH,
+    verified: false,
+  },
+  {
+    // Created by `aws_dx_gateway_association`, likewise.
+    what: 'a Direct Connect gateway transit gateway attachment',
+    subject: subject('tgw-attachment', TGW_ATTACH, {
+      raw: { resourceType: 'direct-connect-gateway' },
+    }),
+    type: '',
+    id: TGW_ATTACH,
+    verified: false,
+  },
+  {
+    what: 'a transit gateway attachment of an unmodelled resource type',
+    subject: subject('tgw-attachment', TGW_ATTACH, { raw: { resourceType: 'other' } }),
+    type: '',
+    id: TGW_ATTACH,
+    verified: false,
+  },
+
+  // --- dx-vif — one id, three types ---------------------------------------
+  {
+    what: 'a private virtual interface',
+    subject: subject('dx-vif', 'dxvif-33cc44dd', { raw: { vifType: 'private' } }),
+    type: 'aws_dx_private_virtual_interface',
+    id: 'dxvif-33cc44dd',
+    verified: true,
+  },
+  {
+    what: 'a public virtual interface',
+    subject: subject('dx-vif', 'dxvif-33cc44dd', { raw: { vifType: 'public' } }),
+    type: 'aws_dx_public_virtual_interface',
+    id: 'dxvif-33cc44dd',
+    verified: true,
+  },
+  {
+    what: 'a transit virtual interface',
+    subject: subject('dx-vif', 'dxvif-33cc44dd', { raw: { vifType: 'transit' } }),
+    type: 'aws_dx_transit_virtual_interface',
+    id: 'dxvif-33cc44dd',
+    verified: true,
+  },
+  {
+    what: 'a virtual interface with no vifType',
+    subject: subject('dx-vif', 'dxvif-33cc44dd'),
+    type: '',
+    id: 'dxvif-33cc44dd',
+    verified: false,
+  },
+
+  // --- apigw — REST vs v2, sharing the bare API id ------------------------
+  {
+    what: 'a REST API',
+    subject: subject('apigw', 'abc123', { name: 'orders', raw: { protocolType: 'REST' } }),
+    type: 'aws_api_gateway_rest_api',
+    id: 'abc123',
+    verified: true,
+  },
+  {
+    what: 'an HTTP API',
+    subject: subject('apigw', 'abc123', { name: 'orders', raw: { protocolType: 'HTTP' } }),
+    type: 'aws_apigatewayv2_api',
+    id: 'abc123',
+    verified: true,
+  },
+  {
+    what: 'a WebSocket API',
+    subject: subject('apigw', 'abc123', { name: 'events', raw: { protocolType: 'WEBSOCKET' } }),
+    type: 'aws_apigatewayv2_api',
+    id: 'abc123',
+    verified: true,
+  },
+  {
+    what: 'an API with no protocolType',
+    subject: subject('apigw', 'abc123', { name: 'orders' }),
+    type: '',
+    id: 'abc123',
+    verified: false,
+  },
+
+  // --- apigw-vpc-link — the one kind whose snapshot states its version ----
+  {
+    what: 'a v1 VPC link',
+    subject: subject('apigw-vpc-link', 'aabbccddee', { raw: { version: 'v1' } }),
+    type: 'aws_api_gateway_vpc_link',
+    id: 'aabbccddee',
+    verified: true,
+  },
+  {
+    what: 'a v2 VPC link',
+    subject: subject('apigw-vpc-link', 'aabbccddee', { raw: { version: 'v2' } }),
+    type: 'aws_apigatewayv2_vpc_link',
+    id: 'aabbccddee',
+    verified: true,
+  },
+  {
+    what: 'a VPC link with no version',
+    subject: subject('apigw-vpc-link', 'aabbccddee'),
+    type: '',
+    id: 'aabbccddee',
+    verified: false,
+  },
+
+  // --- apigw-domain — genuinely unresolvable for its commonest variant ----
+  {
+    what: 'an edge-optimised custom domain',
+    subject: subject('apigw-domain', 'dev.example.com', {
+      name: 'dev.example.com',
+      raw: { domainName: 'dev.example.com', endpointTypes: ['EDGE'] },
+    }),
+    type: 'aws_api_gateway_domain_name',
+    id: 'dev.example.com',
+    verified: true,
+  },
+  {
+    // The reverse split: the type resolves (v2 cannot be private) and the id
+    // does not (`<name>/<domain_name_id>`, and `domainNameId` is not collected).
+    what: 'a private custom domain',
+    subject: subject('apigw-domain', 'api.internal.example.com', {
+      name: 'api.internal.example.com',
+      raw: { domainName: 'api.internal.example.com', endpointTypes: ['PRIVATE'] },
+    }),
+    type: 'aws_api_gateway_domain_name',
+    id: 'api.internal.example.com',
+    verified: false,
+  },
+  {
+    what: 'a regional custom domain',
+    subject: subject('apigw-domain', 'ws-api.example.com', {
+      name: 'ws-api.example.com',
+      raw: { domainName: 'ws-api.example.com', endpointTypes: ['REGIONAL'] },
+    }),
+    type: '',
+    id: 'ws-api.example.com',
+    verified: false,
+  },
+  {
+    what: 'a custom domain with no endpoint types',
+    subject: subject('apigw-domain', 'dev.example.com', {
+      name: 'dev.example.com',
+      raw: { domainName: 'dev.example.com' },
+    }),
+    type: '',
+    id: 'dev.example.com',
+    verified: false,
+  },
+];
+
+for (const v of VARIANTS) {
+  test(`${v.what} resolves to ${v.type === '' ? 'no terraform type' : v.type}`, () => {
+    const resolved = resolveScanned(v.subject);
+    assert.equal(resolved.type, v.type, `${v.what}: wrong terraform type`);
+    assert.equal(resolved.id, v.id, `${v.what}: wrong import id`);
+    assert.equal(resolved.verified, v.verified, `${v.what}: ${resolved.comments.join(' | ')}`);
+  });
+}
+
+test('every variant of these kinds is covered, and none is guessed', () => {
+  // `RULES` is the merged registry, so scope to this half of the table —
+  // `fsx` and `datasync-location` resolve their types the same way but belong
+  // to `scanned-workload.ts` and are pinned in its test file.
+  const ambiguous = RULES.filter(
+    (r) => r.typeFromScanned !== undefined && EXPECTED_KINDS.some((k) => (r.kinds ?? []).includes(k)),
+  );
+  assert.deepEqual(
+    ambiguous.map((r) => r.type).sort(),
+    [
+      'aws_api_gateway_domain_name',
+      'aws_api_gateway_rest_api',
+      'aws_api_gateway_vpc_link',
+      'aws_dx_private_virtual_interface',
+      'aws_ec2_transit_gateway_vpc_attachment',
+      'aws_lb',
+    ],
+    'a kind gained or lost a per-subject type resolver',
+  );
+  for (const rule of ambiguous) {
+    const choices = rule.typeChoices ?? [];
+    assert.ok(choices.length > 1, `${rule.type}: typeFromScanned without candidates`);
+    // The declared type is the merge key and a member of the set, never a
+    // claim: nothing may emit it except `typeFromScanned` choosing it.
+    assert.ok(choices.includes(rule.type), `${rule.type}: merge key is not a candidate`);
+  }
+  // Every type any of them can emit appears in the table above, so a new
+  // variant cannot be added without a row pinning its id.
+  //
+  // The single exception is the one candidate this package can *never* emit:
+  // `aws_apigatewayv2_domain_name` is only ever reached through a `REGIONAL`
+  // domain, and `REGIONAL` is exactly the value that fails to discriminate —
+  // v1 accepts it too. There is no snapshot a v2 domain resolves from, which
+  // is the honest end state, not a gap to fill. Any *other* unreachable
+  // candidate is a rule that cannot produce a type it advertises.
+  const UNREACHABLE = ['aws_apigatewayv2_domain_name'];
+  const emitted = new Set(VARIANTS.map((v) => v.type).filter((t) => t !== ''));
+  const declared = new Set(ambiguous.flatMap((r) => [...(r.typeChoices ?? [])]));
+  assert.deepEqual([...declared].filter((t) => !emitted.has(t)).sort(), UNREACHABLE);
+});
+
+// --- The comment has to blame the right half -------------------------------
+
+/**
+ * The regression this package exists to prevent, in its subtlest form. An HTTP
+ * API's id was always right; saying otherwise sent the reader to check the one
+ * thing that was not wrong and let them paste the one that was.
+ */
+test('an HTTP API is no longer flagged for an id that was always correct', () => {
+  const http = resolveScanned(
+    subject('apigw', 'abc123', { name: 'orders', raw: { protocolType: 'HTTP' } }),
+  );
+  const text = emitBlock(http);
+  assert.match(text, /to = aws_apigatewayv2_api\.orders/);
+  assert.match(text, /id = "abc123"/);
+  assert.doesNotMatch(text, /could not build an import id/);
+  assert.doesNotMatch(text, /aws_api_gateway_rest_api/);
+  // Nothing is commented out: this block is pasteable as it stands.
+  assert.doesNotMatch(text, /# import \{/);
+});
+
+test('a classic ELB is no longer flagged for an id that was always correct', () => {
   const classic = resolveScanned(
-    subject('lb', 'legacy-web-elb', { name: 'legacy-web-elb', raw: { lbType: 'classic' } }),
+    subject('lb', 'my-classic-elb', { name: 'my-classic-elb', raw: { lbType: 'classic' } }),
   );
-  assert.equal(classic.verified, false);
-  assert.match(emitBlock(classic), /# VERIFY: the aws_lb rule could not build an import id/);
-});
-
-test('an ARN-less non-classic load balancer declines rather than emitting a name', () => {
-  const noArn = resolveScanned(
-    subject('lb', 'web', { name: 'web', raw: { lbType: 'application' } }),
-  );
-  assert.equal(noArn.verified, false);
-});
-
-test('non-VPC transit gateway attachments decline', () => {
-  for (const resourceType of ['peering', 'connect', 'vpn', 'direct-connect-gateway']) {
-    const other = resolveScanned(
-      subject('tgw-attachment', 'tgw-attach-0a1b2c3d4e5f6789', { raw: { resourceType } }),
-    );
-    assert.equal(other.verified, false, `${resourceType} should not claim to be a VPC attachment`);
-  }
-});
-
-test('public and transit virtual interfaces decline', () => {
-  for (const vifType of ['public', 'transit']) {
-    const vif = resolveScanned(subject('dx-vif', 'dxvif-33cc44dd', { raw: { vifType } }));
-    assert.equal(vif.verified, false, `${vifType} VIF is not aws_dx_private_virtual_interface`);
-  }
-});
-
-test('HTTP and WebSocket APIs decline rather than posing as a REST API', () => {
-  for (const protocolType of ['HTTP', 'WEBSOCKET']) {
-    const api = resolveScanned(subject('apigw', 'aabbccddee', { raw: { protocolType } }));
-    assert.equal(api.verified, false, `${protocolType} API is aws_apigatewayv2_api`);
-  }
-  const v2Link = resolveScanned(subject('apigw-vpc-link', 'aabbccddee', { raw: { version: 'v2' } }));
-  assert.equal(v2Link.verified, false);
+  const text = emitBlock(classic);
+  assert.match(text, /to = aws_elb\.my-classic-elb/);
+  assert.match(text, /id = "my-classic-elb"/);
+  assert.doesNotMatch(text, /could not build an import id/);
+  assert.doesNotMatch(text, /aws_lb\./);
 });
 
 /**
- * `ApiGatewayDomainName` carries no v1/v2 discriminator (unlike
- * `ApiGatewayVpcLink`, which does), and both candidate types import by the
- * domain name — so a `REGIONAL`-only domain declines. The fallback id is the
- * same string either way, so declining costs nothing and flags the one thing
- * that is genuinely uncertain: the type.
+ * When the type genuinely cannot be determined the block must be commented out
+ * — decision 5's "wrong-but-flagged" only holds for ids, because a reader can
+ * check an id. A `to =` naming the wrong resource looks identical to a right
+ * one, so the block is made unpasteable and the candidates are named instead.
  */
-test('a REGIONAL-only API Gateway domain declines because its type is ambiguous', () => {
-  const ambiguous = resolveScanned(
+test('an unresolvable type is commented out, blamed correctly, and recoverable', () => {
+  const regional = resolveScanned(
     subject('apigw-domain', 'ws-api.example.com', {
+      name: 'ws-api.example.com',
       raw: { domainName: 'ws-api.example.com', endpointTypes: ['REGIONAL'] },
     }),
   );
-  assert.equal(ambiguous.verified, false);
-  assert.equal(ambiguous.id, 'ws-api.example.com');
+  const text = emitBlock(regional);
+  for (const line of text.split('\n')) {
+    assert.ok(line.startsWith('# '), `line is pasteable but has no type: ${line}`);
+  }
+  assert.match(text, /VERIFY: the terraform resource type could not be determined/);
+  assert.match(
+    text,
+    /Candidates: aws_api_gateway_domain_name, aws_apigatewayv2_domain_name/,
+    'a commented-out block must name what to fill in',
+  );
+  assert.match(text, /The id below is right whichever of those it is/);
+  assert.match(text, /id = "ws-api\.example\.com"/);
+  // The id is not the problem here and must not be reported as one.
+  assert.doesNotMatch(text, /could not build an import id/);
 });
 
 /**
- * The second form on the same doc page: a *private* custom domain imports by
- * `<name>/<domain_name_id>`, and the snapshot has no `domainNameId` field, so
- * the composite cannot be built. Emitting the bare name for one of these would
- * be the exact failure mode this package exists to prevent — a block that
- * parses, plans and adopts the wrong thing (or nothing).
+ * The reverse split, and the reason the two halves are resolved independently:
+ * a private custom domain's *type* is known exactly (`endpoint_type` on
+ * `r/apigatewayv2_domain_name.html.markdown` accepts `REGIONAL` only, so v2
+ * cannot be private) while its *id* is `<name>/<domain_name_id>` and
+ * `ApiGatewayDomainName` has no `domainNameId`.
  */
-test('a PRIVATE API Gateway domain declines because its id is composite', () => {
+test('a private custom domain keeps its type and flags only the id', () => {
   const priv = resolveScanned(
     subject('apigw-domain', 'api.internal.example.com', {
+      name: 'api.internal.example.com',
       raw: { domainName: 'api.internal.example.com', endpointTypes: ['PRIVATE'] },
     }),
   );
-  assert.equal(priv.verified, false);
-  assert.equal(priv.id, 'api.internal.example.com');
+  const text = emitBlock(priv);
+  assert.match(text, /^ {2}to = aws_api_gateway_domain_name\./m);
+  assert.match(text, /the aws_api_gateway_domain_name rule could not build an import id/);
+  assert.doesNotMatch(text, /type could not be determined/);
+});
+
+/**
+ * `lb` is the one kind here whose variants disagree about the id form too, so
+ * an unknown `lbType` leaves both halves unknown. The block must not tell the
+ * reader the ARN is right whichever candidate this is — for `aws_elb` it is not.
+ */
+test('an unknown lbType declines both halves rather than vouching for the id', () => {
+  const unknown = resolveScanned(subject('lb', ALB_ARN, { arn: ALB_ARN, name: 'web' }));
+  const text = emitBlock(unknown);
+  assert.match(text, /VERIFY: the terraform resource type could not be determined/);
+  assert.match(text, /Candidates: aws_lb, aws_elb/);
+  assert.doesNotMatch(text, /right whichever of those it is/);
+  assert.match(text, /the aws_lb rule could not build an import id/);
 });
 
 // --- Network Firewall ------------------------------------------------------

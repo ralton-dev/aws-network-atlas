@@ -17,7 +17,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CONFLICTS, resolveScanned, ruleForKind, type ScannedSubject } from '../src/index.js';
+import {
+  CONFLICTS,
+  emitBlock,
+  resolveScanned,
+  ruleForKind,
+  type ScannedSubject,
+} from '../src/index.js';
 import { NO_RULE_KINDS, RULES } from '../src/rules/scanned-workload.js';
 
 const ACCOUNT = '111122223333';
@@ -42,6 +48,7 @@ const SFN_ARN = `arn:aws:states:${REGION}:${ACCOUNT}:stateMachine:fulfilment`;
 const JOB_QUEUE_ARN = `arn:aws:batch:${REGION}:${ACCOUNT}:job-queue/nightly`;
 const DS_AGENT_ARN = `arn:aws:datasync:${REGION}:${ACCOUNT}:agent/agent-01234567890abcdef`;
 const DS_TASK_ARN = `arn:aws:datasync:${REGION}:${ACCOUNT}:task/task-01234567890abcdef`;
+const DS_LOC_ARN = `arn:aws:datasync:${REGION}:${ACCOUNT}:location/loc-01234567890abcdef`;
 const FIREHOSE_ARN = `arn:aws:firehose:${REGION}:${ACCOUNT}:deliverystream/audit`;
 const RAM_ARN = `arn:aws:ram:${REGION}:${ACCOUNT}:resource-share/73da1ab9-b94a`;
 const TRAIL_ARN = `arn:aws:cloudtrail:${REGION}:${ACCOUNT}:trail/org-trail`;
@@ -262,6 +269,14 @@ const CASES: readonly Case[] = [
     DS_TASK_ARN,
     { id: 'task-01234567890abcdef', arn: DS_TASK_ARN, name: 'nightly-copy' },
   ],
+  // One representative per kind here; every other locationType is pinned in
+  // DATASYNC_VARIANTS below, including the four that decline their id.
+  [
+    'datasync-location',
+    'aws_datasync_location_s3',
+    DS_LOC_ARN,
+    { id: 'loc-01234567890abcdef', arn: DS_LOC_ARN, raw: { locationType: 's3' } },
+  ],
 
   // --- streaming -----------------------------------------------------------
   // Backwards: collect/firehose.ts:87 stores the stream NAME as `id`.
@@ -347,6 +362,13 @@ const CASES: readonly Case[] = [
 
   // --- storage -------------------------------------------------------------
   ['s3', 'aws_s3_bucket', 'atlas-logs-euw1', { id: 'atlas-logs-euw1', name: 'atlas-logs-euw1' }],
+  // One representative per kind; all four fileSystemTypes are in FSX_VARIANTS.
+  [
+    'fsx',
+    'aws_fsx_lustre_file_system',
+    'fs-543ab12b1ca672f33',
+    { id: 'fs-543ab12b1ca672f33', name: 'scratch', raw: { fileSystemType: 'LUSTRE' } },
+  ],
 
   // --- IAM -----------------------------------------------------------------
   ['iam-role', 'aws_iam_role', 'AtlasScanner', { id: 'AtlasScanner', name: 'AtlasScanner', arn: `arn:aws:iam::${ACCOUNT}:role/AtlasScanner` }],
@@ -468,14 +490,13 @@ test('every workload kind is served by this module, not another one', () => {
   );
 });
 
-test('kinds with no determinable terraform type fall back rather than guess', () => {
-  // Deliberate omissions, not oversights — see NO_RULE_KINDS for the reasons.
-  assert.deepEqual(Object.keys(NO_RULE_KINDS).sort(), [
-    'datasync-location',
-    'ecr-registry',
-    'fsx',
-    'sso-instance',
-  ]);
+test('kinds AWS models but terraform does not have no rule at all', () => {
+  // What is left after WP-I. `fsx` and `datasync-location` used to be here,
+  // declined because a kind whose terraform *type* depends on a collected
+  // field could not be expressed; `typeFromScanned` expresses it and both are
+  // real rules below. These two are the honest case — the provider has no
+  // resource for them at any variant, so the fallback is the final answer.
+  assert.deepEqual(Object.keys(NO_RULE_KINDS).sort(), ['ecr-registry', 'sso-instance']);
   for (const kind of Object.keys(NO_RULE_KINDS)) {
     assert.equal(ruleForKind(kind), undefined, `${kind} should have no rule`);
     const resolved = resolveScanned(subject(kind, { id: 'fs-0abc', name: 'thing' }));
@@ -483,6 +504,349 @@ test('kinds with no determinable terraform type fall back rather than guess', ()
     assert.equal(resolved.verified, false);
     assert.ok(resolved.comments.some((c) => c.startsWith('VERIFY:')));
   }
+});
+
+// --- Kinds whose terraform type depends on a collected field ---------------
+
+/**
+ * WP-I. Both kinds here map one atlas record onto several provider resources,
+ * and both used to be declined outright — a commented-out block with no type
+ * and no candidates, for every FSx file system and every DataSync location in
+ * the estate. `typeFromScanned` resolves the type per subject, so they now
+ * emit real blocks for the variants they can place and a *named shortlist* for
+ * the ones they cannot.
+ *
+ * `datasync-location` is also the case that proves the type and the id fail
+ * independently: the four FSx-backed locations resolve their type exactly and
+ * cannot build their id, which is the opposite of every other row here.
+ */
+interface Variant {
+  readonly what: string;
+  readonly subject: ScannedSubject;
+  /** `''` asserts that no terraform type may be emitted. */
+  readonly type: string;
+  readonly id: string;
+  readonly verified: boolean;
+}
+
+const FS_ID = 'fs-543ab12b1ca672f33';
+
+/**
+ * All four FSx file system pages print the identical
+ * `id = "fs-543ab12b1ca672f33"`, so only the type was ever in doubt.
+ * `collect/fsx.ts:52` writes `FileSystemType ?? 'UNKNOWN'`, which is why the
+ * literal `UNKNOWN` has a row of its own.
+ */
+const FSX_VARIANTS: readonly Variant[] = [
+  {
+    what: 'a Lustre file system',
+    subject: subject('fsx', { id: FS_ID, name: 'scratch', raw: { fileSystemType: 'LUSTRE' } }),
+    type: 'aws_fsx_lustre_file_system',
+    id: FS_ID,
+    verified: true,
+  },
+  {
+    what: 'a Windows file system',
+    subject: subject('fsx', { id: FS_ID, name: 'shares', raw: { fileSystemType: 'WINDOWS' } }),
+    type: 'aws_fsx_windows_file_system',
+    id: FS_ID,
+    verified: true,
+  },
+  {
+    what: 'an ONTAP file system',
+    subject: subject('fsx', { id: FS_ID, name: 'ontap', raw: { fileSystemType: 'ONTAP' } }),
+    type: 'aws_fsx_ontap_file_system',
+    id: FS_ID,
+    verified: true,
+  },
+  {
+    what: 'an OpenZFS file system',
+    subject: subject('fsx', { id: FS_ID, name: 'zfs', raw: { fileSystemType: 'OPENZFS' } }),
+    type: 'aws_fsx_openzfs_file_system',
+    id: FS_ID,
+    verified: true,
+  },
+  {
+    what: 'a file system whose type the collector could not read',
+    subject: subject('fsx', { id: FS_ID, name: 'mystery', raw: { fileSystemType: 'UNKNOWN' } }),
+    type: '',
+    id: FS_ID,
+    verified: false,
+  },
+];
+
+/**
+ * The DataSync location types, and the split that motivated the whole seam.
+ * The plain locations import by the location ARN; the four FSx-backed ones
+ * import by `<location-arn>#<fsx-arn>` — verified on all four pages, with
+ * ONTAP wanting the storage-virtual-machine ARN rather than the file system's
+ * — and `collect/datasync.ts:91` keeps only `SecurityGroupArns` from the
+ * describe call, so the second half is not in the snapshot at all.
+ */
+const DATASYNC_VARIANTS: readonly Variant[] = [
+  {
+    what: 'an S3 location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 's3' },
+    }),
+    type: 'aws_datasync_location_s3',
+    id: DS_LOC_ARN,
+    verified: true,
+  },
+  {
+    what: 'an NFS location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'nfs' },
+    }),
+    type: 'aws_datasync_location_nfs',
+    id: DS_LOC_ARN,
+    verified: true,
+  },
+  {
+    what: 'an SMB location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'smb' },
+    }),
+    type: 'aws_datasync_location_smb',
+    id: DS_LOC_ARN,
+    verified: true,
+  },
+  {
+    what: 'an EFS location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'efs' },
+    }),
+    type: 'aws_datasync_location_efs',
+    id: DS_LOC_ARN,
+    verified: true,
+  },
+  {
+    what: 'an HDFS location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'hdfs' },
+    }),
+    type: 'aws_datasync_location_hdfs',
+    id: DS_LOC_ARN,
+    verified: true,
+  },
+  {
+    // The exact scheme string AWS returns for these two could not be verified
+    // against a real snapshot, so the rule matches after stripping separators
+    // and case: both spellings reach the same type and neither can reach a
+    // different one. This row is the hyphenated spelling.
+    what: 'an object-storage location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'object-storage' },
+    }),
+    type: 'aws_datasync_location_object_storage',
+    id: DS_LOC_ARN,
+    verified: true,
+  },
+  {
+    what: 'an object_storage location under the underscore spelling',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'object_storage' },
+    }),
+    type: 'aws_datasync_location_object_storage',
+    id: DS_LOC_ARN,
+    verified: true,
+  },
+  {
+    what: 'an Azure Blob location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'azure-blob' },
+    }),
+    type: 'aws_datasync_location_azure_blob',
+    id: DS_LOC_ARN,
+    verified: true,
+  },
+  // The four whose id is a composite the snapshot cannot supply: the TYPE
+  // resolves and the ID does not. Nothing else in this package runs this way,
+  // and it is why `typeFromScanned` is independent of `fromScanned` rather
+  // than one function returning a pair.
+  {
+    what: 'an FSx for Windows location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'fsxWindows' },
+    }),
+    type: 'aws_datasync_location_fsx_windows_file_system',
+    // Declining the id falls the block back to `subject.id`, which for a
+    // DataSync location is `lastSegment(arn)` — flagged, and not the ARN.
+    id: 'loc-01234567890abcdef',
+    verified: false,
+  },
+  {
+    what: 'an FSx for Lustre location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'fsxLustre' },
+    }),
+    type: 'aws_datasync_location_fsx_lustre_file_system',
+    // Declining the id falls the block back to `subject.id`, which for a
+    // DataSync location is `lastSegment(arn)` — flagged, and not the ARN.
+    id: 'loc-01234567890abcdef',
+    verified: false,
+  },
+  {
+    what: 'an FSx for ONTAP location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'fsxOntap' },
+    }),
+    type: 'aws_datasync_location_fsx_ontap_file_system',
+    // Declining the id falls the block back to `subject.id`, which for a
+    // DataSync location is `lastSegment(arn)` — flagged, and not the ARN.
+    id: 'loc-01234567890abcdef',
+    verified: false,
+  },
+  {
+    what: 'an FSx for OpenZFS location',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'fsxOpenZfs' },
+    }),
+    type: 'aws_datasync_location_fsx_openzfs_file_system',
+    // Declining the id falls the block back to `subject.id`, which for a
+    // DataSync location is `lastSegment(arn)` — flagged, and not the ARN.
+    id: 'loc-01234567890abcdef',
+    verified: false,
+  },
+  {
+    // Unlike `fsx`, these eleven do not share one id form, so an unreadable
+    // locationType leaves both halves unknown and the ARN must not be vouched
+    // for. `collect/datasync.ts:29` returns undefined for an unparseable URI.
+    what: 'a location whose type the collector could not read',
+    subject: subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+    }),
+    type: '',
+    id: 'loc-01234567890abcdef',
+    verified: false,
+  },
+];
+
+for (const v of [...FSX_VARIANTS, ...DATASYNC_VARIANTS]) {
+  test(`${v.what} resolves to ${v.type === '' ? 'no terraform type' : v.type}`, () => {
+    const resolved = resolveScanned(v.subject);
+    assert.equal(resolved.type, v.type, `${v.what}: wrong terraform type`);
+    assert.equal(resolved.id, v.id, `${v.what}: wrong import id`);
+    assert.equal(resolved.verified, v.verified, `${v.what}: ${resolved.comments.join(' | ')}`);
+  });
+}
+
+test('both per-subject type resolvers cover every variant they advertise', () => {
+  const ambiguous = RULES.filter((r) => r.typeFromScanned !== undefined);
+  assert.deepEqual(ambiguous.map((r) => r.type).sort(), [
+    'aws_datasync_location_s3',
+    'aws_fsx_lustre_file_system',
+  ]);
+  const emitted = new Set(
+    [...FSX_VARIANTS, ...DATASYNC_VARIANTS].map((v) => v.type).filter((t) => t !== ''),
+  );
+  for (const rule of ambiguous) {
+    const choices = rule.typeChoices ?? [];
+    assert.ok(choices.length > 1, `${rule.type}: typeFromScanned without candidates`);
+    // The declared type is the merge key and nothing more. Neither of these
+    // kinds has a dominant variant, so `type` is an arbitrary member of the
+    // set and must never be emitted except by `typeFromScanned` choosing it.
+    assert.ok(choices.includes(rule.type), `${rule.type}: merge key is not a candidate`);
+    for (const choice of choices) {
+      assert.ok(emitted.has(choice), `${choice} is advertised but no variant produces it`);
+    }
+  }
+});
+
+/**
+ * The regression WP-I fixes, in this half of the table. Before, every FSx file
+ * system emitted a fully commented-out block with no type and no hint; a
+ * Windows file system is now a block you can paste.
+ */
+test('a Windows file system is no longer declined outright', () => {
+  const windows = resolveScanned(
+    subject('fsx', { id: FS_ID, name: 'shares', raw: { fileSystemType: 'WINDOWS' } }),
+  );
+  const text = emitBlock(windows);
+  assert.match(text, /^ {2}to = aws_fsx_windows_file_system\.shares$/m);
+  assert.match(text, new RegExp(`id = "${FS_ID}"`));
+  assert.doesNotMatch(text, /VERIFY/);
+  assert.doesNotMatch(text, /aws_fsx_lustre_file_system/, 'the merge key must never be emitted');
+});
+
+test('an unreadable FSx type is commented out and names all four candidates', () => {
+  const unknown = resolveScanned(
+    subject('fsx', { id: FS_ID, name: 'mystery', raw: { fileSystemType: 'UNKNOWN' } }),
+  );
+  const text = emitBlock(unknown);
+  for (const line of text.split('\n')) {
+    assert.ok(line.startsWith('# '), `line is pasteable but has no type: ${line}`);
+  }
+  assert.match(text, /VERIFY: the terraform resource type could not be determined/);
+  assert.match(
+    text,
+    /Candidates: aws_fsx_lustre_file_system, aws_fsx_windows_file_system, aws_fsx_ontap_file_system, aws_fsx_openzfs_file_system/,
+  );
+  // All four import by the `fs-…` id, so this claim is safe here — and the
+  // block is one word away from being usable.
+  assert.match(text, /The id below is right whichever of those it is/);
+  assert.doesNotMatch(text, /could not build an import id/);
+});
+
+/**
+ * The reverse split. The type is exact and the id genuinely cannot be built,
+ * so the comment must blame the id — the one case where the old wording was
+ * right, kept working, and now names the resolved type rather than a
+ * placeholder.
+ */
+test('an FSx-backed DataSync location keeps its type and flags only the id', () => {
+  const fsxLoc = resolveScanned(
+    subject('datasync-location', {
+      id: 'loc-01234567890abcdef',
+      arn: DS_LOC_ARN,
+      raw: { locationType: 'fsxWindows' },
+    }),
+  );
+  const text = emitBlock(fsxLoc);
+  assert.match(text, /^ {2}to = aws_datasync_location_fsx_windows_file_system\./m);
+  assert.match(
+    text,
+    /the aws_datasync_location_fsx_windows_file_system rule could not build an import id/,
+    'the comment must name the resolved type, not the merge key',
+  );
+  assert.doesNotMatch(text, /type could not be determined/);
+  assert.doesNotMatch(text, /aws_datasync_location_s3/);
+});
+
+test('an unreadable DataSync location declines both halves rather than vouching', () => {
+  const unknown = resolveScanned(
+    subject('datasync-location', { id: 'loc-01234567890abcdef', arn: DS_LOC_ARN }),
+  );
+  const text = emitBlock(unknown);
+  assert.match(text, /VERIFY: the terraform resource type could not be determined/);
+  // These eleven disagree about the id form, so no claim may be made about it.
+  assert.doesNotMatch(text, /right whichever of those it is/);
+  assert.match(text, /could not build an import id/);
 });
 
 test('every rule records the provider doc page its id format came from', () => {
