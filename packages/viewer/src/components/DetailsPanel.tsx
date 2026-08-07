@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { ScanError } from '@atlas/schema';
@@ -6,6 +6,7 @@ import type { AtlasIndex, ResourceRef } from '../data.js';
 import type { AtlasEdgeData } from '../model/graph-types.js';
 import { AwsLogo, iconFor } from '../icons.js';
 import { consoleUrl } from '../console-link.js';
+import { copyToClipboard, importBlockFor } from '../model/tf-import.js';
 import { TerraformMark } from './nodes.js';
 
 export type Selection =
@@ -104,6 +105,71 @@ function RepoRef({ repo }: { repo: string }): React.ReactElement {
       : undefined;
   if (!href) return <code>{repo}</code>;
   return <a href={href} target="_blank" rel="noreferrer">{repo}</a>;
+}
+
+/**
+ * The paste-this block for a resource no imported state claims.
+ *
+ * Finding drift is only half the job: the panel used to say "not claimed by any
+ * imported state" and stop, leaving the reader to work out the Terraform type
+ * and the import id themselves — and the import id is *not* the AWS id for a
+ * large fraction of the estate (`aws_sqs_queue` wants the queue URL,
+ * `aws_ecs_service` wants `cluster/service`). The rule table in
+ * `tf-import-blocks` knows the difference; this renders what it says.
+ *
+ * Nothing is hidden when there is no rule (decision 5): a resource the table
+ * cannot type is shown commented out, with the reason, because silently
+ * omitting it is how a resource gets forgotten.
+ */
+function ImportBlock({ subject }: { subject: ResourceRef }): React.ReactElement {
+  const block = useMemo(() => importBlockFor(subject), [subject]);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const { resolved } = block;
+
+  const copy = (): void => {
+    void copyToClipboard(block.text).then((ok) => {
+      setCopyState(ok ? 'copied' : 'failed');
+      window.setTimeout(() => setCopyState('idle'), 1800);
+    });
+  };
+
+  return (
+    <div className="tf-import">
+      <div className="tf-import-head">
+        <span className="tf-import-title">Import block</span>
+        <button
+          className={copyState === 'copied' ? 'tf-copy-btn is-copied' : 'tf-copy-btn'}
+          onClick={copy}
+          title="Copy this block to the clipboard"
+        >
+          {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy'}
+        </button>
+      </div>
+      {resolved.type === '' && (
+        <p className="tf-import-warn">
+          The Terraform resource type for this <code>{subject.kind}</code> could not be
+          determined, so the block below is commented out — it cannot be pasted as it stands.
+          The block says which half is missing: either no rule covers this kind, or the kind
+          spans several provider resources and the scan can't tell which this one is.
+        </p>
+      )}
+      {resolved.type !== '' && !resolved.verified && (
+        <p className="tf-import-warn">
+          No rule computed an import id for <code>{resolved.type}</code>, so the id below is
+          the scanned identifier. Check it against that resource's provider documentation
+          before applying.
+        </p>
+      )}
+      <pre className="tf-import-block">{block.text}</pre>
+      {resolved.type !== '' && resolved.addressIsSuggestion && (
+        <p className="tf-import-note">
+          <code>{resolved.address}</code> is a <strong>suggested</strong> address — there is no
+          state file to read a real one from, so it was built from this resource's name.
+          Rename it to suit your module before pasting.
+        </p>
+      )}
+    </div>
+  );
 }
 
 function annotationHint(ref: ResourceRef): string {
@@ -317,6 +383,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
             {index.terraform.length === 1 ? '' : 's'} imported) — created outside
             Terraform, or managed by a stack that hasn't been imported.
           </p>
+          <ImportBlock subject={ref} />
         </section>
       )}
 

@@ -241,6 +241,18 @@ function prodEuWest1(): RegionSnapshot {
       ingress: [{ protocol: 'tcp', fromPort: 5432, toPort: 5432, cidrs: [], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [{ groupId: sg }], description: 'postgres from app tier' }],
       egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }],
     },
+    // The other half of the duplicate-name pair (see the dev VPC): two
+    // unmanaged `default` security groups in different accounts, so a bulk
+    // import emit has to disambiguate `aws_security_group.default`.
+    {
+      id: 'sg-0prod000000000d1',
+      name: 'default',
+      tags: {},
+      vpcId: vpc,
+      description: 'default VPC security group',
+      ingress: [{ protocol: '-1', cidrs: [], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [{ groupId: 'sg-0prod000000000d1' }], description: 'self' }],
+      egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }],
+    },
   );
 
   // ALB (public) → target group → 6 app instances across 3 AZs.
@@ -1415,11 +1427,57 @@ function devAccount(): AccountSnapshot {
       routes: [route('local', 'local', '10.2.0.0/16'), route('nat', 'nat-0dev00000000001', '0.0.0.0/0'), route('pcx', 'pcx-0proddev000000001', '10.0.0.0/16'), route('tgw', TGW_EU, '10.1.0.0/16'), route('tgw', TGW_EU, '172.16.0.0/12')],
     },
   );
-  r.securityGroups.push({ id: sg, name: 'dev-app', tags: {}, vpcId: vpc, description: 'dev', ingress: [], egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }] });
+  r.securityGroups.push(
+    { id: sg, name: 'dev-app', tags: {}, vpcId: vpc, description: 'dev', ingress: [], egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }] },
+    // Every VPC has one of these and they are all called `default` — which is
+    // why a synthesised import address (`aws_security_group.default`) collides
+    // the moment a bulk emit spans more than one VPC. The prod VPC has the
+    // matching half of this pair.
+    { id: 'sg-0dev0000000002', name: 'default', tags: {}, vpcId: vpc, description: 'default VPC security group', ingress: [{ protocol: '-1', cidrs: [], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [{ groupId: 'sg-0dev0000000002' }], description: 'self' }], egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }] },
+  );
   ['a', 'b'].forEach((az, i) =>
     addInstance(r, { id: `i-0devapp00000${i}01`, name: `dev-app-${az}`, vpcId: vpc, subnetId: `subnet-0devpriv0000${i}01`, az: `${EU}${az}`, ip: `10.2.1${i}.20`, sg, type: 't4g.small' }),
   );
   r.rdsInstances.push({ id: 'dev-postgres', arn: `arn:aws:rds:${EU}:${ACCT.dev}:db:dev-postgres`, name: 'dev-postgres', tags: { env: 'dev' }, engine: 'postgres', engineVersion: '16.4', instanceClass: 'db.t4g.medium', vpcId: vpc, subnetGroupName: 'dev-db', subnetIds: ['subnet-0devpriv0000001', 'subnet-0devpriv0000101'].map((_, i) => `subnet-0devpriv0000${i}01`), securityGroupIds: [sg], endpoint: { address: 'dev-postgres.abc.eu-west-1.rds.amazonaws.com', port: 5432 }, multiAz: false, publiclyAccessible: false, availabilityZone: `${EU}a` });
+
+  // --- deliberately awkward, for the Terraform import-block path ------------
+  // These three shapes exist so the details panel's import block can be checked
+  // against something other than a type whose import id happens to be its id.
+  //
+  // SQS: the collector stores the queue **ARN** as `id`
+  // (`collect/messaging.ts:142`), but `aws_sqs_queue` imports by queue **URL**.
+  // A naive `id = <ref.id>` renders an ARN here and would fail at apply time.
+  r.sqsQueues.push({
+    id: `arn:aws:sqs:${EU}:${ACCT.dev}:dev-orders`,
+    arn: `arn:aws:sqs:${EU}:${ACCT.dev}:dev-orders`,
+    name: 'dev-orders',
+    tags: { env: 'dev' },
+    visibilityTimeout: 30,
+    sqsManagedSseEnabled: true,
+    deadLetterTargetArn: `arn:aws:sqs:${EU}:${ACCT.dev}:dev-orders-dlq`,
+    maxReceiveCount: 5,
+  });
+  // ECS: `id` is the service ARN (`collect/containers.ts`), but
+  // `aws_ecs_service` imports by `<cluster>/<service>`. Two services deployed
+  // blue/green share the name `web`, so their synthesised addresses collide —
+  // the case decision 8's `_2` dedupe exists for, and the only place in this
+  // estate where it is exercised inside a single view.
+  ['blue', 'green'].forEach((colour, i) =>
+    r.ecsServices.push({
+      id: `arn:aws:ecs:${EU}:${ACCT.dev}:service/dev-${colour}/web`,
+      arn: `arn:aws:ecs:${EU}:${ACCT.dev}:service/dev-${colour}/web`,
+      name: 'web',
+      tags: { env: 'dev', deployment: colour },
+      clusterArn: `arn:aws:ecs:${EU}:${ACCT.dev}:cluster/dev-${colour}`,
+      clusterName: `dev-${colour}`,
+      launchType: 'FARGATE',
+      desiredCount: i === 0 ? 2 : 0,
+      runningCount: i === 0 ? 2 : 0,
+      subnetIds: ['subnet-0devpriv0000001', 'subnet-0devpriv0000101'],
+      securityGroupIds: [sg],
+      assignPublicIp: false,
+    }),
+  );
 
   r.transitGatewayAttachments.push({ id: ATT.dev, name: 'dev-vpc-attach', tags: {}, transitGatewayId: TGW_EU, transitGatewayOwnerId: ACCT.shared, resourceOwnerId: ACCT.dev, resourceType: 'vpc', resourceId: vpc, state: 'available', subnetIds: ['subnet-0devpriv0000001', 'subnet-0devpriv0000101'].map((_, i) => `subnet-0devpriv0000${i}01`) });
   r.peeringConnections.push({
@@ -1431,6 +1489,10 @@ function devAccount(): AccountSnapshot {
     status: 'active',
   });
   r.generic.push({ arn: `arn:aws:dynamodb:${EU}:${ACCT.dev}:table/dev-scratch`, service: 'dynamodb', resourceType: 'table', name: 'dev-scratch', tags: { env: 'dev' } });
+  // A tagged resource of a service with no detailed collector: it lands as
+  // `generic`, which by design has no import rule at all. Selecting it must
+  // still show a block — commented out, with the reason — rather than silence.
+  r.generic.push({ arn: `arn:aws:kinesisvideo:${EU}:${ACCT.dev}:stream/dev-doorbell/1699999999999`, service: 'kinesisvideo', resourceType: 'stream', name: 'dev-doorbell', tags: { env: 'dev' } });
 
   return {
     accountId: ACCT.dev,

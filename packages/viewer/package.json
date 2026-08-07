@@ -17,7 +17,8 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "tf-import-blocks": "*"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",

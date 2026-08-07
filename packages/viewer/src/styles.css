@@ -294,6 +294,56 @@ html, body, #root { margin: 0; height: 100%; }
 .tf-address { font-size: 12px; font-weight: 600; color: #5c4d9a; word-break: break-all; }
 .tf-origin { font-size: 12px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
 
+/* Import blocks for unmanaged resources — the details panel's single block and
+   the Layers panel's bulk copy share this palette. The `.tf-bulk-*` rules are
+   used by the Layers panel only; they live here because this stylesheet is the
+   single owner for the whole feature. */
+.tf-import { margin-top: 10px; }
+.tf-import-head { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.tf-import-title {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--muted); font-weight: 600; flex: 1;
+}
+.tf-copy-btn {
+  background: #ede8fa; color: #5c4d9a; border: 1px solid #c9bdec;
+  border-radius: 5px; font-size: 11px; font-weight: 600; padding: 3px 10px;
+  cursor: pointer; flex-shrink: 0;
+}
+.tf-copy-btn:hover { background: #e0d8f6; }
+.tf-copy-btn.is-copied { background: #e3f5e6; border-color: #a8ddb1; color: #1f7a4d; }
+/* Wraps rather than scrolls: the whole point of the panel is to *read* the id
+   and see that it is a queue URL and not the ARN sitting in Identifiers below,
+   and a horizontally-clipped line hides exactly that. Copying is the button's
+   job, and it copies the unwrapped text. */
+.tf-import-block {
+  margin: 0; font-size: 10.5px; line-height: 1.5;
+  background: #fbfaff; border: 1px solid #ddd3f0; border-radius: 6px;
+  padding: 9px 10px; max-height: 340px; overflow-y: auto;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.tf-import-note { margin: 6px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+.tf-import-note code { color: #5c4d9a; word-break: break-all; }
+/* Amber, not the panel's purple: an unverifiable id is the one thing here that
+   can quietly do damage, so it must not read as ordinary chrome. */
+.tf-import-warn {
+  margin: 0 0 6px; font-size: 11.5px; line-height: 1.45; color: #7a4a00;
+  background: #fff7e6; border: 1px solid #f0d9a8; border-left: 3px solid #d98f00;
+  border-radius: 5px; padding: 6px 8px;
+}
+.tf-import-warn code { word-break: break-all; }
+
+/* Layers-panel bulk copy (every unmanaged node in the current view). */
+.tf-bulk-btn {
+  display: block; width: 100%; margin-top: 8px;
+  background: #ede8fa; color: #5c4d9a; border: 1px solid #c9bdec;
+  border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600;
+  cursor: pointer; text-align: center;
+}
+.tf-bulk-btn:hover:not(:disabled) { background: #e0d8f6; }
+.tf-bulk-btn:disabled { opacity: 0.45; cursor: default; }
+.tf-bulk-btn.is-copied { background: #e3f5e6; border-color: #a8ddb1; color: #1f7a4d; }
+.tf-bulk-note { margin: 5px 0 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+
 /* Scan-error list shown when a partially-scanned account/region is selected. */
 .scan-error-note { margin: 10px 0 4px; line-height: 1.5; }
 .scan-errors { list-style: none; margin: 6px 0 0; padding: 0; }
