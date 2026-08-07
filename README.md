@@ -403,8 +403,10 @@ Terraform already owns. If you see no import block, that's why.
 Two things differ from the CLI path, because a scan has no state file to read:
 
 - **The address is a suggestion.** There's no real address to copy, so one is
-  synthesised from the resource's name (`aws_vpc.prod_core`) and sanitised to a
-  valid HCL identifier. Rename it to suit your module — the panel says so.
+  synthesised from the resource's name and sanitised to a valid HCL identifier:
+  a VPC named `prod-core` becomes `aws_vpc.prod-core`, anything outside
+  `[A-Za-z0-9_-]` becomes `_`, and a name that can't start an identifier gets an
+  `r_` prefix. Rename it to suit your module — the panel says so.
 - **The Terraform type isn't always knowable.** A resource's import id isn't its
   id, and its Terraform *type* isn't always determinable either: several atlas
   kinds cover more than one provider resource — `apigw` is REST or HTTP, `lb` is
