@@ -1,10 +1,12 @@
 #!/usr/bin/env tsx
+import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { loadConfig } from './config.js';
 import { verifyAwsCli } from './preflight.js';
 import { scanAccount } from './scan.js';
 import { bundle, readAccountSnapshots, writeAccountSnapshot } from './bundle.js';
 import { collectSnapshotKeys, matchReport, tfImport } from './terraform.js';
+import { formatSummary, tfBlocks, writeBlocks } from './tf-blocks.js';
 
 const HELP = `atlas-scan — read-only AWS inventory scanner for the network atlas
 
@@ -12,6 +14,7 @@ Usage:
   atlas-scan scan [--profile <name>]... [--region <region>]... [--config <path>]
   atlas-scan bundle [--config <path>]
   atlas-scan tf-import --repo <repo> [--stack <name>] <statefile>... [--config <path>]
+  atlas-scan tf-blocks [--out <file>] [--filter <prefix>] <statefile>...
 
 Commands:
   scan       Verify credentials, scan the configured accounts (READ ONLY),
@@ -24,6 +27,15 @@ Commands:
              \`terraform show -json\` output. Only address/type/id/arn are
              kept — state attribute values (which may hold secrets) never
              leave the state file.
+  tf-blocks  Generate Terraform \`import\` blocks for the resources in state
+             file(s), for moving them into another configuration. HCL goes to
+             stdout (redirect it straight into a .tf) and a summary to stderr.
+             Import ids come from a per-type rule table, not from the state
+             id — aws_sqs_queue imports by queue URL, aws_lambda_function by
+             function name, aws_route by <route-table>_<destination>. A type
+             with no rule is still emitted, flagged \`# VERIFY\`, because a
+             silently dropped resource is the worst outcome of a state move.
+             Nothing but identifiers leaves the state file.
 
 Options:
   --profile   AWS config profile to scan (repeatable; overrides atlas.config.json accounts)
@@ -33,11 +45,16 @@ Options:
               (URL or org/repo slug) — required, shown on matched resources
   --stack     tf-import: stack name for a single state file
               (default: derived from the file name; multiple files always derive)
+  --out       tf-blocks: write the HCL to this file instead of stdout
+  --filter    tf-blocks: emit only addresses starting with this prefix
+              (e.g. --filter module.net.) — moving one subtree is the common case
 
 Examples:
   terraform state pull > /tmp/prod-network.tfstate
   atlas-scan tf-import --repo github.com/acme/infra-network --stack prod-network /tmp/prod-network.tfstate
   atlas-scan tf-import --repo github.com/acme/platform states/*.tfstate
+  atlas-scan tf-blocks /tmp/prod-network.tfstate > imports.tf
+  atlas-scan tf-blocks --filter module.net. --out imports.tf /tmp/prod-network.tfstate
 `;
 
 function invocationDir(): string {
@@ -53,19 +70,46 @@ async function main(): Promise<void> {
       config: { type: 'string' },
       repo: { type: 'string' },
       stack: { type: 'string' },
+      out: { type: 'string' },
+      filter: { type: 'string' },
       help: { type: 'boolean', short: 'h' },
     },
   });
 
   const command = positionals[0] ?? 'scan';
-  const knownCommand = command === 'scan' || command === 'bundle' || command === 'tf-import';
-  const extraPositionals = command !== 'tf-import' && positionals.length > 1;
+  const takesFiles = command === 'tf-import' || command === 'tf-blocks';
+  const knownCommand =
+    command === 'scan' || command === 'bundle' || command === 'tf-import' || takesFiles;
+  const extraPositionals = !takesFiles && positionals.length > 1;
   if (values.help || !knownCommand || extraPositionals) {
     if (extraPositionals) {
       console.error(`Unexpected arguments: ${positionals.slice(1).join(' ')}\n`);
     }
     console.log(HELP);
     process.exit(values.help ? 0 : 1);
+  }
+
+  // Before loadConfig: turning a state file into HCL needs no atlas.config.json,
+  // no snapshots and no AWS credentials. Requiring any of them would make the
+  // command unusable in the target repo, which is where you actually want it.
+  if (command === 'tf-blocks') {
+    const files = positionals.slice(1);
+    if (files.length === 0) {
+      throw new Error('tf-blocks: pass at least one Terraform state file');
+    }
+    const cwd = invocationDir();
+    const { hcl, summary } = await tfBlocks({ files, filter: values.filter, cwd });
+
+    // stdout is HCL and nothing else — it is expected to be redirected into a
+    // .tf file, so every word of prose goes to stderr.
+    if (values.out) {
+      const abs = await writeBlocks(hcl, values.out, cwd);
+      console.error(`tf-blocks: wrote ${path.relative(cwd, abs) || abs}`);
+    } else {
+      process.stdout.write(hcl);
+    }
+    for (const line of formatSummary(summary)) console.error(line);
+    return;
   }
 
   const config = await loadConfig({

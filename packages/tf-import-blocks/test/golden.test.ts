@@ -1,15 +1,15 @@
 /**
- * The red pin.
+ * The pin — now green.
  *
- * This test states what correct output looks like and fails until it is true.
- * It runs under `{ todo: true }`, so `npm test` still exits 0 — the tree
- * documents the known defect without a red build.
+ * This test states what correct output looks like. It was written under
+ * `{ todo: true }` while the rule tables were empty, so `npm test` exited 0
+ * while the tree documented the known defect; WP-E removed the flag once the
+ * tables made it true. It is a plain assertion now and must stay one.
  *
- * **WP-E removes `{ todo: true }`. When this passes as a plain assertion, the
- * plan is done. There is no other definition.** If it does not pass, the defect
- * is in the rule modules (WP-B / WP-C / WP-D), not here: the fixtures are the
- * specification and their values came off the provider doc pages, so do not
- * edit them to match the code.
+ * If it goes red, the defect is in the rule modules, not here: the fixtures are
+ * the specification and their values came off the provider doc pages, so do not
+ * edit them to match the code. `buildReport()` below exists to say which type
+ * disagrees and how, so that a regression names itself.
  *
  * Three things are asserted, all from the same two fixtures:
  *
@@ -22,8 +22,10 @@
  *      string. That is the plan's completion signal.
  *
  * ---------------------------------------------------------------------------
- * OBSERVED FAILURE at WP-A (rule tables empty, 2026-08-07). Recorded so the
- * next agent can tell a *new* failure from the expected one:
+ * HISTORY — the failure this test was pinned on, observed at WP-A with the rule
+ * tables empty (2026-08-07). Every line of it is now fixed; it is kept because
+ * it is the clearest statement of what the whole package is for, and because a
+ * regression will almost certainly reproduce one of these exact lines:
  *
  *   IMPORT IDS (state path) — 4 of 15 blocks resolve to the wrong id
  *     aws_ecs_service.web             aws_ecs_service
@@ -289,7 +291,7 @@ function buildReport(): string {
   return `\n${sections.join('\n\n')}\n`;
 }
 
-test('import blocks for awkward.tfstate.json match the golden output', { todo: true }, () => {
+test('import blocks for awkward.tfstate.json match the golden output', () => {
   // `assert.fail`, not `assert.equal(report, '')`: the latter prints the whole
   // report twice — once as the message and again as a string diff — which
   // buries the thing you need to read.
