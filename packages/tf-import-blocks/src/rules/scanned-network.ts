@@ -282,10 +282,19 @@ export const RULES: ImportRule[] = [
    * `ApiGatewayDomainName` carries no version discriminator (unlike
    * `ApiGatewayVpcLink`, which does), and `collect/edge-network.ts:725` / `:766`
    * merge v1 and v2 domains into one collection behind a shared `seenDomains`
-   * set. `endpointTypes` is the only signal: `EDGE` and `PRIVATE` exist on REST
-   * custom domains alone, so those confirm v1; a `REGIONAL`-only domain could
-   * be either and declines, which costs nothing — the fallback id is the same
-   * string — and buys an honest `# VERIFY`.
+   * set. `endpointTypes` is the only signal, and only `EDGE` is usable:
+   *
+   *  - `EDGE` exists on REST custom domains alone, so it confirms v1 *and* the
+   *    plain `dev.example.com` id form.
+   *  - `PRIVATE` also confirms v1, but a private custom domain imports by
+   *    `<name>/<domain_name_id>` — a second form the same doc page documents —
+   *    and `ApiGatewayDomainName` carries no `domainNameId` field, so the
+   *    composite cannot be built. Declining beats emitting half of it.
+   *  - `REGIONAL` could be either API family and declines too.
+   *
+   * Declining costs nothing here: the fallback id is the domain name either
+   * way (`id: d.domainName`), so all a decline changes is that the block gains
+   * an honest `# VERIFY` about the one thing that is genuinely uncertain.
    */
   {
     type: 'aws_api_gateway_domain_name',
@@ -293,9 +302,8 @@ export const RULES: ImportRule[] = [
     doc: doc('api_gateway_domain_name'),
     fromScanned: (s) => {
       const types = s.raw['endpointTypes'];
-      const v1Only =
-        Array.isArray(types) && types.some((t) => t === 'EDGE' || t === 'PRIVATE');
-      if (!v1Only) return undefined;
+      if (!Array.isArray(types)) return undefined;
+      if (!types.includes('EDGE') || types.includes('PRIVATE')) return undefined;
       return rawStr(s, 'domainName') ?? str(s.id);
     },
   },

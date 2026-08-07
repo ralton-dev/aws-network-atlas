@@ -613,6 +613,23 @@ test('a REGIONAL-only API Gateway domain declines because its type is ambiguous'
   assert.equal(ambiguous.id, 'ws-api.example.com');
 });
 
+/**
+ * The second form on the same doc page: a *private* custom domain imports by
+ * `<name>/<domain_name_id>`, and the snapshot has no `domainNameId` field, so
+ * the composite cannot be built. Emitting the bare name for one of these would
+ * be the exact failure mode this package exists to prevent — a block that
+ * parses, plans and adopts the wrong thing (or nothing).
+ */
+test('a PRIVATE API Gateway domain declines because its id is composite', () => {
+  const priv = resolveScanned(
+    subject('apigw-domain', 'api.internal.example.com', {
+      raw: { domainName: 'api.internal.example.com', endpointTypes: ['PRIVATE'] },
+    }),
+  );
+  assert.equal(priv.verified, false);
+  assert.equal(priv.id, 'api.internal.example.com');
+});
+
 // --- Network Firewall ------------------------------------------------------
 
 test('Network Firewall imports by ARN even though the collector stores the name', () => {
