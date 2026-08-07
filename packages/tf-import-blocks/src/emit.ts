@@ -129,11 +129,33 @@ export function providerComment(
   return `source provider ${label} — ${why}; ${how}`;
 }
 
+/**
+ * What stands in for the address when there is none.
+ *
+ * Deliberately not valid HCL: a bare `<` cannot open an expression (`<<` would
+ * be a heredoc, a single one is a parse error), so a reader who uncomments the
+ * stanza without filling this in gets a syntax error at the exact line rather
+ * than a block terraform accepts and applies somewhere unintended. A plain
+ * `TYPE.NAME` placeholder would parse — as a reference to an undeclared
+ * resource — and fail later and further away.
+ *
+ * It says what to write rather than why it is missing: the `# VERIFY` comment
+ * immediately above already names the reason (no rule for the kind, or a rule
+ * that could not choose between several provider resources), and repeating it
+ * here would crowd out the one thing that line can usefully carry.
+ */
+const NO_ADDRESS = '<replace with the terraform type and a name, e.g. aws_vpc.main>';
+
 /** One `import { … }` block, or a commented-out stanza when the type is unknown. */
 export function emitBlock(item: ResolvedImport): string {
   const body = [
     'import {',
-    `  to = ${item.address}`,
+    // An empty address is what a missing terraform type leaves behind. Emitting
+    // it raw produced `  to = ` — trailing whitespace, no address, and nothing
+    // telling the reader what belongs there. Keyed on the address rather than
+    // on the type because the address is what the line actually needs, so the
+    // placeholder still fires if the two ever come apart.
+    `  to = ${item.address === '' ? NO_ADDRESS : item.address}`,
     `  id = "${escapeHcl(item.id)}"`,
     '}',
   ];

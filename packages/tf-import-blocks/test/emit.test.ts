@@ -95,8 +95,33 @@ test('a resolution with no terraform type is emitted fully commented out', () =>
   const text = emitBlock(block({ type: '', address: '', comments: ['VERIFY: unknown kind'] }));
   assert.equal(
     text,
-    ['# VERIFY: unknown kind', '# import {', '#   to = ', '#   id = "vpc-123"', '# }'].join('\n'),
+    [
+      '# VERIFY: unknown kind',
+      '# import {',
+      '#   to = <replace with the terraform type and a name, e.g. aws_vpc.main>',
+      '#   id = "vpc-123"',
+      '# }',
+    ].join('\n'),
   );
+  // The two properties that make the placeholder worth having, asserted rather
+  // than left to the string above: no line ends in whitespace (`  to = ` did,
+  // which some editors strip and every reviewer queries), and the stand-in
+  // cannot parse as HCL, so uncommenting without filling it in fails loudly at
+  // this line instead of resolving to something.
+  for (const line of text.split('\n')) assert.equal(line, line.trimEnd());
+  assert.ok(text.includes('to = <'));
+});
+
+test('an empty address is filled even when the block is not commented out', () => {
+  // The placeholder keys on the address, not the type. Nothing in this package
+  // produces a typed resolution with no address — `from-scanned.ts` clears both
+  // together and the state path takes its type from the state file — but this
+  // is the case where a dangling `to = ` would reach a .tf file *uncommented*,
+  // as live invalid HCL, so the guard covers it rather than assuming the two
+  // fields stay coupled.
+  const text = emitBlock(block({ address: '' }));
+  assert.ok(!text.startsWith('#'));
+  assert.match(text, /^ {2}to = <replace with the terraform type and a name/m);
 });
 
 test('emitBlocks separates blocks by a blank line and ends with one newline', () => {
