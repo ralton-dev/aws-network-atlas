@@ -25,7 +25,11 @@ export interface StateResource {
 }
 
 export interface StateSkipCounts {
-  /** Instances carrying a `deposed` key — orphans of an interrupted replace. */
+  /**
+   * Orphans of an interrupted create-before-destroy replace. Raw v4 spells this
+   * `instances[].deposed`; `terraform show -json` spells it `deposed_key` on a
+   * separate resource entry. Both are counted here.
+   */
   readonly deposed: number;
   /** `mode: "data"` — decision 11. */
   readonly dataSources: number;
@@ -62,6 +66,31 @@ function classifySkip(mode: unknown, type: unknown): keyof StateSkipCounts | und
   return undefined;
 }
 
+/**
+ * A deposed object is the *old* half of an interrupted create-before-destroy
+ * replace. It shares an address with the live object and is scheduled for
+ * destruction, so importing it would both collide and adopt something Terraform
+ * is about to delete. Skip, and count — decision 5 forbids a silent drop.
+ *
+ * The two input formats spell it differently and the difference is the whole
+ * defect this function exists to close (verified against terraform on `main`,
+ * 2026-08-08):
+ *
+ *   - raw v4 (`states/statefile/version4.go:705`) nests the deposed object as a
+ *     further entry in the resource's own `instances[]`, keyed `deposed`.
+ *   - `terraform show -json` (`command/jsonstate/state.go:114`, marshalled at
+ *     lines ~481-529) has no nesting: it appends a **separate resource entry**
+ *     whose `address` is assigned `current.Address`, i.e. byte for byte the same
+ *     address as the live object, and sets `deposed_key`.
+ *
+ * Reading only the v4 spelling therefore looked correct on every fixture while
+ * emitting two `import` blocks at one address for any real state caught
+ * mid-replace — HCL Terraform rejects — and reporting `deposed: 0` for it.
+ */
+function deposedKey(entry: Record<string, unknown>): string | undefined {
+  return str(entry['deposed']) ?? str(entry['deposed_key']);
+}
+
 /** Raw state v4 — the *.tfstate format, also what `terraform state pull` emits. */
 function parseRawState(state: Record<string, unknown>): ParsedStateFile {
   const resources: StateResource[] = [];
@@ -77,11 +106,7 @@ function parseRawState(state: Record<string, unknown>): ParsedStateFile {
     const type = res['type'] as string;
     const base = `${res['module'] ? `${String(res['module'])}.` : ''}${type}.${String(res['name'])}`;
     for (const inst of (res['instances'] as Array<Record<string, unknown>> | undefined) ?? []) {
-      // A deposed object is the *old* half of an interrupted create-before-
-      // destroy replace. It shares an address with the live instance and is
-      // scheduled for destruction, so importing it would both collide and
-      // adopt something Terraform is about to delete. Skip, and count.
-      if (inst['deposed'] !== undefined && inst['deposed'] !== '') {
+      if (deposedKey(inst) !== undefined) {
         skipped.deposed += 1;
         continue;
       }
@@ -105,6 +130,12 @@ function parseShowJson(state: Record<string, unknown>): ParsedStateFile {
       if (!isManagedAws(res['mode'], res['type'])) {
         const bucket = classifySkip(res['mode'], res['type']);
         if (bucket !== undefined && bucket !== 'deposed') skipped[bucket] += 1;
+        continue;
+      }
+      // Same address as the live entry, `deposed_key` the only difference — so
+      // this is the branch whose absence produced two blocks at one address.
+      if (deposedKey(res) !== undefined) {
+        skipped.deposed += 1;
         continue;
       }
       resources.push({
