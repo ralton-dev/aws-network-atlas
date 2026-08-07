@@ -12,9 +12,9 @@
  * computed id, the address, and the account/region the ARN disclosed. Raw
  * state attributes routinely contain secrets and are never copied verbatim.
  */
-import { contextComment } from './emit.js';
+import { contextComment, providerComment, type ProviderProvenance } from './emit.js';
 import { ruleForType } from './rules/registry.js';
-import { parseArn, str, type ResolvedImport, type StateAttributes } from './types.js';
+import { parseArn, str, type ParsedArn, type ResolvedImport, type StateAttributes } from './types.js';
 
 /** One resource instance lifted out of a state file. */
 export interface StateResource {
@@ -48,6 +48,15 @@ export interface StateResource {
    * replace the object on its next apply.
    */
   readonly tainted?: boolean | undefined;
+  /**
+   * The provider *configuration* this resource was managed through, when it was
+   * not the root default one. Raw v4 only: `terraform show -json` records the
+   * provider *source* address (`provider_name`, always
+   * `registry.terraform.io/hashicorp/aws` here) and drops the alias entirely,
+   * so cross-account provenance is recoverable from a raw state and not from a
+   * shown one.
+   */
+  readonly provider?: ProviderProvenance | undefined;
 }
 
 export interface StateSkipCounts {
@@ -152,6 +161,63 @@ function instanceAttributes(inst: Record<string, unknown>): {
   return { attributes: {}, legacyFlatmap: false };
 }
 
+/**
+ * `resources[].provider` (`version4.go:698`) — the provider *configuration*
+ * address, in one of two spellings:
+ *
+ *   provider["registry.terraform.io/hashicorp/aws"].usw2     0.13 and later
+ *   provider.aws.usw2                                        0.12
+ *   module.legacy.provider["…/hashicorp/aws"]                config inside a module
+ *
+ * Returns `undefined` for anything unparseable, which is treated exactly like
+ * the root default provider: no claim is better than a wrong one, and a claim
+ * about which account a resource lives in is not one to guess at.
+ */
+const PROVIDER_CONFIG =
+  /^(?:(module\..+?)\.)?provider(?:\["([^"]+)"\]|\.([A-Za-z0-9_-]+))(?:\.([A-Za-z_][A-Za-z0-9_-]*))?$/;
+
+export function parseProviderConfig(value: unknown): ProviderProvenance | undefined {
+  const raw = str(value);
+  if (raw === undefined) return undefined;
+  const m = PROVIDER_CONFIG.exec(raw);
+  if (m === null) return undefined;
+  const [, modulePath, sourceAddr, legacyName, alias] = m;
+  // `registry.terraform.io/hashicorp/aws` → `aws`, which is the local name in
+  // every configuration that has not renamed it — and renaming it is not
+  // something a state file records.
+  const localName = sourceAddr !== undefined ? (sourceAddr.split('/').pop() ?? '') : legacyName;
+  if (localName === undefined || localName === '') return undefined;
+  return { localName, alias, module: modulePath };
+}
+
+/**
+ * Services whose ARNs leave the region field empty **because the service is
+ * global**, so an empty region is an answer rather than an absence.
+ *
+ * A whitelist rather than a rule, because the shape is ambiguous: an S3 bucket
+ * ARN also omits the region and buckets are emphatically regional. Reporting
+ * `region unknown` for `arn:aws:iam::…:role/x` was the reverse error — ignorance
+ * where the answer is known and documented — so both halves are stated
+ * explicitly and neither is inferred.
+ */
+const GLOBAL_ARN_SERVICES = new Set([
+  'iam',
+  'organizations',
+  'route53',
+  'cloudfront',
+  'globalaccelerator',
+  'networkmanager',
+  'waf',
+  'account',
+  'sts',
+]);
+
+function regionFromArn(arn: ParsedArn | undefined): string | undefined {
+  if (arn === undefined) return undefined;
+  if (arn.region !== '') return arn.region;
+  return GLOBAL_ARN_SERVICES.has(arn.service) ? '' : undefined;
+}
+
 /** Raw state v4 — the *.tfstate format, also what `terraform state pull` emits. */
 function parseRawState(state: Record<string, unknown>): ParsedStateFile {
   const resources: StateResource[] = [];
@@ -167,6 +233,7 @@ function parseRawState(state: Record<string, unknown>): ParsedStateFile {
     }
     const type = res['type'] as string;
     const base = `${res['module'] ? `${String(res['module'])}.` : ''}${type}.${String(res['name'])}`;
+    const provider = parseProviderConfig(res['provider']);
     for (const inst of (res['instances'] as Array<Record<string, unknown>> | undefined) ?? []) {
       if (deposedKey(inst) !== undefined) {
         skipped.deposed += 1;
@@ -184,6 +251,7 @@ function parseRawState(state: Record<string, unknown>): ParsedStateFile {
         attributes,
         legacyFlatmap,
         tainted,
+        provider,
       });
     }
   }
@@ -278,13 +346,18 @@ export function resolveStateResource(res: StateResource): ResolvedImport {
   const rule = ruleForType(res.type);
   const stateId = str(res.attributes['id']) ?? '';
   const arn = parseArn(res.attributes['arn']);
-  // An ARN with an empty region field (S3, IAM) has not told us the resource is
-  // global — it has told us nothing. `undefined` says that; `''` would claim it.
   const accountId = arn?.accountId ? arn.accountId : undefined;
-  const region = arn?.region ? arn.region : undefined;
+  // An empty ARN region field means "global" for a service that is global and
+  // "nothing was said" for one that merely omits it (S3). `''` claims the
+  // first, `undefined` the second — see GLOBAL_ARN_SERVICES.
+  const region = regionFromArn(arn);
   const comments: string[] = [];
   const context = contextComment(accountId, region);
   if (context !== undefined) comments.push(context);
+  if (res.provider !== undefined) {
+    const provenance = providerComment(res.provider, res.address.startsWith('module.'));
+    if (provenance !== undefined) comments.push(provenance);
+  }
   if (res.tainted === true) {
     comments.push(
       'TAINTED in the source state — the object exists and the id below is the real one, so ' +

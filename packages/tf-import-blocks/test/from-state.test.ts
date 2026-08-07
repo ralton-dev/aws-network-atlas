@@ -189,3 +189,149 @@ test('a tainted resource entry is flagged on the show -json path too', () => {
   const hcl = emitBlocks(importsFromState(fixture('awkward-show.json'), 'awkward-show.json'));
   assert.equal(hcl.match(/^# TAINTED/gm)?.length, 1);
 });
+
+// ── provenance: the provider configuration address ─────────────────────────
+//
+// Decision 10 forbids emitting a `provider =` argument, because we cannot know
+// the user's alias names, and mitigates the wrong-account paste with a comment
+// instead. But the only thing that fired was `# account … · region …`, computed
+// from an `arn` *attribute* — and plenty of types have none. On this two-account
+// state four of eight blocks carried no provenance whatsoever, and the worst of
+// them was module.dr.aws_route.dr_default: a resource in the DR account, no
+// `arn` attribute, and therefore silent. That is exactly the cross-account paste
+// decision 10 exists to warn about, unmitigated.
+//
+// The state does carry the answer. `resources[].provider` (version4.go:698) is
+// the provider *configuration* address, alias and all, and nothing in the repo
+// read it. Naming an alias is not an attribute value, so decision 6 is intact.
+
+test('an aliased provider is named, and the root default provider is not', () => {
+  const provOf = (address: string): string[] =>
+    blockAt('two-account.tfstate.json', address).comments.filter((c) =>
+      c.startsWith('source provider'),
+    );
+
+  // The block that had nothing at all: no arn attribute, other account.
+  const route = provOf('module.dr.aws_route.dr_default');
+  assert.equal(route.length, 1);
+  assert.match(route[0] ?? '', /aws\.usw2/);
+  assert.match(provOf('aws_vpc.dr')[0] ?? '', /aws\.usw2/);
+
+  // Silence for the root default provider is the point, not an oversight: it is
+  // the provider the target already uses, so a line would be noise — and this
+  // is what keeps awkward.expected.tf byte-identical.
+  assert.deepEqual(provOf('aws_vpc.main'), []);
+  assert.deepEqual(provOf('aws_instance.web'), []);
+
+  // A provider configured inside a module is not the root provider either. Its
+  // resources are necessarily inside that module too — a provider cannot be
+  // passed upward — so the fixture puts the bucket where such a config can
+  // actually reach it.
+  assert.match(provOf('module.legacy.aws_s3_bucket.logs')[0] ?? '', /module\.legacy\.aws/);
+});
+
+test('the provider advice matches where terraform will accept it', () => {
+  // internal/configs/import.go:80-90 — the `provider` argument is rejected with
+  // "Invalid import provider argument" when the `to` address is inside a
+  // module, and the user is directed to the module block's `providers` instead.
+  // Advice that ignores that sends someone to paste a config terraform refuses.
+  const root = blockAt('two-account.tfstate.json', 'aws_vpc.dr').comments.join(' ');
+  assert.match(root, /provider = aws\./);
+
+  const inModule = blockAt('two-account.tfstate.json', 'module.dr.aws_route.dr_default').comments
+    .join(' ');
+  assert.doesNotMatch(inModule, /provider = aws\./);
+  assert.match(inModule, /providers argument/);
+});
+
+test('every block outside the root default provider carries provenance', () => {
+  // The invariant worth holding: a resource reached through an aliased or
+  // module-scoped provider is never silent about it. Root-default resources
+  // with no ARN stay silent, because the state genuinely says nothing about
+  // them — and they are the least dangerous case, being the provider the target
+  // already uses.
+  const items = importsFromState(fixture('two-account.tfstate.json'), 'two-account.tfstate.json');
+  const silent = items.filter(
+    (i) => !i.comments.some((c) => c.startsWith('account') || c.startsWith('source provider')),
+  );
+  assert.deepEqual(
+    silent.map((i) => i.address),
+    ['aws_route53_record.legacy', 'aws_security_group_rule.legacy_ingress'],
+  );
+});
+
+test('an empty ARN region means global for a global service, not unknown', () => {
+  // `arn:aws:iam::111122223333:role/app-task` has an empty region field because
+  // IAM is global, and the answer is knowable. It read "region unknown", which
+  // is ignorance where there is none. S3 is the reason the general rule cannot
+  // be "empty means global" — a bucket ARN omits the region and buckets are
+  // regional — so this is a whitelist of services that are themselves global,
+  // and aws_s3_bucket.logs is in the fixture to prove S3 stays out of it.
+  const role = blockAt('two-account.tfstate.json', 'aws_iam_role.app');
+  assert.equal(role.region, '');
+  assert.ok(role.comments.includes('account 111122223333 · region global'));
+
+  const bucket = blockAt('two-account.tfstate.json', 'module.legacy.aws_s3_bucket.logs');
+  assert.equal(bucket.region, undefined);
+  assert.deepEqual(
+    bucket.comments.filter((c) => c.startsWith('account')),
+    [],
+  );
+});
+
+test('decision 6: no attribute value reaches the output but the import id', () => {
+  // The guard on everything above: provenance may name an account, a region or
+  // an alias, and nothing else. Raw state attributes routinely hold secrets.
+  const awkward = emitBlocks(importsFromState(fixture('awkward.tfstate.json'), 'awkward'));
+  assert.ok(!awkward.includes('never-emitted-decision-6'));
+
+  const twoAccount = emitBlocks(
+    importsFromState(fixture('two-account.tfstate.json'), 'two-account'),
+  );
+  for (const attributeValue of ['10.0.0.0/16', '10.9.0.0/16', 't3.micro', '10.0.1.9']) {
+    assert.ok(!twoAccount.includes(attributeValue), `leaked attribute value ${attributeValue}`);
+  }
+});
+
+test('the 0.12 spelling of a provider config address is read too', () => {
+  // Pre-0.13 states write `provider.aws[.alias]` rather than
+  // `provider["registry.terraform.io/hashicorp/aws"][.alias]`. A state old
+  // enough to hold flatmap instances is exactly the state old enough to hold
+  // this spelling, so refusing to read it would strand the two together.
+  const items = importsFromState(
+    {
+      version: 4,
+      resources: [
+        {
+          mode: 'managed',
+          type: 'aws_vpc',
+          name: 'dr',
+          provider: 'provider.aws.usw2',
+          instances: [{ attributes: { id: 'vpc-legacy' } }],
+        },
+        {
+          mode: 'managed',
+          type: 'aws_vpc',
+          name: 'main',
+          provider: 'provider.aws',
+          instances: [{ attributes: { id: 'vpc-root' } }],
+        },
+        {
+          // Unparseable: no claim is better than a wrong claim about which
+          // account a resource lives in.
+          mode: 'managed',
+          type: 'aws_vpc',
+          name: 'odd',
+          provider: 'something else entirely',
+          instances: [{ attributes: { id: 'vpc-odd' } }],
+        },
+      ],
+    },
+    'inline',
+  );
+  const prov = (address: string): string[] =>
+    items.find((i) => i.address === address)?.comments.filter((c) => c.startsWith('source')) ?? [];
+  assert.match(prov('aws_vpc.dr')[0] ?? '', /source provider aws\.usw2/);
+  assert.deepEqual(prov('aws_vpc.main'), []);
+  assert.deepEqual(prov('aws_vpc.odd'), []);
+});

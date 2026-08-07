@@ -66,6 +66,69 @@ export function contextComment(
   return `account ${acct} · region ${reg}`;
 }
 
+/**
+ * Which provider *configuration* a state resource was managed through. Not the
+ * provider itself (always `aws` here) — the config address, which is the only
+ * place a state file says anything about **which account** a resource is in
+ * when it has no ARN attribute to disclose it.
+ */
+export interface ProviderProvenance {
+  /** Provider local name, e.g. `aws`. */
+  readonly localName: string;
+  /** Configuration alias, when the address carried one. */
+  readonly alias?: string | undefined;
+  /** Module the provider is configured in, e.g. `module.legacy`. */
+  readonly module?: string | undefined;
+}
+
+/**
+ * `source provider aws.usw2 — …` (decision 10, serving its intent rather than
+ * only its letter).
+ *
+ * Decision 10 forbids a `provider =` argument because we cannot know the user's
+ * alias names, and mitigates the wrong-account paste with a comment. The only
+ * comment that existed was `account · region`, computed from an `arn`
+ * attribute — so every type without one was silent, which on a two-account
+ * state is most of the dangerous half. An alias is not an attribute value, so
+ * naming it keeps decision 6 intact and closes most of that gap.
+ *
+ * Returns `undefined` for the root default provider: that is the provider the
+ * target configuration already uses, so a line about it is noise, and its
+ * absence is what leaves single-provider output unchanged.
+ *
+ * `addressInModule` changes the advice, not the warning. Verified against
+ * terraform on `main` (2026-08-08), `internal/configs/import.go:80-90`: a
+ * `provider` argument in an import block whose `to` address is inside a module
+ * is rejected outright — "The provider argument can only be specified in import
+ * blocks that will generate configuration" — and the user is directed to the
+ * module block's `providers` argument instead. Advice that ignored that would
+ * send someone to paste a configuration terraform refuses.
+ */
+export function providerComment(
+  provider: ProviderProvenance,
+  addressInModule: boolean,
+): string | undefined {
+  const aliased = provider.alias !== undefined && provider.alias !== '';
+  const inModule = provider.module !== undefined && provider.module !== '';
+  if (!aliased && !inModule) return undefined;
+
+  const label =
+    (inModule ? `${provider.module ?? ''}.` : '') +
+    provider.localName +
+    (aliased ? `.${provider.alias ?? ''}` : '');
+  const why = aliased
+    ? 'an aliased provider in the source state, so this resource is very likely not in the ' +
+      'account or region your default provider points at'
+    : 'configured inside that module rather than at the root, so it may not be the account ' +
+      'your default provider points at';
+  const how = addressInModule
+    ? "an import block whose to = address is inside a module cannot take a provider argument, " +
+      "so select the provider with the module block's providers argument"
+    : `add provider = ${provider.localName}.<your alias> to this block if the target ` +
+      'configuration aliases it too';
+  return `source provider ${label} — ${why}; ${how}`;
+}
+
 /** One `import { … }` block, or a commented-out stanza when the type is unknown. */
 export function emitBlock(item: ResolvedImport): string {
   const body = [
