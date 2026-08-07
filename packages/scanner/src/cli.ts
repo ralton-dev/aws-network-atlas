@@ -1,12 +1,11 @@
 #!/usr/bin/env tsx
-import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { loadConfig } from './config.js';
 import { verifyAwsCli } from './preflight.js';
 import { scanAccount } from './scan.js';
 import { bundle, readAccountSnapshots, writeAccountSnapshot } from './bundle.js';
 import { collectSnapshotKeys, matchReport, tfImport } from './terraform.js';
-import { formatSummary, tfBlocks, writeBlocks } from './tf-blocks.js';
+import { displayPath, formatSummary, tfBlocks, writeBlocks } from './tf-blocks.js';
 
 const HELP = `atlas-scan — read-only AWS inventory scanner for the network atlas
 
@@ -55,6 +54,11 @@ Examples:
   atlas-scan tf-import --repo github.com/acme/platform states/*.tfstate
   atlas-scan tf-blocks /tmp/prod-network.tfstate > imports.tf
   atlas-scan tf-blocks --filter module.net. --out imports.tf /tmp/prod-network.tfstate
+
+Note: \`npm run\` prints its own banner to stdout, so redirecting through it
+captures that banner as well as the HCL. Through npm, use --out, or
+\`npm run --silent tf-blocks -- <statefile> > imports.tf\`. Invoked directly
+(atlas-scan / tsx src/cli.ts) stdout is HCL and nothing else.
 `;
 
 function invocationDir(): string {
@@ -104,7 +108,7 @@ async function main(): Promise<void> {
     // .tf file, so every word of prose goes to stderr.
     if (values.out) {
       const abs = await writeBlocks(hcl, values.out, cwd);
-      console.error(`tf-blocks: wrote ${path.relative(cwd, abs) || abs}`);
+      console.error(`tf-blocks: wrote ${displayPath(abs, cwd)}`);
     } else {
       process.stdout.write(hcl);
     }

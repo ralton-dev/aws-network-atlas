@@ -78,6 +78,17 @@ export interface TfBlocksResult {
   readonly summary: TfBlocksSummary;
 }
 
+/**
+ * The shorter of the relative and absolute forms. A state file is routinely
+ * somewhere else entirely — /tmp, a sibling repo — where the relative form is a
+ * stack of `../` that is harder to read than the path the user typed. Used for
+ * parse-error labels and for the `--out` confirmation.
+ */
+export function displayPath(abs: string, cwd: string): string {
+  const rel = path.relative(cwd, abs);
+  return rel === '' || rel.startsWith('..') ? abs : rel;
+}
+
 type Bucket = 'viaRule' | 'notImportable' | 'unresolved' | 'noRule';
 
 /**
@@ -115,7 +126,7 @@ export async function tfBlocks(opts: TfBlocksOptions): Promise<TfBlocksResult> {
 
   for (const file of opts.files) {
     const abs = path.resolve(opts.cwd, file);
-    const label = path.relative(opts.cwd, abs) || abs;
+    const label = displayPath(abs, opts.cwd);
     const parsed = parseStateFile(JSON.parse(await readFile(abs, 'utf8')), label);
     skippedDeposed += parsed.skipped.deposed;
     skippedDataSources += parsed.skipped.dataSources;
