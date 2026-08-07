@@ -205,12 +205,222 @@ filter to show only Terraform-managed or only unmanaged resources. The import
 also prints a match report: state entries the scanner couldn't find (stale state
 or an uncollected resource type) are listed per stack.
 
-Matching is by ARN, falling back to the AWS-native id — the same convention the
-AWS provider uses for its `id` attribute, so VPCs, subnets, instances, buckets,
-and ARN-only resources (Lambda, SNS, IAM…) all join without per-type rules.
-Relationship-only resources (`aws_route`, `aws_security_group_rule`,
-attachment/association resources) have synthetic ids that don't correspond to a
-drawable resource; they're imported but simply never match a node.
+Matching is by ARN, falling back to the AWS-native id. That's a *matching* key
+and nothing more: `tf-import` keeps both `id` and `arn` from every state entry
+and the scanner records both for every resource, so a node and a state entry
+join on whichever they have in common. Relationship-only resources (`aws_route`,
+`aws_security_group_rule`, attachment/association resources) have synthetic ids
+that don't correspond to a drawable resource; they're imported but simply never
+match a node.
+
+**A matching key is not an import id, and the AWS provider has no single
+convention for `id`.** `aws_lambda_function`'s `id` is the function *name*, not
+its ARN. `aws_sqs_queue`'s is the queue URL. `aws_ecs_service`'s is the service
+ARN, but it *imports* by `cluster-name/service-name`. `aws_wafv2_web_acl`
+imports by `<id>/<name>/<scope>`. `aws_iam_role` imports by name while
+`aws_iam_policy` imports by ARN — one service, two different rules. The scanner
+stores the ARN for the first three, so pasting the thing it matched on as an
+import id fails, or worse succeeds against something else. Matching and
+importing are different problems: matching needs one key both sides happen to
+hold, importing needs a per-type rule table. That table is what the next section
+is built on.
+
+## Generating Terraform `import` blocks
+
+Finding drift tells you a resource is unmanaged. `npm run tf-blocks` tells you
+what to paste to adopt it: `import { … }` blocks (Terraform ≥ 1.5), one per
+resource, address and id ready to go.
+
+```bash
+npm run tf-blocks -- [--filter <address-prefix>] [--out <file>] <statefile>...
+```
+
+Raw state (`terraform state pull`, or the `.tfstate` itself) and
+`terraform show -json` output are both accepted, including pre-0.12 flatmap
+instances and the pre-0.13 provider-address spelling. HCL goes to stdout and the
+summary to stderr — nothing but HCL ever reaches stdout, precisely so it can be
+redirected into a `.tf`. Blocks are ordered by address, so re-running produces a
+stable diff.
+
+Every import id comes from a per-type rule table, never from the state's `id`
+attribute. The formats, the provider doc page each was read from, and the types
+with no documented import at all are listed in
+**[`packages/tf-import-blocks/README.md`](packages/tf-import-blocks/README.md)** —
+215 Terraform types resolve from a state file, four of them flagged as not
+importable. That package is standalone and atlas-free by design (see
+[Architecture](#architecture)).
+
+**Only identifiers leave the state file.** A rule may *read* attributes to
+compute an import id — `aws_ecs_service` needs `cluster`, `aws_route53_record`
+needs `zone_id`, `name` and `type` — but the emitter writes only the computed id
+and the address. No attribute value is copied into the output unless it *is* the
+import id. The stderr summary is held to the same line: counts, Terraform types
+and addresses, never a value and not even an id, because stderr is what gets
+pasted into a ticket. Nothing is written into this repo — generated `.tf` goes
+where `--out` says, and it belongs in the *target* repo.
+
+### Worked example — moving a subtree from one state to another
+
+`module.net` lives in the `prod-network` stack and belongs in `platform`.
+
+**1. Take stack A's state.**
+
+```bash
+# in stack A's Terraform working directory (any backend)
+terraform state pull > /tmp/prod-network.tfstate
+```
+
+Prefer `terraform state pull` to `terraform show -json` here. Both parse, but
+only the raw state records which *provider configuration* each resource was
+managed through; `terraform show -json` keeps the provider source address and
+drops the alias. On a state that spans two accounts, that alias is the only
+thing in the file that says so.
+
+**2. Generate blocks for the subtree you're moving.**
+
+```bash
+# in this repo — no AWS credentials, no atlas.config.json, no snapshot needed
+npm run --silent tf-blocks -- \
+  --filter 'module.net.' \
+  --out ~/repos/platform/imports.tf \
+  /tmp/prod-network.tfstate
+```
+
+`--filter` keeps only addresses with that prefix, and the addresses it keeps are
+exactly the ones you'll remove from stack A in step 5 — the same list, twice.
+`--out` resolves relative to where you invoked the command. The command needs
+nothing from this repo but the code, so it runs just as well from inside the
+target repo (`npx tsx <path-to-atlas>/packages/scanner/src/cli.ts tf-blocks …`).
+
+> **Don't use a bare `>` through `npm run`.** npm prints its own banner to
+> stdout and it lands in your `.tf`. Use `--out`, or
+> `npm run --silent tf-blocks -- … > imports.tf`. Invoked directly —
+> `npx tsx packages/scanner/src/cli.ts tf-blocks …` — stdout is HCL and nothing
+> else.
+
+**3. Read the summary on stderr.** It is the whole story of what the run could
+and couldn't do:
+
+```
+tf-blocks: 23 blocks from 2 state files
+  21 resolved by a rule
+  2 fell back to the state id, flagged # VERIFY
+    no rule: aws_s3_object
+    rule could not compute an id: aws_security_group_rule
+  1 tainted object in the source state — emitted, not skipped
+  17 withheld by --filter
+  skipped: 1 deposed instance, 1 data source, 1 non-aws resource
+```
+
+(Abridged — the tainted and deposed lines each carry a couple of explanatory
+lines under them in the real output. Zero-valued lines are omitted entirely, so
+a clean run is two lines long.)
+
+- **resolved by a rule** — the id was computed from a documented format.
+- **fell back to the state id** — split by cause, because the fix differs. *No
+  rule* means the type isn't in the table at all. *Rule could not compute an id*
+  means the type is covered but this state didn't carry the attributes it needed
+  (a pre-0.12 flatmap instance, most often; the block's own comment says so).
+  Either way the block is still emitted, carrying `# VERIFY`, because silently
+  dropping a resource during a state move is the worst possible failure.
+- **not importable at all** — one of four types the AWS provider publishes no
+  import for. Emitted and loudly flagged, but they will not apply.
+- **withheld by `--filter`** — resolved fine, just outside the prefix you asked
+  for. Worth a glance: a resource you meant to move that the prefix missed shows
+  up here as a number that's larger than you expected.
+- **tainted and skipped, and why they differ.** Data sources and non-`aws_`
+  resources aren't ours to import. Deposed instances are dropped deliberately: a
+  deposed object is the orphan of an interrupted create-before-destroy, it
+  shares its address with the live object, and it's scheduled for destruction,
+  so importing it would both collide and adopt something Terraform is about to
+  delete — both input formats are checked for it. A **tainted** object is the
+  opposite case — it's the only object at its address, it exists, and its id is
+  real — so it *is* emitted, with a `# TAINTED` comment. (Taint is state
+  metadata and doesn't travel with the resource, so the import is sound; stack A
+  will still replace the object on its next apply unless you remove it there
+  first.)
+- **WARNING: N addresses emitted more than once** — two state files contributed
+  the same address. State addresses are authoritative and never renamed, so the
+  output is not valid HCL as it stands and you have to pick.
+
+**4. Check the blocks by hand before pasting.** Four things need your eyes:
+
+- **`# VERIFY`** — the id below it is a guess (the state's own `id`). Check it
+  against that type's provider documentation.
+- **`# NOT IMPORTABLE`** — delete the block and re-declare the resource in stack
+  B's configuration instead. They're pure associations, so recreating them isn't
+  destructive.
+- **`# account 111122223333 · region eu-west-1`**, and where the state used an
+  aliased or in-module provider, **`# source provider aws.<alias>`**. No
+  `provider =` argument is emitted, because we can't know your alias names —
+  these comments are the honest mitigation, and importing into the wrong account
+  is silent and expensive. Note the advice differs by address shape: Terraform
+  *rejects* a `provider` argument on an import block whose `to` address is
+  inside a module, so for those you select the provider with the module block's
+  `providers` argument instead.
+- **The addresses.** They're copied verbatim from stack A. If stack B calls the
+  module something else, rewrite every `to =` before pasting.
+
+**5. Import into stack B, then release from stack A.** With the moved
+configuration in place alongside `imports.tf`:
+
+```bash
+# in stack B
+terraform plan          # expect: N to import, 0 to add, 0 to change, 0 to destroy
+terraform apply
+```
+
+Then, and only then, take the same addresses out of stack A:
+
+```bash
+# in stack A
+terraform state rm 'module.net.aws_subnet.private["eu-west-1a"]'
+# …one per address --filter emitted
+```
+
+> **Remove stack A's configuration for those resources in the same change as the
+> `state rm`.** An `apply` in stack A with the configuration deleted but the
+> state entries still present destroys the real resources — which stack B is now
+> managing. If a plan in stack A shows anything to destroy, stop.
+
+**6. Delete `imports.tf`.** Import blocks are a record of a one-time migration,
+not configuration. Once the apply is clean they've done their job.
+
+### In the viewer
+
+**Details panel.** Select a resource no imported stack claims and the Terraform
+section shows an **Import block** with a Copy button — type and id from the same
+rule table, so an unmanaged SQS queue offers
+`id = "https://sqs.eu-west-1.amazonaws.com/…"` rather than its ARN. The Copy
+button puts exactly the block text on the clipboard.
+
+This needs `npm run tf-import` to have been run at least once. The block is
+gated on Terraform state being loaded on purpose: with no state imported the
+viewer can't tell an unmanaged resource from one whose stack you simply haven't
+imported yet, so it stays quiet rather than inviting you to adopt something
+Terraform already owns. If you see no import block, that's why.
+
+Two things differ from the CLI path, because a scan has no state file to read:
+
+- **The address is a suggestion.** There's no real address to copy, so one is
+  synthesised from the resource's name (`aws_vpc.prod_core`) and sanitised to a
+  valid HCL identifier. Rename it to suit your module — the panel says so.
+- **The Terraform type isn't always knowable.** A resource's import id isn't its
+  id, and its Terraform *type* isn't always determinable either: several atlas
+  kinds cover more than one provider resource — `apigw` is REST or HTTP, `lb` is
+  `aws_lb` or classic `aws_elb`, `fsx` has four variants, and `dx-vif`,
+  `tgw-attachment`, `apigw-vpc-link`, `apigw-domain` and `datasync-location`
+  likewise. Where the scanned fields don't identify one, the block is emitted
+  **commented out**, naming the candidates. A commented-out block is
+  recoverable; a confidently wrong type is not.
+
+**Bulk copy.** The Layers panel's Terraform section has a **Copy N import
+blocks** button beside the managed/unmanaged filter: one block per unmanaged
+node in the current view, grouped under `# account … · region …` banners (a bulk
+paste crossing accounts being exactly what those comments exist for), with
+colliding suggested addresses deduped `_2`, `_3` — every VPC has a security
+group called `default`. The note under the button says how many of them pasted
+commented out.
 
 ## Configuration — `atlas.config.json`
 
@@ -236,6 +446,7 @@ listed in the snapshot (and shown as a note in the overview) so nothing disappea
 | `npm run scan` | Verify AWS CLI + credentials, scan accounts (read-only), write snapshots, rebuild `site/data/` |
 | `npm run bundle` | Rebuild `site/data/` from committed snapshots + annotations + Terraform stacks only |
 | `npm run tf-import` | Import Terraform state file(s) → `data/terraform/<stack>.json`, rebuild `site/data/` |
+| `npm run tf-blocks` | Generate Terraform `import` blocks from state file(s) → stdout, or `--out <file>`; writes nothing into this repo |
 | `npm run fixture` | Regenerate the synthetic demo estate (no AWS needed) into `site/data/` |
 | `npm run dev` | Viewer dev server with hot reload (uses the same `site/data/`) |
 | `npm run build` | Rebuild the committed single-file viewer `site/index.html` |
@@ -316,6 +527,15 @@ npm workspaces monorepo:
   a Resource Groups Tagging sweep, and a **Cloud Control API** sweep for untagged resources.
   Adaptive retry, paginated, per-region concurrency; every step is error-isolated and
   output is deterministically sorted for clean diffs.
+- **`packages/tf-import-blocks`** — the per-type `(terraform type, import id)` rule
+  table behind `npm run tf-blocks` and the viewer's import blocks, with the two
+  entry points (from a state file, from a scanned resource) as thin adapters onto
+  it. It imports nothing from `@atlas/*` and has **no runtime dependencies** —
+  not an HCL library, not a YAML parser — because it's expected to move to its
+  own repository; lifting it out is `git mv packages/tf-import-blocks` plus a
+  `package.json`. It accepts a structural subject
+  (`{ kind, id, arn?, name?, region, accountId, raw }`) that the viewer's
+  `ResourceRef` already satisfies, so nothing converts between the two.
 - **`packages/viewer`** — React + React Flow (@xyflow/react) + ELK auto-layout
   (nested containers laid out in one pass), official AWS Architecture Icons,
   MiniSearch, react-markdown. Built with Vite into a single offline-capable HTML file.
