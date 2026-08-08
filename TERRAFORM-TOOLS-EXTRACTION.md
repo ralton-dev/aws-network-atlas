@@ -1,7 +1,9 @@
-# Extracting `tf-import-blocks` into `ralton-dev/terraform-tools`
+# Extracting `tf-import-blocks` into its own repository
 
-Base commit: `06648fa`. Tree clean, `npm run typecheck` green across four
-workspaces, `npm test` 278 passing / 0 failing / 0 todo.
+Base commit as written: `06648fa` — tree clean, typecheck green across four
+workspaces, `npm test` 278 passing. **Orchestration began sixteen commits
+later, at `90c8cfe`**, where the gate is 298 passing / 0 failing / 0 todo. See
+amendment 31; the title and destination changed too, see amendment 27.
 
 This plan follows `TERRAFORM-IMPORT-BLOCKS.md`, which is **complete**. Its
 decisions 1–14 still bind; decisions here are numbered from **15** and carry
@@ -130,6 +132,50 @@ Continuing the numbering from `TERRAFORM-IMPORT-BLOCKS.md`.
 
 ---
 
+## Amendments — 2026-08-08, from Ben, after the plan was written
+
+These **supersede** the decisions they name. Where an amendment and an earlier
+decision disagree, the amendment wins. The rest of the plan stands.
+
+27. **Its own repository, not a `terraform-tools` monorepo. Supersedes 16.**
+    The new repo is `ralton-dev/tf-import-blocks` — public, MIT, and it holds
+    exactly one package **at the repository root**. No `packages/` directory, no
+    workspaces array, no root-vs-package `package.json` split: `src/`, `test/`,
+    `package.json`, `tsconfig.json`, `LICENSE`, `NOTICE`, `README.md` all sit at
+    the top level. This makes WP-2 *simpler*, not harder —
+    `git subtree split --prefix=packages/tf-import-blocks` already produces a
+    history whose tree root is the package, so the restructure step decision 16
+    required is deleted rather than rewritten. The repo name matches the npm
+    name deliberately. A second tool later gets its own repo too.
+28. **Publishing happens in CI, not on a laptop. Supersedes the "no publish
+    workflow" sentence of decisions 20 and 24.** Ben's reasoning, and it is
+    right: a local `npm publish` is an unreproducible artifact built from
+    whatever happened to be in one working tree. WP-3 therefore ships a release
+    workflow that publishes on a version tag, from a clean `npm ci` checkout,
+    after the same gate a pull request runs. Nothing publishes on a push to
+    `main`.
+29. **Repo creation and branch protection are no longer Ben's. Supersedes 24.**
+    The orchestrator creates `ralton-dev/tf-import-blocks`, pushes the split
+    history, and applies the decision-21 protection. Decision 24's caution was
+    about irreversibility, and that caution now attaches to exactly one thing:
+    **the npm credential**. Creating a repo is reversible; publishing a version
+    is not.
+30. **The one remaining human step is the npm credential.** Publishing from CI
+    needs either an npm automation token stored as a repository secret or a
+    trusted-publisher (OIDC) configuration on npmjs.com. Both require npm
+    account access no agent has. An agent **prepares** the workflow and writes
+    down the exact steps; it must never ask for, echo, or store a token value.
+    The first release tag is pushed only once Ben confirms the credential is in
+    place.
+31. **The plan's test count has drifted; do not trust it.** The plan says 278
+    tests against base `06648fa`. Sixteen commits later, at `90c8cfe`, the gate
+    is **298 passing / 0 failing / 0 todo**. Every "all 278 tests" acceptance
+    criterion means "every test that passes today, and no regression". Read the
+    number from `npm test`, not from this document — a worked example of the
+    standing rule immediately below.
+
+---
+
 ## Standing rules
 
 - **Deletion belongs to the package that supersedes.** WP-6 deletes
@@ -234,27 +280,40 @@ new repo, ready for a human to push.
   commit count, that the bodies survived intact (spot-check WP-J's before/after
   evidence and WP-M's deprecation finding), and that no `@atlas` file came
   along.
-- Restructure that branch into the monorepo layout of decision 16:
-  `packages/tf-import-blocks/**` at the new root, plus root `package.json`
-  (workspaces), `tsconfig.base.json`, `.gitignore`, `LICENSE` (copied verbatim
-  from this repo), `NOTICE` (decision 25) and a root `README.md`.
+- **No restructure (decision 27).** The split branch's tree root is already the
+  package, which is exactly the layout the new repo wants. What it is missing is
+  everything `tsconfig.base.json` used to supply from two directories up: fold
+  the base compiler options into the package's own `tsconfig.json` (`strict`,
+  `noUncheckedIndexedAccess`, `noFallthroughCasesInSwitch`,
+  `forceConsistentCasingInFileNames`, `skipLibCheck`, `esModuleInterop`,
+  `resolveJsonModule`, `isolatedModules`, ES2022 target and lib) and drop the
+  `extends`. **A missing `noUncheckedIndexedAccess` is the failure to fear
+  here** — it silently *weakens* typechecking, so everything still compiles and
+  the loss is invisible. Prove it is on by asserting a known indexed access
+  still errors, not by reading the config back.
+- Add `.gitignore`, `LICENSE` (copied verbatim from this repo), `NOTICE`
+  (decision 25) and the README. There is no root `package.json` and no
+  workspaces array — the package's own `package.json` is the repo's.
 - The new repo needs its **own test invocation**. This repo's is
   `tsx --test "packages/*/test/**/*.test.ts"` in the root `package.json`, and
   `tsx` is hoisted there from the *scanner's* devDependencies — a dependency
   that does not exist in the new repo. **`tsx` must become an explicit
-  devDependency there.** Re-verify that a `{ todo: true }` failing assertion
-  still exits 0 under whatever invocation you ship; the previous plan records
-  two plausible invocations that break this.
-- **Do not create the GitHub repo and do not push** (decision 24). Leave the
-  branch local, and write the exact `gh repo create` and `gh api` commands —
-  including the branch-protection payload from decision 21 — into the report
-  for Ben to run.
+  devDependency there**, as must `typescript` and `@types/node`. The glob
+  becomes `test/**/*.test.ts`. Re-verify that a `{ todo: true }` failing
+  assertion still exits 0 under whatever invocation you ship; the previous plan
+  records two plausible invocations that break this.
+- **Do not create the GitHub repo and do not push.** Not because a human must
+  (decision 29 moved that to the orchestrator) but because WP-3 and WP-4 have
+  not run yet: the branch is incomplete until CI and the publish metadata land
+  on it. WP-5 pushes. Leave the branch local and named, and say what it is
+  called.
 
 **Acceptance:** a local branch that `npm install && npm test` passes on
 **standalone**, outside the workspace, with all the package's tests green and
 the golden a plain passing assertion. History contains the package's commits
-with bodies intact and nothing from the scanner, viewer or schema. The
-`gh` commands are written out and **not executed**.
+with bodies intact and nothing from the scanner, viewer or schema. Nothing is
+pushed and no GitHub repo is created — WP-5 does that once WP-3 and WP-4 have
+landed on the branch.
 
 Owns: nothing in `main`'s working tree — this package works on a split branch
 and in a scratch directory. It must not modify `packages/tf-import-blocks/` on
@@ -273,15 +332,32 @@ Size **M**. Depends: WP-1.
   repo's root `package.json`; the local toolchain is Node 23).
 - **This repo has no CI to copy from**, so there is no house style to match —
   keep it minimal and readable rather than elaborate.
-- Do not add a publish workflow. Decision 24 keeps publishing manual and human.
+- **Also ship a release workflow (decision 28).** It publishes to npm on a
+  version tag (`v*`), never on a push to `main`, and only after running the same
+  gate the pull-request workflow runs — a tag that fails typecheck or tests must
+  not reach the registry. Use `npm ci`, not `npm install`, and publish the
+  package built in that job rather than anything committed.
+- **The credential is not yours to create (decision 30).** Design for whichever
+  of the two mechanisms you judge correct — an `NPM_TOKEN` repository secret, or
+  npm's OIDC trusted publishing — and **check the current state of trusted
+  publishing before choosing**, including whether it can be configured for a
+  package that does not exist on the registry yet, and what npm CLI version the
+  runner needs (the local CLI is 10.9.2, which predates it). Report the exact
+  steps Ben must take, and never ask for or echo a token value. If you pick
+  OIDC, `id-token: write` permission and a modern npm on the runner are load
+  bearing — say so.
+- Add `--provenance` only if the chosen mechanism actually supports it; a
+  provenance flag with the wrong auth mode fails the publish rather than
+  degrading.
 
 **Acceptance:** the workflow file is syntactically valid (`actionlint` or
 equivalent) and its steps are exactly the gate this project already uses. It
 cannot be run until the repo exists, so **do not claim it passes** — state
 that it is unexercised and that WP-5 is where it first runs.
 
-Owns: `.github/workflows/ci.yml` on WP-2's split branch.
-Size **S**. Depends: WP-2.
+Owns: `.github/workflows/` on WP-2's split branch — both the pull-request gate
+and the release workflow.
+Size **M**. Depends: WP-2.
 
 ---
 
@@ -315,38 +391,52 @@ Size **S**. Depends: WP-2.
   proving the `exports` map, the `.d.ts` and the ESM resolution all work from
   outside. This is the only test in the plan that exercises the artifact the
   way a stranger will.
-- **Do not run `npm publish`** (decision 24). Report the exact command and what
-  Ben must have in place: an npm account, 2FA, and the understanding from
-  decision 17 that this is effectively permanent.
+- **Do not run `npm publish`** — not even `--dry-run` against the network with
+  credentials. Publishing is CI's job now (decision 28); WP-4's job is to make
+  the artifact correct so that when CI publishes it, it is right the first time.
+  `npm publish --dry-run` locally is fine and expected: it reports the file list
+  without contacting the registry.
 
-**Acceptance:** a packed tarball installs into a clean project and
-`import { emitBlocks } from 'tf-import-blocks'` resolves, typechecks and runs.
-`npm publish --dry-run` reports the intended file list and version. Nothing is
-published.
+**Acceptance:** a packed tarball installs into a clean project outside this
+repo and `import { emitBlocks } from 'tf-import-blocks'` resolves, typechecks
+and runs. `npm publish --dry-run` reports the intended file list and version
+`0.1.0`. Nothing is published.
 
-Owns: `packages/tf-import-blocks/package.json`, `README.md`, `NOTICE` — all on
-WP-2's split branch.
+Owns: `package.json`, `README.md`, `NOTICE` at the **root** of WP-2's split
+branch (decision 27 — there is no `packages/` directory there).
 Size **M**. Depends: WP-2.
 
 ---
 
-## WP-5 · Ben: create, protect, publish
+## WP-5 · Create, protect, release
 
-**Goal:** the repo exists, is protected, and the package is on npm.
+**Goal:** the repo exists, is protected, CI is green, and `0.1.0` is on npm.
 
-**This package is not for an agent.** It is the three steps of decision 24,
-listed here so the plan is honest about where it stops:
+**The orchestrator runs this, not an agent and not Ben** (decision 29) — it is
+the one package that acts on the world, and it is ordered so that each step is
+verified before the next becomes possible.
 
-1. `gh repo create ralton-dev/terraform-tools --public` and push WP-2's branch.
-2. Apply the branch protection of decision 21.
-3. `npm publish` from the packed artifact WP-4 verified.
+1. `gh repo create ralton-dev/tf-import-blocks --public` and push WP-2's branch
+   to `main`. **Push before protecting**, so the first push is not fighting a
+   rule it would have to bypass.
+2. Watch CI's first run to a **conclusion**, per job, by run id. This is the
+   first time WP-3's workflow has ever executed; treat a failure here as
+   expected work, not as a surprise. Fix forward on `main` before protection
+   lands, because after it lands every fix is a pull request.
+3. Apply the decision-21 protection, then **verify it by reading it back** from
+   the API rather than trusting the write's exit code.
+4. **Stop and confirm the npm credential with Ben** (decision 30). Only then
+   push the `v0.1.0` tag that triggers the release workflow.
+5. Confirm the published artifact from the outside: `npm view tf-import-blocks
+   version` and a fresh `npm install tf-import-blocks` in a scratch directory.
 
 **Acceptance:** `npm view tf-import-blocks version` returns `0.1.0`; the CI of
-WP-3 has run at least once and is green; a pull request against the new `main`
-is required and blocked without a review.
+WP-3 has run at least once and is green; branch protection reads back with 1
+required review, `dismiss_stale_reviews`, `required_conversation_resolution`,
+force-pushes and deletions blocked, `enforce_admins: false`.
 
 Owns: nothing in this repo.
-Size **S**. Depends: WP-3, WP-4.
+Size **M**. Depends: WP-3, WP-4.
 
 ---
 
@@ -400,8 +490,8 @@ Size **L**. Depends: WP-5.
 | --- | --- | --- |
 | 1 | WP-1 | **alone** — it owns the package's `package.json` and root build wiring, and everything downstream builds on the emit config |
 | 2 | WP-2 | **alone** — it splits history from a tree WP-1 has settled |
-| 3 | WP-3 + WP-4 | disjoint on the split branch: `.github/workflows/ci.yml` vs `package.json` / `README.md` / `NOTICE` |
-| 4 | WP-5 | **Ben, not an agent** |
+| 3 | WP-3 + WP-4 | disjoint on the split branch: `.github/workflows/` vs `package.json` / `README.md` / `NOTICE` |
+| 4 | WP-5 | **the orchestrator, not an agent** (decision 29); one confirmation from Ben before the release tag |
 | 5 | WP-6 | **alone** — it owns three `package.json` files, the lock file, `site/`, both docs and a directory deletion |
 
 Checked against the `Owns` lists, not the shape:
@@ -415,9 +505,13 @@ Checked against the `Owns` lists, not the shape:
 
 - Root `package.json` and `package-lock.json` — WP-1 and WP-6 only, never
   concurrently.
-- `packages/tf-import-blocks/package.json` — WP-1 in this repo, WP-4 on the
-  split branch. They are different files on different branches; do not let
-  that fool anyone into running them together.
+- The package's `package.json` — WP-1 edits it at
+  `packages/tf-import-blocks/package.json` in this repo; WP-4 edits it at the
+  **root** of the split branch (decision 27). Same file, two paths, two
+  branches. Do not let that fool anyone into running them together, and note
+  that WP-4 is editing a file whose content WP-1 authored — a WP-4 that
+  contradicts WP-1's `exports`, `files` or `type` has broken the build WP-1
+  proved, and must say so rather than quietly overwriting it.
 - `site/` — WP-6 only. It is a committed build artifact and the last viewer
   change in the plan owns rebuilding it.
 - `packages/scanner/src/terraform.ts`, `packages/viewer/src/model/terraform.ts`,
@@ -425,7 +519,9 @@ Checked against the `Owns` lists, not the shape:
   any wave.** They have held a zero-line diff across fifteen packages and two
   plans. A diff in any of them means something has gone wrong.
 
-Five waves, one of which is a human.
+Five waves. None is a human's any more (decision 29) — but wave 4 pauses once,
+for Ben to confirm the npm credential is in place before a tag triggers an
+irreversible publish.
 
 ---
 
