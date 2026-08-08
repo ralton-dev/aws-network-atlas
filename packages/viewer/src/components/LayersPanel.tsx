@@ -217,7 +217,9 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
               : `${blockCount} blocks for the ${resources} unmanaged resource${resources === 1 ? '' : 's'} in this view — ${nested} are nested resources such as security group rules, which Terraform manages separately and the graph does not draw.`,
             commentedOut === 0
               ? ''
-              : `${commentedOut} paste commented out and will not apply; each says why.`,
+              : commentedOut === 1
+                ? '1 is pasted commented out and will not apply; it says why.'
+                : `${commentedOut} are pasted commented out and will not apply; each says why.`,
             'Addresses are suggestions — rename them to suit your module.',
           ]
             .filter((s) => s !== '')
