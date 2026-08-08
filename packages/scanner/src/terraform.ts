@@ -341,16 +341,19 @@ function subjectsOfKind(
       });
     }
   };
+  // Every lookup is defensive for one reason: a snapshot committed by an older
+  // scanner predates whichever collection was added since, and `global` itself
+  // predates nothing but is absent from the very oldest. The viewer fills those
+  // in from the empty factories at load; nothing does that here, and a match
+  // report is not worth crashing an import over. `push` treats a non-array as
+  // an absent collection, so this only has to survive reaching it.
   for (const account of snapshots) {
     if (source.scope === 'global') {
-      push(
-        (account.global as unknown as Record<string, unknown>)[source.collection],
-        account.accountId,
-        '',
-      );
+      const global = account.global as unknown as Record<string, unknown> | undefined;
+      push(global?.[source.collection], account.accountId, '');
       continue;
     }
-    for (const region of account.regions) {
+    for (const region of account.regions ?? []) {
       push(
         (region as unknown as Record<string, unknown>)[source.collection],
         account.accountId,
