@@ -38,6 +38,80 @@ export interface ScannedSubject {
 }
 
 /**
+ * One nested terraform resource a scanned parent expands into.
+ *
+ * **The seam for expansion. Read this before writing an expander.**
+ *
+ * The snapshot nests some relationships inside the resource they belong to:
+ * `SecurityGroup.ingress` / `.egress`, `NetworkAcl.entries`,
+ * `RouteTable.routes`. Terraform does not — each is its own resource with its
+ * own import id. The viewer indexes only what it draws, so those nested
+ * relationships are not nodes and have nothing to hang an import block on. The
+ * result was a half-adoption that looks complete: an `aws_security_group` block
+ * you can paste, and rules terraform still does not manage.
+ *
+ * An expander closes that by turning one scanned parent into N children, where
+ * **N is data-dependent** — it is a function of the collected fields, not a
+ * property of the type. `from-scanned.ts` gives each child an address, applies
+ * the same sanitising and collision dedupe parents get (decision 8), and emits
+ * it whether or not its id could be built.
+ *
+ * Contract for an expander:
+ *
+ *  - **Never throw and never drop.** A relationship you cannot express is a
+ *    child with `problem` set, not a missing child. Decision 5 in the plan is
+ *    about resources; it applies with more force here, because a dropped child
+ *    is invisible — nothing in the UI says it was ever considered.
+ *  - **One relationship, one side.** An expander sees only its own subject, so
+ *    a relationship recorded on both ends (a route table association nested
+ *    under the route table *and* under the subnet) must be registered on
+ *    exactly one of them. Nothing detects the duplicate: the two children would
+ *    be emitted twice and address dedupe would rename rather than merge them.
+ *  - **Scanned path only.** A state file already carries these as first-class
+ *    resources, so expanding there would emit every one of them twice. The
+ *    separation is structural — `from-state.ts` does not import
+ *    `from-scanned.ts` — and `test/scanned-expand.test.ts` asserts it.
+ *
+ * What the mechanism deliberately cannot express, so the next author knows
+ * before starting: **grandchildren** (expansion is one level, and no
+ * relationship in this domain needs two); **cross-resource composition** (an
+ * expander is handed one subject and cannot read the rest of the snapshot, so a
+ * child needing a field off a *different* resource is out of reach); and
+ * **ordering or dependency** between children, which `import` blocks do not
+ * express at all.
+ */
+export interface ExpandedChild {
+  /**
+   * Terraform resource type, e.g. `aws_security_group_rule`. `''` is allowed
+   * and renders the block commented out, for an expander that knows a
+   * relationship exists but not which provider resource represents it.
+   */
+  readonly type: string;
+  /**
+   * The child-specific half of the suggested address. `from-scanned.ts`
+   * prefixes the parent's own label and sanitises the result, so a child reads
+   * as `aws_security_group_rule.<parent label>_<this>` and sorts beside its
+   * parent. Legibility is the only requirement — uniqueness is dedupe's job.
+   */
+  readonly label: string;
+  /**
+   * The import id, unescaped (`emit.ts` owns escaping — decision 9). When
+   * `problem` is set this may be a **partial** id: a reader completing three
+   * characters is better served than one handed an empty string.
+   */
+  readonly id: string;
+  /** Type-specific disclosure, one comment body per entry, no leading `# `. */
+  readonly comments?: readonly string[] | undefined;
+  /**
+   * Why this child is not importable as written. Setting it is the single
+   * switch that marks the child unverified and renders it commented out, so it
+   * survives a bulk paste as visible evidence and cannot be applied by
+   * accident. A child failing here never affects its siblings or its parent.
+   */
+  readonly problem?: string | undefined;
+}
+
+/**
  * One resource type's import-id rule. **This interface is the seam between
  * WP-A and WP-B / WP-C / WP-D — it is fixed; build against it.**
  *
@@ -118,6 +192,22 @@ export interface ImportRule {
   readonly typeChoices?: readonly string[];
   readonly fromScanned?: (subject: ScannedSubject) => string | undefined;
   readonly fromState?: (attrs: StateAttributes) => string | undefined;
+  /**
+   * Nested relationship resources this scanned parent contains — see
+   * `ExpandedChild`. Only `resolveScannedExpanded` calls it, so `resolveScanned`
+   * is unaffected and the state path can never reach it.
+   *
+   * **Registry caveat, and it is load-bearing.** `rules/registry.ts` merges two
+   * declarations of one type field by field from a fixed list that does not
+   * include `expand`; only the *first* declaration is spread wholesale.
+   * `aws_security_group` survives because `scanned-network.ts` is declared
+   * before `state.ts` in `SOURCES`. That is ordering, not design. The registry
+   * belongs to WP-A and this package may not edit it, so
+   * `test/scanned-expand.test.ts` asserts every declared expander is still
+   * reachable after the merge — declare your expander in the module that
+   * declares the type *first*, and check that test stays green.
+   */
+  readonly expand?: (subject: ScannedSubject) => readonly ExpandedChild[];
   /** Why this type cannot be imported at all. Mutually exclusive with the above. */
   readonly notImportable?: string;
   /** Provider doc page the id format was verified against. */
@@ -154,6 +244,35 @@ export interface ResolvedImport {
   readonly accountId?: string | undefined;
   /** `''` for global; `undefined` when the source could not tell us. */
   readonly region?: string | undefined;
+  /**
+   * Render the whole stanza commented out even though the type is known.
+   *
+   * `type === ''` already forces that, but it conflates two different failures.
+   * An expanded child can know its terraform type exactly and still be
+   * unpastable — a security group rule with no source, a route with no
+   * destination — and telling a reader the *type* is in doubt sends them to
+   * check the half that never was. Additive and optional: every producer that
+   * predates expansion omits it, and `emit.ts` keeps the `type === ''`
+   * behaviour untouched.
+   */
+  readonly commentedOut?: boolean | undefined;
+}
+
+/**
+ * A scanned resource and the nested relationship resources it contains.
+ *
+ * Returned by `resolveScannedExpanded` for the single-resource case (a details
+ * panel wanting to show a parent and its rules as a group). Bulk callers want
+ * `resolveScannedManyExpanded`, which flattens to the order `emitBlocks`
+ * expects.
+ *
+ * `children` is empty for the overwhelming majority of kinds — no expander
+ * registered, or a parent with nothing nested inside it — so a caller can treat
+ * the expanded form as the default without special-casing.
+ */
+export interface ExpandedImport {
+  readonly parent: ResolvedImport;
+  readonly children: readonly ResolvedImport[];
 }
 
 /** Narrow an attribute to a non-empty string. The intended way to read `attrs`. */

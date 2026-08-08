@@ -10,9 +10,14 @@
  * the two must produce the same string for the same real resource — that
  * agreement is the plan's completion signal and `test/golden.test.ts` asserts it.
  */
-import { contextComment, suggestAddress } from './emit.js';
+import { contextComment, sanitizeLabel, suggestAddress } from './emit.js';
 import { ruleForKind } from './rules/registry.js';
-import type { ResolvedImport, ScannedSubject } from './types.js';
+import type {
+  ExpandedChild,
+  ExpandedImport,
+  ResolvedImport,
+  ScannedSubject,
+} from './types.js';
 
 /**
  * Resolve one scanned resource.
@@ -131,4 +136,138 @@ export function resolveScanned(subject: ScannedSubject): ResolvedImport {
  */
 export function resolveScannedMany(subjects: readonly ScannedSubject[]): ResolvedImport[] {
   return subjects.map(resolveScanned);
+}
+
+/**
+ * The label a subject's suggested address is built from — the same input
+ * `resolveScanned` hands `suggestAddress`, so a parent and its children always
+ * share a stem however the sanitiser mangles it.
+ */
+function subjectLabel(subject: ScannedSubject): string {
+  return subject.name ?? subject.id;
+}
+
+/** One `ExpandedChild` turned into something the emitter can write. */
+function resolveChild(
+  subject: ScannedSubject,
+  parentLabel: string,
+  parentAddress: string,
+  child: ExpandedChild,
+): ResolvedImport {
+  const comments: string[] = [];
+  const context = contextComment(subject.accountId, subject.region);
+  if (context !== undefined) comments.push(context);
+  // Stated before the type-specific disclosure: a child block read on its own,
+  // pasted out of a bulk copy, otherwise says nothing about where it came from.
+  comments.push(
+    `nested resource of ${parentAddress === '' ? subject.id : parentAddress} — it is not a ` +
+      'node in the atlas, so adopting that resource without this one leaves this ' +
+      'configuration unmanaged',
+  );
+  comments.push(...(child.comments ?? []));
+  if (child.problem !== undefined) comments.push(`VERIFY: ${child.problem}`);
+
+  const usable = child.problem === undefined && child.type !== '';
+  return {
+    type: child.type,
+    address:
+      child.type === '' ? '' : suggestAddress(child.type, `${parentLabel}_${child.label}`),
+    id: child.id,
+    comments,
+    verified: usable,
+    // Children never come from a state file, so their address is always a
+    // suggestion — which is also what enrols them in decision 8's dedupe.
+    addressIsSuggestion: true,
+    accountId: subject.accountId,
+    region: subject.region,
+    // `type === ''` already hides the stanza; only say so again when the type is
+    // known and the id is the part that failed.
+    ...(child.problem !== undefined && child.type !== '' ? { commentedOut: true } : {}),
+  };
+}
+
+/**
+ * Resolve one scanned resource **and the nested terraform resources it
+ * contains** — see `ExpandedChild` in `types.ts` for the seam and its limits.
+ *
+ * The snapshot nests security group rules inside the group, NACL entries inside
+ * the ACL, routes inside the route table. Terraform does not, and the viewer
+ * indexes only what it draws, so those never became nodes and never got an
+ * import block. Offering the parent alone is the half-adoption this exists to
+ * end: a block you can paste that leaves the rules unmanaged.
+ *
+ * `parent` is byte-identical to `resolveScanned(subject)` except for one added
+ * comment when there are children — everything else about the single-resource
+ * path is untouched, which is what keeps the golden test still.
+ *
+ * An expander that throws costs its parent nothing: the parent is resolved
+ * first and independently, and a failed expansion is reported on it rather than
+ * propagated. Silence would be the worst outcome — the caller would show a
+ * complete-looking block and never learn the rules were missed.
+ */
+export function resolveScannedExpanded(subject: ScannedSubject): ExpandedImport {
+  const parent = resolveScanned(subject);
+  const expand = ruleForKind(subject.kind)?.expand;
+  if (expand === undefined) return { parent, children: [] };
+
+  const parentLabel = sanitizeLabel(subjectLabel(subject));
+  let raw: readonly ExpandedChild[];
+  try {
+    raw = expand(subject);
+  } catch (err) {
+    return {
+      parent: {
+        ...parent,
+        comments: [
+          ...parent.comments,
+          'VERIFY: this resource contains nested terraform resources (rules, routes, ' +
+            'attachments) and they could not be enumerated from the scan — adopting this ' +
+            `block alone may leave them unmanaged: ${err instanceof Error ? err.message : String(err)}`,
+        ],
+      },
+      children: [],
+    };
+  }
+  if (raw.length === 0) return { parent, children: [] };
+
+  const children = raw.map((child) => resolveChild(subject, parentLabel, parent.address, child));
+  return {
+    parent: {
+      ...parent,
+      comments: [
+        ...parent.comments,
+        `this resource contains ${children.length} nested terraform ` +
+          `resource${children.length === 1 ? '' : 's'} — ${children.length} further ` +
+          `block${children.length === 1 ? '' : 's'} follow${children.length === 1 ? 's' : ''}, ` +
+          'and importing this one without them adopts the parent while leaving its ' +
+          'configuration unmanaged',
+      ],
+    },
+    children,
+  };
+}
+
+/**
+ * Bulk expanded form, flattened for `emitBlocks`.
+ *
+ * **Ordering is the contract**: each parent is immediately followed by its own
+ * children, in the order the expander produced them, and subjects keep the
+ * order they were given. A caller wanting the grouping back reads it off the
+ * types, or calls `resolveScannedExpanded` per subject.
+ *
+ * Addresses are still suggestions and dedupe still runs in `emitBlocks`, across
+ * parents and children alike. Note that dedupe works per address and makes no
+ * attempt to keep a child's stem in lockstep with a renamed parent: two groups
+ * both named `default` may yield `aws_security_group.default_2` whose child is
+ * `aws_security_group_rule.default_…` un-suffixed, because nothing collided
+ * there. The addresses are suggestions to rename (decision 8); the *ids* are
+ * what must be right, and they are unaffected.
+ */
+export function resolveScannedManyExpanded(subjects: readonly ScannedSubject[]): ResolvedImport[] {
+  const out: ResolvedImport[] = [];
+  for (const subject of subjects) {
+    const { parent, children } = resolveScannedExpanded(subject);
+    out.push(parent, ...children);
+  }
+  return out;
 }

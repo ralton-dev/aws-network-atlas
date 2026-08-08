@@ -162,7 +162,11 @@ export function emitBlock(item: ResolvedImport): string {
   const lines = item.comments.map((c) => `# ${c}`);
   // No terraform type means no writable address: comment the whole stanza so
   // it survives a bulk paste as visible evidence rather than as broken HCL.
-  lines.push(...(item.type === '' ? body.map((l) => `# ${l}`) : body));
+  // `commentedOut` is the same treatment reached for a different reason — an
+  // expanded child whose type is certain and whose id could not be built — so
+  // the two are separate flags rather than one overloaded empty string.
+  const hidden = item.commentedOut === true || item.type === '';
+  lines.push(...(hidden ? body.map((l) => `# ${l}`) : body));
   return lines.join('\n');
 }
 
