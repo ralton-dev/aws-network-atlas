@@ -112,18 +112,18 @@ export interface ExpandedChild {
 }
 
 /**
- * One resource type's import-id rule. **This interface is the seam between
- * WP-A and WP-B / WP-C / WP-D — it is fixed; build against it.**
+ * One resource type's import-id rule. **This interface is the seam the registry
+ * and every rule module build against.**
  *
  * A rule may carry `fromScanned`, `fromState`, both, or neither (`notImportable`).
  *
  * - `fromScanned` is the drift-adoption path: only the atlas snapshot exists,
  *   so composite ids must be reconstructed from the collected fields. Rules
- *   registered in `rules/scanned-network.ts` (WP-B) and
- *   `rules/scanned-workload.ts` (WP-C) live here.
+ *   registered in `rules/scanned-network.ts` and `rules/scanned-workload.ts`
+ *   live here.
  * - `fromState` is the state-move path: real Terraform attributes are present,
  *   so composite ids are computable exactly. Rules registered in
- *   `rules/state.ts` (WP-D) live here.
+ *   `rules/state.ts` live here.
  *
  * Where a type ends up with both, the registry merges the two declarations
  * into a single rule and **both functions must return the same string for the
@@ -197,15 +197,13 @@ export interface ImportRule {
    * `ExpandedChild`. Only `resolveScannedExpanded` calls it, so `resolveScanned`
    * is unaffected and the state path can never reach it.
    *
-   * **Registry caveat, and it is load-bearing.** `rules/registry.ts` merges two
-   * declarations of one type field by field from a fixed list that does not
-   * include `expand`; only the *first* declaration is spread wholesale.
-   * `aws_security_group` survives because `scanned-network.ts` is declared
-   * before `state.ts` in `SOURCES`. That is ordering, not design. The registry
-   * belongs to WP-A and this package may not edit it, so
+   * A type declared in two rule modules keeps its expander wherever you put it:
+   * `rules/registry.ts` lists `expand` in `MERGED_FIELDS`, so the merged rule
+   * takes it from whichever declaration supplies it and declaration order in
+   * `SOURCES` does not matter. Two declarations that *both* set it are reported
+   * as a `RuleConflict` rather than one silently losing.
    * `test/scanned-expand.test.ts` asserts every declared expander is still
-   * reachable after the merge — declare your expander in the module that
-   * declares the type *first*, and check that test stays green.
+   * reachable after the merge, so a regression there fails loudly.
    */
   readonly expand?: (subject: ScannedSubject) => readonly ExpandedChild[];
   /** Why this type cannot be imported at all. Mutually exclusive with the above. */

@@ -2,13 +2,14 @@
  * The rule table: three source modules merged by terraform type and indexed by
  * type *and* by atlas kind.
  *
- * This file is owned by WP-A for the whole plan and is not edited by anyone
- * else. A rule module that believes it needs to change the registry has found
- * a boundary problem — report it rather than editing here.
- *
  * Merging by type is what lets a single type be declared twice: once with
- * `fromScanned` (WP-B / WP-C) and once with `fromState` (WP-D). The merged rule
- * carries both, and `test/golden.test.ts` asserts the two agree.
+ * `fromScanned` (`scanned-network.ts` / `scanned-workload.ts`) and once with
+ * `fromState` (`state.ts`). The merged rule carries both, and
+ * `test/golden.test.ts` asserts the two agree.
+ *
+ * A rule module never needs to edit this file to add a rule. Adding a *field*
+ * to `ImportRule` does: it must be listed in `MERGED_FIELDS` below, or a second
+ * declaration of the same type drops it silently.
  */
 import type { ImportRule } from '../types.js';
 import { RULES as SCANNED_NETWORK } from './scanned-network.js';
