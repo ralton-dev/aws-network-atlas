@@ -172,7 +172,24 @@ decision disagree, the amendment wins. The rest of the plan stands.
     is **298 passing / 0 failing / 0 todo**. Every "all 278 tests" acceptance
     criterion means "every test that passes today, and no regression". Read the
     number from `npm test`, not from this document — a worked example of the
-    standing rule immediately below.
+    standing rule below.
+32. **`0.1.0` is published by hand, exactly once; every release after it is
+    tokenless CI. Refines 28 and 30.** WP-3 established that npm **cannot**
+    publish a package's first version over OIDC — a trusted publisher can only
+    be attached to a package that already exists on the registry
+    (`npm/cli#8544`, open). Classic tokens were permanently revoked in November
+    2025, so the only remaining bootstrap credential is a granular token which,
+    for a package that does not exist yet, **cannot be scoped by name**: it must
+    be All-Packages read+write with 2FA bypass. That is a credential able to
+    publish to every package on Ben's account, created to ship one version, and
+    safe only for as long as it takes someone to remember to revoke it.
+    Publishing `0.1.0` interactively with real 2FA costs one command and creates
+    nothing that can leak. Decision 28's intent — reproducible artifacts, no
+    laptop state — is served by building the bootstrap from a pristine `npm ci`
+    checkout, and holds unconditionally from `0.1.1` onward. **The release
+    workflow therefore carries no token path at all**; an empty
+    `NODE_AUTH_TOKEN` is worse than none, because npm treats an empty token as a
+    token and fails rather than falling back to OIDC.
 
 ---
 
@@ -453,10 +470,17 @@ verified before the next becomes possible.
    lands, because after it lands every fix is a pull request.
 3. Apply the decision-21 protection, then **verify it by reading it back** from
    the API rather than trusting the write's exit code.
-4. **Stop and confirm the npm credential with Ben** (decision 30). Only then
-   push the `v0.1.0` tag that triggers the release workflow.
+4. **Hand over to Ben for the bootstrap publish** (decision 32). He runs
+   `npm login` and publishes `0.1.0` by hand from a pristine `npm ci` checkout —
+   there is no `v0.1.0` tag and the release workflow does not run for this
+   version, because npm cannot attach a trusted publisher to a package that does
+   not exist. Then he configures the trusted publisher on npmjs.com. From
+   `0.1.1` onward a tag is the whole release process.
 5. Confirm the published artifact from the outside: `npm view tf-import-blocks
    version` and a fresh `npm install tf-import-blocks` in a scratch directory.
+   **This is a different check from WP-4's tarball proof** — that one installs a
+   local file, this one exercises the registry, which is the only thing WP-6's
+   `^0.1.0` dependency can resolve against.
 
 **Acceptance:** `npm view tf-import-blocks version` returns `0.1.0`; the CI of
 WP-3 has run at least once and is green; branch protection reads back with 1
