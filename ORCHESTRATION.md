@@ -21,10 +21,22 @@ about the wider repo.
   `--workspaces --if-present`.
 - A wall of `TS2307: Cannot find module '@aws-sdk/client-*'` means a **stale
   install**, not a code defect. Run `npm install` and re-run. This has cost
-  time more than once.
+  time more than once. The same remedy covers `TS2307: Cannot find module
+  'tf-import-blocks'`, which has a second cause — that package is consumed from
+  npm and ships its own `dist/`, so the error means the dependency is not
+  installed rather than that anything in this repo is wrong.
 - `tsconfig.base.json` sets `strict` **and `noUncheckedIndexedAccess`**. Tell
   agents up front; it changes how they write array and record access, and
   retrofitting it at the end is miserable.
+- **The root `test` script must not rely on the runner expanding a glob.** It
+  used to be `tsx --test "packages/*/test/**/*.test.ts"`; Node only learned to
+  expand that itself in 22, so on the Node 20 this repo's `engines` promises to
+  support it arrived as a literal path and the whole suite did not run. It is
+  now a `find … -exec tsx --test {} +`, which discovers the same files on 20 and
+  23 and still exits non-zero when a test fails. The failure mode of getting
+  this wrong is **silence**, not redness — a sibling repo saw `# tests 0` with
+  exit 0 — so anyone touching it should compare the discovered count before and
+  after, and check that a deliberately failing test still turns the gate red.
 
 ## Workflow
 
@@ -44,16 +56,44 @@ Bodies here are paragraphs, not bullet lists.
 
 ## Repo shape
 
-npm workspaces under `packages/*`:
+**Three** npm workspaces under `packages/*` — there is no fourth:
 
 | package | name | notes |
 | --- | --- | --- |
 | `packages/schema` | `@atlas/schema` | snapshot types; the cleanest template for a new package's `package.json` / `tsconfig.json` |
 | `packages/scanner` | `@atlas/scanner` | AWS collectors + CLI (`src/cli.ts`); ~80 AWS SDK deps |
-| `packages/viewer` | `@atlas/viewer` | React + Vite; consumes `@atlas/schema` as a workspace dep — follow that precedent for any new workspace dep |
+| `packages/viewer` | `@atlas/viewer` | React + Vite; consumes `@atlas/schema` as a workspace dep and `tf-import-blocks` from npm — two different precedents, pick the one that matches |
 
 `tsx` is a scanner devDependency that npm hoists to root `node_modules/.bin`,
 so root scripts can use it without a new dependency.
+
+### The published dependency
+
+`tf-import-blocks` was `packages/tf-import-blocks` until 2026-08. It is now an
+ordinary npm dependency of both the scanner and the viewer, pinned `^0.1.0`, and
+its source and CI live in **its own repo**, `ralton-dev/tf-import-blocks`
+(public, MIT, `main` protected, CI on Node 20 and 24). It is **not** in this
+repo and must not come back: `packages/scanner/test/consumed-from-npm.test.ts`
+fails the moment it resolves from inside `packages/`.
+
+Consequences a cold orchestrator will otherwise hit:
+
+- **A change to import-block behaviour is not a change to this repo.** It is a
+  release there and a version bump here. No agent should be briefed to "fix the
+  emitter" in this tree — there is nothing to fix in it.
+- Its test suite travels with it. The golden-file assertion that used to be the
+  regression signal is no longer run by `npm test` here; what remains is the
+  consumed-from-npm pin, which asserts the CLI still reproduces
+  `awkward.expected.tf` from this side of the boundary.
+- Test fixtures are read out of the **installed** package
+  (`resolver.resolve('tf-import-blocks/package.json')`, then `test/fixtures`) —
+  it ships them for exactly this, and exports `./package.json` so the package
+  root is nameable. Never reintroduce a path into `packages/`.
+- `npm install` will **not** reconcile a lock that still carries the old
+  workspace entries: it silently keeps `"resolved": "packages/tf-import-blocks",
+  "link": true` and leaves a dead symlink in `node_modules`. The fix is to drop
+  those entries from `package-lock.json` and reinstall. Check the lock records a
+  registry tarball URL before believing an install did what you asked.
 
 ## Verifying Terraform import IDs
 
@@ -103,11 +143,14 @@ a deposed instance and a legacy flatmap resource.
 
 ## Committed build artifacts
 
-`site/index.html` is a **committed build output** bundling the viewer *and*
-`packages/tf-import-blocks/src/emit.ts` and `rules/registry.ts`
-(`from-state.ts` is tree-shaken out). Any package that changes a bundled
-source leaves it stale, and no package naturally owns rebuilding it — assign
-the rebuild to the **last** package in the wave and verify it took.
+`site/index.html` is a **committed build output** bundling the viewer *and*, from
+the installed `tf-import-blocks` dependency, `dist/emit.js` and
+`dist/rules/registry.js` (`dist/from-state.js` is tree-shaken out). Those last
+two now come from `node_modules/`, not from `packages/` — so a bundled source
+can change without a single file in this repo changing, simply by the dependency
+moving. Any package that changes a bundled source leaves it stale, and no
+package naturally owns rebuilding it — assign the rebuild to the **last**
+package in the wave and verify it took.
 
 The minified diff is unreadable, so do not eyeball it. Grep the bundle for a
 string that only exists after the change, and grep for a string from a

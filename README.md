@@ -272,10 +272,10 @@ stable diff.
 Every import id comes from a per-type rule table, never from the state's `id`
 attribute. The formats, the provider doc page each was read from, and the types
 with no documented import at all are listed in
-**[`packages/tf-import-blocks/README.md`](packages/tf-import-blocks/README.md)** —
+**[the `tf-import-blocks` README](https://github.com/ralton-dev/tf-import-blocks#readme)** —
 215 Terraform types resolve from a state file, four of them flagged as not
-importable. That package is standalone and atlas-free by design (see
-[Architecture](#architecture)).
+importable. That package is a standalone npm dependency, atlas-free by design
+(see [Architecture](#architecture)).
 
 **Only identifiers leave the state file.** A rule may *read* attributes to
 compute an import id — `aws_ecs_service` needs `cluster`, `aws_route53_record`
@@ -422,7 +422,7 @@ rule table, so an unmanaged SQS queue offers
 button puts exactly the block text on the clipboard. 136 of the 139 resource
 kinds the viewer can build resolve to a rule; the three that don't and why each
 is deliberate are under "Coverage — atlas kinds" in
-[`packages/tf-import-blocks/README.md`](packages/tf-import-blocks/README.md).
+[the `tf-import-blocks` README](https://github.com/ralton-dev/tf-import-blocks#readme).
 
 **Nested resources.** Some resources are more than one Terraform resource. A
 security group's rules live *inside* the group in the snapshot, and are never
@@ -614,7 +614,8 @@ aws iam attach-role-policy --role-name <your-scanning-role> \
 
 ## Architecture
 
-npm workspaces monorepo:
+npm workspaces monorepo — three workspaces, plus one dependency this project
+publishes and consumes from npm:
 
 - **`packages/schema`** — the TypeScript data model shared by scanner and viewer
   (snapshot format, annotations, config). Schema drift is a compile error.
@@ -623,16 +624,26 @@ npm workspaces monorepo:
   a Resource Groups Tagging sweep, and a **Cloud Control API** sweep for untagged resources.
   Adaptive retry, paginated, per-region concurrency; every step is error-isolated and
   output is deterministically sorted for clean diffs.
-- **`packages/tf-import-blocks`** — the per-type `(terraform type, import id)` rule
-  table behind `npm run tf-blocks` and the viewer's import blocks, with the
-  entry points (from a state file, from a scanned resource, and from a scanned
-  resource *plus the terraform resources nested inside it*) as thin adapters onto
-  it. It imports nothing from `@atlas/*` and has **no runtime dependencies** —
-  not an HCL library, not a YAML parser — because it's expected to move to its
-  own repository; lifting it out is `git mv packages/tf-import-blocks` plus a
-  `package.json`. It accepts a structural subject
+- **[`tf-import-blocks`](https://www.npmjs.com/package/tf-import-blocks)** — *not a
+  workspace: an ordinary npm dependency of both the scanner and the viewer.* The
+  per-type `(terraform type, import id)` rule table behind `npm run tf-blocks` and
+  the viewer's import blocks, with the entry points (from a state file, from a
+  scanned resource, and from a scanned resource *plus the terraform resources
+  nested inside it*) as thin adapters onto it. It imports nothing from `@atlas/*`
+  and has **no runtime dependencies** — not an HCL library, not a YAML parser. It
+  accepts a structural subject
   (`{ kind, id, arn?, name?, region, accountId, raw }`) that the viewer's
-  `ResourceRef` already satisfies, so nothing converts between the two.
+  `ResourceRef` already satisfies, so nothing converts between the two — which is
+  what let it leave this repo without a converter.
+
+  It lived here as `packages/tf-import-blocks` until 2026-08. Its source and CI are
+  now at **[ralton-dev/tf-import-blocks](https://github.com/ralton-dev/tf-import-blocks)**
+  and it is published to the public npm registry, so it is installable by anyone:
+  `npm install tf-import-blocks`. This repo is its most substantial consumer and
+  pins it at `^0.1.0`. Its own test suite — including the golden-file assertion —
+  travels with it; what stays here is `packages/scanner/test/consumed-from-npm.test.ts`,
+  which asserts the package resolves from outside this tree *and* that the CLI
+  still reproduces the golden byte for byte.
 - **`packages/viewer`** — React + React Flow (@xyflow/react) + ELK auto-layout
   (nested containers laid out in one pass), official AWS Architecture Icons,
   MiniSearch, react-markdown. Built with Vite into a single offline-capable HTML file.

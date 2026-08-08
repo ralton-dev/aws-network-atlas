@@ -13,43 +13,27 @@
  *      observable.
  *
  * Either alone is easy and worthless. (1) without (2) is an extraction that
- * quietly changed the emitted HCL; (2) without (1) is just today. Landed as
- * `{ todo: true }` so the suite keeps exiting 0 while the split is in flight —
- * node:test *runs* a todo test and reports its failure without counting it —
- * and the todo comes off in WP-6. When it passes as a plain assertion the
- * extraction is done; there is no other definition.
+ * quietly changed the emitted HCL; (2) without (1) is just today.
  *
  * It lives in `packages/scanner/test/` rather than in the package because it
  * has to survive `rm -rf packages/tf-import-blocks/`.
  *
- * OBSERVED FAILURE — this is what actually happened, not what was expected.
- * Run un-todo'd on 2026-08-08 at 95e66fa, with the built artifact in place:
+ * RESOLVED — 2026-08-08. This landed under `{ todo: true }` while the split was
+ * in flight, red on assertion 1 with:
  *
- *   $ npx tsx --test "packages/scanner/test/consumed-from-npm.test.ts"
- *   ✖ tf-import-blocks resolves from outside packages/, and the CLI still
- *     reproduces the golden (4.531375ms)
- *   ℹ tests 1
- *   ℹ pass 0
- *   ℹ fail 1
- *
- *   ✖ failing tests:
  *   AssertionError [ERR_ASSERTION]: tf-import-blocks still resolves inside the
- *   source tree: /Users/benralton/repos/BEN_WORKING/terraform_graphing/
- *   packages/tf-import-blocks/dist/index.js
- *       at TestContext.<anonymous> (packages/scanner/test/consumed-from-npm.test.ts:113:12)
- *     generatedMessage: false,
- *     code: 'ERR_ASSERTION',
- *     actual: false,
- *     expected: true,
- *     operator: '=='
+ *   source tree: <repo>/packages/tf-import-blocks/dist/index.js
  *
- * The failing frame is the resolution assert, not the golden compare — line
- * numbers below refer to that run, before the `{ todo: true }` went back on —
- * so execution got past assertion 2. Assertion 2 already passes; assertion 1
- * is the whole of the red. That is the point: `npm install` symlinks
- * `node_modules/tf-import-blocks` straight back to `packages/tf-import-blocks`,
- * and Node's CJS resolver realpaths through it, so the package the scanner
- * loads is the one in this repo.
+ * because npm workspaces symlinked `node_modules/tf-import-blocks` straight
+ * back to `packages/tf-import-blocks` and Node's CJS resolver realpaths through
+ * it, so the package the scanner loaded was the one in this repo. Assertion 2
+ * passed even then, which was the point of running it first.
+ *
+ * The todo came off when `packages/tf-import-blocks/` was deleted and both
+ * consumers moved to `tf-import-blocks@^0.1.0` from the public registry. It is
+ * a plain assertion now and must stay one: if it ever goes red again, either
+ * the dependency has been re-pointed at something inside this tree, or
+ * consuming the published package has changed the emitted HCL.
  */
 import assert from 'node:assert/strict';
 import { realpathSync } from 'node:fs';
@@ -107,12 +91,10 @@ function stripAnnotations(text: string): string {
 
 test(
   'tf-import-blocks resolves from outside packages/, and the CLI still reproduces the golden',
-  { todo: true },
   async () => {
-    // Assertion 2 runs first on purpose. Today only assertion 1 can fail, and
-    // putting it first would leave the golden comparison as dead code behind a
-    // known-red assert for the whole life of the split — the half that would
-    // actually catch a behaviour change never running.
+    // Assertion 2 runs first on purpose. It was the ordering that kept the
+    // golden comparison live while assertion 1 was known-red; now that both
+    // pass it is simply the more informative failure to see first.
     const { hcl } = await tfBlocks({
       files: [path.join(FIXTURES, 'awkward.tfstate.json')],
       cwd: REPO_ROOT,

@@ -7,8 +7,14 @@
  * `ScannedSubject` (decision 2). `ResourceRef` already *is* that shape — same
  * `kind`, `id`, `arn`, `name`, `region`, `accountId`, `raw` — so it is passed
  * straight through. There is no converter here on purpose: writing one would
- * couple the package to the viewer and is the thing that would stop
- * `git mv packages/tf-import-blocks` from working.
+ * couple the package to the viewer, and that decoupling is what let the package
+ * leave this repo at all.
+ *
+ * It has left. `tf-import-blocks` is an ordinary npm dependency now, published
+ * from https://github.com/ralton-dev/tf-import-blocks; the bare specifier below
+ * resolves into `node_modules`, not into `packages/`. Keep it that way — an
+ * import here that reaches for a relative path back into a local copy is the
+ * one change that would undo the split.
  *
  * Nothing in this module renders. Both entry points return plain strings so the
  * details panel (single) and the Layers panel (bulk) can each present them

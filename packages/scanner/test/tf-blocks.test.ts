@@ -10,6 +10,7 @@
  */
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -17,8 +18,27 @@ import { fileURLToPath } from 'node:url';
 
 import { formatSummary, tfBlocks } from '../src/tf-blocks.js';
 
+const resolver = createRequire(import.meta.url);
+
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const FIXTURES = path.join(REPO_ROOT, 'packages/tf-import-blocks/test/fixtures');
+
+/**
+ * Read out of *whatever copy of the package is installed*, never out of a path
+ * inside this repo. `tf-import-blocks` is an npm dependency now, so
+ * `packages/tf-import-blocks/test/fixtures` does not exist; the package ships
+ * `test/fixtures/` in its tarball and exports `./package.json` precisely so the
+ * package root is nameable from here (without that export Node answers
+ * `ERR_PACKAGE_PATH_NOT_EXPORTED` and there is no supported way to find it).
+ *
+ * It also keeps the golden honest: the file compared against is the one
+ * versioned with the emitter that produced it, so a local copy cannot go stale
+ * the first time the package legitimately changes its output.
+ */
+const FIXTURES = path.join(
+  path.dirname(resolver.resolve('tf-import-blocks/package.json')),
+  'test',
+  'fixtures',
+);
 const STATE = path.join(FIXTURES, 'awkward.tfstate.json');
 
 /** `##` lines in the golden are annotations for the reader, not expected output. */
