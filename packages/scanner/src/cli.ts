@@ -4,7 +4,7 @@ import { loadConfig } from './config.js';
 import { verifyAwsCli } from './preflight.js';
 import { scanAccount } from './scan.js';
 import { bundle, readAccountSnapshots, writeAccountSnapshot } from './bundle.js';
-import { collectSnapshotKeys, matchReport, tfImport } from './terraform.js';
+import { collectSnapshotKeys, formatMatchReport, matchReport, tfImport } from './terraform.js';
 import { displayPath, formatSummary, tfBlocks, writeBlocks } from './tf-blocks.js';
 
 const HELP = `atlas-scan — read-only AWS inventory scanner for the network atlas
@@ -146,16 +146,8 @@ async function main(): Promise<void> {
     for (const { file, stack } of results) {
       console.log(`[${stack.stack}] wrote ${file} (${stack.resources.length} AWS resource(s), repo: ${stack.repo})`);
       if (snapshots.length === 0) continue;
-      const report = matchReport(stack, keys);
-      console.log(`[${stack.stack}] matched ${report.matched}/${report.total} against ${snapshots.length} scanned account snapshot(s)`);
-      if (report.ghosts.length > 0) {
-        console.log(`[${stack.stack}] in state but not found by any scan (stale state, or a type the scanner doesn't collect):`);
-        for (const g of report.ghosts.slice(0, 20)) {
-          console.log(`  - ${g.address} (${g.arn ?? g.id ?? 'no id'})`);
-        }
-        if (report.ghosts.length > 20) {
-          console.log(`  … and ${report.ghosts.length - 20} more`);
-        }
+      for (const line of formatMatchReport(matchReport(stack, keys), snapshots.length)) {
+        console.log(`[${stack.stack}] ${line}`);
       }
     }
 

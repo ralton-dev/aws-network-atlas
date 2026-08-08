@@ -202,8 +202,14 @@ mark on its icon, and its details panel shows the resource address, stack, and a
 link to the repo. Resources *not* claimed by any imported stack are called out
 as such — ClickOps drift, visible at a glance — and the Layers panel gains a
 filter to show only Terraform-managed or only unmanaged resources. The import
-also prints a match report: state entries the scanner couldn't find (stale state
-or an uncollected resource type) are listed per stack.
+also prints a match report per stack, and it splits three ways rather than
+lumping everything unmatched into one list. *Stale* — the scan indexes this type
+and still didn't find it — is the actionable one, and the only one listed
+resource by resource. *Not checkable* — nothing in the scan can produce a key of
+that shape — is counted by type and kept **out of the ratio**, so a stack whose
+remainder is relationship resources no longer reports itself half-drifted. A
+type with no import rule at all is counted separately again, because the
+registry can't say which of the two it is.
 
 Matching is by ARN, falling back to the AWS-native id. That's a *matching* key
 and nothing more: `tf-import` keeps both `id` and `arn` from every state entry

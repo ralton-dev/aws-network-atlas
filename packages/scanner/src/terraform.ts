@@ -14,6 +14,7 @@
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { ruleForType } from 'tf-import-blocks';
 import type { TerraformResourceInstance, TerraformStackFile } from '@atlas/schema';
 import type { ResolvedConfig } from './config.js';
 import { stableStringify } from './stable-json.js';
@@ -207,25 +208,170 @@ export function collectSnapshotKeys(value: unknown, keys = new Set<string>()): S
   return keys;
 }
 
+/**
+ * Why one state resource went unmatched. The whole point of the split: the
+ * first of these is alarming and actionable, the other two are not, and one
+ * list holding all three is read as forty lines of the first.
+ */
+export type UnmatchedReason =
+  /** The scanner does index this type, and this resource still was not found. */
+  | 'stale'
+  /** Nothing in the scan can produce a key of this shape, so absence proves nothing. */
+  | 'not-indexed'
+  /** No import rule for the type at all — the registry cannot say either way. */
+  | 'unknown-type';
+
+/**
+ * Is a terraform type one the scan could have found, had the resource existed?
+ *
+ * Derived from the rule registry and from this run, never from a hand-kept
+ * list, which would rot the first time a collector was added. Two independent
+ * signals, and neither is sound alone:
+ *
+ *  - **`ImportRule.kinds`.** A rule carries `kinds` when the atlas draws the
+ *    type, which means a collector writes a snapshot record for it and
+ *    `collectSnapshotKeys` harvests that record's `id`/`arn`. Verified rather
+ *    than assumed: all 136 rules that declare `kinds` declare kinds that
+ *    `viewer/src/data.ts` actually indexes, so `kinds` ⇒ indexed holds. The
+ *    converse does **not**: `RegionSnapshot.generic` is an ARN sweep over the
+ *    Resource Groups Tagging and Cloud Control APIs, so a Tier-B type with no
+ *    `kinds` — `aws_ecs_cluster`, `aws_kinesis_stream`, `aws_launch_template` —
+ *    is routinely in the key set anyway. Reading "no kinds" as "never indexed"
+ *    would file a genuinely stale resource under "expected".
+ *  - **A sibling matched.** If any resource of the same type in this stack
+ *    matched, the scan demonstrably produces keys of that type's shape, so its
+ *    unmatched siblings are suspicious whatever the registry says. This is what
+ *    repairs the generic-sweep hole above, and it costs nothing to maintain.
+ *
+ * Where neither fires we say `not-indexed` — and it means "this scan produced
+ * no evidence it can see this type", not "this type is invisible forever". A
+ * type with no rule at all gets its own answer rather than being folded into
+ * either: the registry knows nothing about it, and saying so is the honest
+ * report.
+ */
+function unmatchedReason(type: string, matchedTypes: ReadonlySet<string>): UnmatchedReason {
+  const rule = ruleForType(type);
+  if (rule === undefined) return 'unknown-type';
+  if (matchedTypes.has(type)) return 'stale';
+  return (rule.kinds?.length ?? 0) > 0 ? 'stale' : 'not-indexed';
+}
+
 export interface StackMatchReport {
   stack: string;
+  /** Every managed AWS resource in the state file. */
   total: number;
   matched: number;
-  /** In state but not found by any scan: stale state or an uncollected type. */
-  ghosts: TerraformResourceInstance[];
+  /**
+   * `matched + stale` — the denominator that means something.
+   *
+   * `matched/total` was the headline and it was materially misleading: a stack
+   * whose every drawable resource matched and whose remainder is security group
+   * rules reported something like 50/100, which reads as half the stack being
+   * stale. The types we never index cannot be matched by anyone and belong
+   * beside the ratio, not inside it.
+   */
+  checkable: number;
+  /** Indexed type, still not found: stale state, drift, or an unscanned region. */
+  stale: TerraformResourceInstance[];
+  /** Nothing in the scan can produce a key of this shape. Expected; no action. */
+  notIndexed: TerraformResourceInstance[];
+  /** No import rule for the type — we cannot say whether it is stale. */
+  unknownType: TerraformResourceInstance[];
 }
 
 export function matchReport(
   stack: TerraformStackFile,
   snapshotKeys: Set<string>,
 ): StackMatchReport {
-  const ghosts = stack.resources.filter(
-    (r) => !(r.arn && snapshotKeys.has(r.arn)) && !(r.id && snapshotKeys.has(r.id)),
-  );
+  const matches = (r: TerraformResourceInstance): boolean =>
+    Boolean(r.arn && snapshotKeys.has(r.arn)) || Boolean(r.id && snapshotKeys.has(r.id));
+
+  // Two passes: the first pass is what tells the second which types this scan
+  // has been shown to produce keys for.
+  const matchedTypes = new Set<string>();
+  let matched = 0;
+  for (const r of stack.resources) {
+    if (!matches(r)) continue;
+    matchedTypes.add(r.type);
+    matched += 1;
+  }
+
+  const stale: TerraformResourceInstance[] = [];
+  const notIndexed: TerraformResourceInstance[] = [];
+  const unknownType: TerraformResourceInstance[] = [];
+  for (const r of stack.resources) {
+    if (matches(r)) continue;
+    const reason = unmatchedReason(r.type, matchedTypes);
+    if (reason === 'stale') stale.push(r);
+    else if (reason === 'not-indexed') notIndexed.push(r);
+    else unknownType.push(r);
+  }
+
   return {
     stack: stack.stack,
     total: stack.resources.length,
-    matched: stack.resources.length - ghosts.length,
-    ghosts,
+    matched,
+    checkable: matched + stale.length,
+    stale,
+    notIndexed,
+    unknownType,
   };
+}
+
+/** `aws_security_group_rule ×30, aws_route ×4`, commonest type first. */
+function byTypeCounts(resources: readonly TerraformResourceInstance[]): string {
+  const counts = new Map<string, number>();
+  for (const r of resources) counts.set(r.type, (counts.get(r.type) ?? 0) + 1);
+  return [...counts]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([type, n]) => `${type} ×${n}`)
+    .join(', ');
+}
+
+/**
+ * The console report, as lines — the caller prefixes each with the stack name.
+ *
+ * Only the stale list names individual resources, because it is the only list
+ * anyone has to act on. The other two are summarised by type and count: a
+ * reader who has just been told 34 security group rules cannot be checked does
+ * not need 34 addresses to know what to do about it, which is nothing. Decision
+ * 6 bounds what may appear here — addresses, terraform types, counts, and the
+ * `id`/`arn` identifiers `tf-import` already persists; never an attribute value.
+ */
+export function formatMatchReport(report: StackMatchReport, snapshotCount: number): string[] {
+  const lines = [
+    `matched ${report.matched}/${report.checkable} checkable against ` +
+      `${snapshotCount} scanned account snapshot(s)`,
+  ];
+  const unCheckable = report.total - report.checkable;
+  if (unCheckable > 0) {
+    lines.push(
+      `  ${unCheckable} of ${report.total} are not checkable against a scan — counted ` +
+        'beside the ratio rather than inside it, so they cannot read as drift',
+    );
+  }
+  if (report.stale.length > 0) {
+    lines.push(
+      `${report.stale.length} in state that the scan should have found — stale state, ` +
+        'drift, or a region/account this scan does not cover:',
+    );
+    for (const r of report.stale.slice(0, 20)) {
+      lines.push(`  - ${r.address} (${r.arn ?? r.id ?? 'no id'})`);
+    }
+    if (report.stale.length > 20) lines.push(`  … and ${report.stale.length - 20} more`);
+  }
+  if (report.notIndexed.length > 0) {
+    lines.push(
+      `${report.notIndexed.length} of a type this scan produces no key for — expected, not drift:`,
+      `    ${byTypeCounts(report.notIndexed)}`,
+    );
+  }
+  if (report.unknownType.length > 0) {
+    lines.push(
+      `${report.unknownType.length} of a type with no import rule, so this cannot say ` +
+        'whether they are stale:',
+      `    ${byTypeCounts(report.unknownType)}`,
+    );
+  }
+  return lines;
 }
