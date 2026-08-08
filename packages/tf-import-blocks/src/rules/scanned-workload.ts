@@ -2,8 +2,14 @@
  * Tier A — workload, data, security and identity kinds, resolved from a
  * scanned resource alone.
  *
- * Owned by WP-C. The network and edge half lives in `scanned-network.ts`
- * (WP-B); the two kind lists are disjoint and `waf-*` belongs to WP-B.
+ * This is one half of the scanned-resource rule table; the network and edge
+ * half lives in `scanned-network.ts`, and the `waf-*` kinds are over there. The
+ * split is for size, and so that the two halves could be written at the same
+ * time. The constraint that outlives that is that **the two kind lists must
+ * stay disjoint**: `rules/registry.ts` indexes kinds first-wins, and unlike a
+ * clash over a merged field a kind claimed twice records no `CONFLICTS` entry.
+ * The second claim is simply discarded and the kind resolves to the other
+ * module's rule.
  *
  * **The assumption this file exists to break is "a resource's import id is its
  * id".** In this half of the estate it fails in both directions:
@@ -534,9 +540,10 @@ export const RULES: ImportRule[] = [
 ];
 
 /**
- * Kinds in WP-C's half that are **deliberately** left to the `# VERIFY`
- * fallback. A silent omission and a deliberate one look identical in a diff,
- * so they are named here and asserted in `test/scanned-workload.test.ts`.
+ * Kinds in this half of the table that are **deliberately** left to the
+ * `# VERIFY` fallback. A silent omission and a deliberate one look identical
+ * in a diff, so they are named here and asserted in
+ * `test/scanned-workload.test.ts`.
  *
  * `fsx` and `datasync-location` used to be here too, declined because
  * `ImportRule.type` was a constant and a kind whose terraform *type* depends on

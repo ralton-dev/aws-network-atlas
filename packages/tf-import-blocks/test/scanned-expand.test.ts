@@ -1,7 +1,7 @@
 /**
- * WP-M's pin: a scanned resource that *contains* other terraform resources
- * expands into them, and the first user of that mechanism — security group
- * rules — produces ids the provider accepts.
+ * The expansion mechanism, pinned: a scanned resource that *contains* other
+ * terraform resources expands into them, and the first user of that mechanism
+ * — security group rules — produces ids the provider accepts.
  *
  * The defect this closes: selecting an unmanaged security group offered an
  * `aws_security_group` block and nothing else, so pasting it adopted a group
@@ -247,7 +247,7 @@ test('protocol and ports are normalised the way the provider normalises them', (
   }
 });
 
-// ── agreement with WP-D's state resolver ───────────────────────────────────
+// ── agreement with the state resolver in rules/state.ts ────────────────────
 
 /**
  * The plan's completion property, applied to the type this package now
@@ -593,15 +593,21 @@ test('the state path emits one block per state resource and never expands', () =
 // ── the seam survives the registry ─────────────────────────────────────────
 
 /**
- * `rules/registry.ts` merges by terraform type and copies a *second*
- * declaration field by field, from a fixed `MERGED_FIELDS` list that does not
- * include `expand`. Today `aws_security_group` is declared first in
- * `rules/scanned-network.ts` (which is spread wholesale) and second in
- * `rules/state.ts`, so the expander survives — by ordering, not by design.
+ * `aws_security_group` is declared twice: in `rules/scanned-network.ts`, which
+ * carries the expander, and in `rules/state.ts`, which carries the state
+ * resolver. `rules/registry.ts` merges the two into a single rule keyed on the
+ * terraform type, and a second declaration contributes only the fields named in
+ * `MERGED_FIELDS`. `expand` is on that list, so the expander is merged by
+ * design and the order of `SOURCES` does not affect it.
  *
- * The registry is owned by WP-A for the whole plan and this package may not
- * edit it, so this test is the guard instead: it fails the moment a merge drops
- * an expander, whatever the cause.
+ * It was not always. `expand` was missing from `MERGED_FIELDS` and survived
+ * only because `scanned-network.ts` happened to come first and first
+ * declarations are spread wholesale; reordering `SOURCES` would have taken the
+ * expander out. That is the failure this test guards against recurring. A field
+ * added to `ImportRule` but not to `MERGED_FIELDS` is dropped from every second
+ * declaration silently — no type error, and no `CONFLICTS` entry either, since
+ * conflicts are only recorded for fields the merge already knows about. This
+ * fails the moment the merge stops delivering an expander, whatever the cause.
  */
 test('every declared expander survives the registry merge', () => {
   const expanders = RULES.filter((r) => r.expand !== undefined).map((r) => r.type);
@@ -611,8 +617,8 @@ test('every declared expander survives the registry merge', () => {
   }
   // Reachable by kind, which is the route the viewer takes.
   assert.notEqual(ruleForKind('sg')?.expand, undefined);
-  // And the merge still carried WP-D's state resolver onto the same rule,
-  // which is the ordering this depends on.
+  // And the same merge still carries `rules/state.ts`'s resolver onto that one
+  // rule. Both fields have to arrive for the sg case to work from both sides.
   assert.notEqual(ruleForKind('sg')?.fromState, undefined);
 });
 
