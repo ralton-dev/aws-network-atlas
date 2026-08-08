@@ -115,6 +115,36 @@ tree-shaken module as a control that the rebuild did not quietly pull in more
 than expected. A logic-only change with no new strings is not grep-provable —
 say so rather than claiming a probe you do not have.
 
+## The frozen files, and when the freeze expired
+
+`packages/scanner/src/terraform.ts`, `packages/viewer/src/model/terraform.ts`,
+`packages/viewer/src/data.ts` and `packages/schema/**` were held at a zero-line
+diff across `TERRAFORM-IMPORT-BLOCKS.md` (fifteen packages) as that plan's
+stated regression signal. The reason was specific: it was building a *parallel*
+path and did not want the existing one disturbed.
+
+**That freeze expired with the plan.** On 2026-08-08 `scanner/src/terraform.ts`
+was edited deliberately, with the user's explicit go-ahead, to fix the
+match-report defect below. A future orchestrator should treat a diff there as
+worth questioning — not as an automatic regression. The freeze that still
+stands unconditionally is `packages/schema/**` and `packages/viewer/src/data.ts`,
+which no package has owned across two plans.
+
+## A signal that only works one way
+
+Deriving "is this terraform type indexed by the scanner?" from whether its
+registry rule declares `kinds` is sound **forwards only**. All 136 rules that
+declare `kinds` declare ones `viewer/src/data.ts` really indexes — zero
+orphans. The converse is false: `RegionSnapshot.generic` is an ARN sweep over
+Resource Groups Tagging and Cloud Control, so `aws_ecs_cluster` and many others
+land in the key set with **no** `kinds` at all. Reading "no kinds" as "never
+indexed" files a genuinely stale resource under "expected, not drift" — a
+confidently wrong answer in place of a merely unhelpful one.
+
+The general lesson, which this project keeps relearning: when a classifier
+cannot tell, a third "cannot tell" bucket beats a wrong binary. The same
+instinct produced decision 5 of the import-blocks plan.
+
 ## Seams worth designing before you fan out
 
 The one that cost the most here: a rule keyed by a single `type` string could
