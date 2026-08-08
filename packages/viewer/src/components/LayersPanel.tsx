@@ -189,21 +189,39 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
     });
   };
 
-  // One block per unmanaged resource — but a resource whose Terraform type
-  // could not be determined is emitted commented out (decision 5), so the
-  // number you can actually paste is smaller than the number on the button.
-  // Both are shown rather than picking one and letting the other surprise
-  // someone mid-paste.
+  // The button counts **blocks**, not selected resources.
+  //
+  // It used to count one per unmanaged node, which was the same number until
+  // resources started expanding into the terraform resources nested inside
+  // them: a security group's rules are separate resources with their own
+  // import ids, and the graph draws none of them. Counting nodes understated
+  // what adoption requires — the reader saw "31", pasted, and got 47 blocks.
+  // The number that matters to someone about to paste is the number of blocks
+  // they are pasting, so that is the number on the button, and the note
+  // reconciles it against the unmanaged count sitting directly above it.
+  //
+  // The shortfall is disclosed in the same breath: a block whose Terraform
+  // type could not be determined, or whose import id could not be built, is
+  // emitted commented out (decision 5) and will not apply. Counting it as
+  // pasteable is exactly the surprise this note exists to prevent.
   const blockCount = bulk.blocks.length;
-  const commentedOut = bulk.blocks.filter((b) => b.type === '').length;
+  const { resources, nested, commentedOut } = bulk;
   const bulkNote =
     copyState === 'copied'
       ? `${blockCount} block${blockCount === 1 ? '' : 's'} copied, grouped by account and region.`
       : copyState === 'failed'
         ? 'The browser refused the clipboard — nothing was copied.'
-        : commentedOut === 0
-          ? 'One per unmanaged resource in this view. Addresses are suggestions — rename them to suit your module.'
-          : `One per unmanaged resource in this view; ${commentedOut} paste commented out, having no Terraform type. Addresses are suggestions.`;
+        : [
+            nested === 0
+              ? 'One per unmanaged resource in this view.'
+              : `${blockCount} blocks for the ${resources} unmanaged resource${resources === 1 ? '' : 's'} in this view — ${nested} are nested resources such as security group rules, which Terraform manages separately and the graph does not draw.`,
+            commentedOut === 0
+              ? ''
+              : `${commentedOut} paste commented out and will not apply; each says why.`,
+            'Addresses are suggestions — rename them to suit your module.',
+          ]
+            .filter((s) => s !== '')
+            .join(' ');
 
   return (
     <aside className="layers-panel">

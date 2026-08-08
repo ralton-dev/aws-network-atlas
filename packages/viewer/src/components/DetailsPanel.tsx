@@ -6,7 +6,7 @@ import type { AtlasIndex, ResourceRef } from '../data.js';
 import type { AtlasEdgeData } from '../model/graph-types.js';
 import { AwsLogo, iconFor } from '../icons.js';
 import { consoleUrl } from '../console-link.js';
-import { copyToClipboard, importBlockFor } from '../model/tf-import.js';
+import { copyToClipboard, importBlockFor, type NestedBlock } from '../model/tf-import.js';
 import { TerraformMark } from './nodes.js';
 
 export type Selection =
@@ -117,6 +117,12 @@ function RepoRef({ repo }: { repo: string }): React.ReactElement {
  * `aws_ecs_service` wants `cluster/service`). The rule table in
  * `tf-import-blocks` knows the difference; this renders what it says.
  *
+ * It also renders what the snapshot keeps *inside* the resource. A security
+ * group's rules are not nodes on the graph, so selecting an unmanaged group
+ * used to offer an `aws_security_group` block and nothing else — a
+ * half-adoption that looks complete, and the defect this panel was reported
+ * for. Each nested resource now gets its own block.
+ *
  * Nothing is hidden when there is no rule (decision 5): a resource the table
  * cannot type is shown commented out, with the reason, because silently
  * omitting it is how a resource gets forgotten.
@@ -124,7 +130,9 @@ function RepoRef({ repo }: { repo: string }): React.ReactElement {
 function ImportBlock({ subject }: { subject: ResourceRef }): React.ReactElement {
   const block = useMemo(() => importBlockFor(subject), [subject]);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  const { resolved } = block;
+  const { resolved, children, sharedChildComments } = block;
+  const total = 1 + children.length;
+  const unusable = children.filter((c) => !c.resolved.verified).length;
 
   const copy = (): void => {
     void copyToClipboard(block.text).then((ok) => {
@@ -136,13 +144,25 @@ function ImportBlock({ subject }: { subject: ResourceRef }): React.ReactElement 
   return (
     <div className="tf-import">
       <div className="tf-import-head">
-        <span className="tf-import-title">Import block</span>
+        <span className="tf-import-title">
+          {total === 1 ? 'Import block' : `Import blocks (${total})`}
+        </span>
         <button
           className={copyState === 'copied' ? 'tf-copy-btn is-copied' : 'tf-copy-btn'}
           onClick={copy}
-          title="Copy this block to the clipboard"
+          title={
+            children.length === 0
+              ? 'Copy this block to the clipboard'
+              : `Copy all ${total} blocks — this resource and its ${children.length} nested resource${children.length === 1 ? '' : 's'}`
+          }
         >
-          {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy'}
+          {copyState === 'copied'
+            ? 'Copied'
+            : copyState === 'failed'
+              ? 'Copy failed'
+              : total === 1
+                ? 'Copy'
+                : `Copy all ${total}`}
         </button>
       </div>
       {resolved.type === '' && (
@@ -160,7 +180,7 @@ function ImportBlock({ subject }: { subject: ResourceRef }): React.ReactElement 
           before applying.
         </p>
       )}
-      <pre className="tf-import-block">{block.text}</pre>
+      <pre className="tf-import-block">{block.parentText}</pre>
       {resolved.type !== '' && resolved.addressIsSuggestion && (
         <p className="tf-import-note">
           <code>{resolved.address}</code> is a <strong>suggested</strong> address — there is no
@@ -168,7 +188,85 @@ function ImportBlock({ subject }: { subject: ResourceRef }): React.ReactElement 
           Rename it to suit your module before pasting.
         </p>
       )}
+      {children.length > 0 && (
+        <NestedBlocks
+          kind={subject.kind}
+          blocks={children}
+          sharedComments={sharedChildComments}
+          unusable={unusable}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * The nested terraform resources a scanned parent contains, rendered so a group
+ * with a dozen rules stays readable.
+ *
+ * Two things make it readable, and both matter more than they look:
+ *
+ * - **The shared notes are stated once.** Every child block correctly carries
+ *   the provider's warning about mixing `aws_security_group_rule` with inline
+ *   rules — it is three lines, it is the warning a reader most needs, and it
+ *   must survive into the clipboard because a pasted `.tf` file has no UI
+ *   around it. Repeating it beside twelve near-identical stanzas is how a
+ *   reader learns to skip it, so on screen it is hoisted into one callout and
+ *   the stanzas below carry only what distinguishes them. `Copy` still copies
+ *   the full text.
+ * - **It collapses.** Open by default, because the whole point is that these
+ *   were invisible; collapsible, because a default security group in a busy
+ *   VPC has more rules than the panel is tall.
+ */
+function NestedBlocks({
+  kind,
+  blocks,
+  sharedComments,
+  unusable,
+}: {
+  kind: string;
+  blocks: readonly NestedBlock[];
+  sharedComments: readonly string[];
+  unusable: number;
+}): React.ReactElement {
+  return (
+    <details className="tf-nested" open>
+      <summary>
+        <span className="tf-nested-count">{blocks.length}</span>
+        nested resource{blocks.length === 1 ? '' : 's'} inside this {kind}
+      </summary>
+      <p className="tf-import-note">
+        Terraform models these as resources of their own, so the block above adopts the{' '}
+        <code>{kind}</code> and leaves them unmanaged. Each needs its own import block.
+        {unusable > 0 && (
+          <>
+            {' '}
+            <strong>
+              {unusable} of {blocks.length}
+            </strong>{' '}
+            could not be turned into a usable import id and {unusable === 1 ? 'is' : 'are'}{' '}
+            emitted commented out, with the reason on the block.
+          </>
+        )}
+      </p>
+      {sharedComments.length > 0 && (
+        <div className="tf-nested-notes">
+          <span className="tf-nested-notes-title">Applies to every block below</span>
+          <ul>
+            {sharedComments.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <ul className="tf-nested-list">
+        {blocks.map((child) => (
+          <li key={`${child.resolved.address}:${child.resolved.id}`}>
+            <pre className="tf-import-block">{child.text}</pre>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 

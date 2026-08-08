@@ -1406,6 +1406,7 @@ function devAccount(): AccountSnapshot {
   const r = emptyRegionSnapshot(EU);
   const vpc = 'vpc-0dev000000000000a1';
   const sg = 'sg-0dev0000000001';
+  const DEV_PREFIX_LIST = 'pl-0dev00000000001';
 
   r.vpcs.push({ id: vpc, name: 'dev-vpc', tags: { Name: 'dev-vpc', env: 'dev' }, cidrBlocks: ['10.2.0.0/16'], ipv6CidrBlocks: [], isDefault: false, state: 'available' });
   addSubnet(r, vpc, { id: 'subnet-0devpub00000001', name: 'dev-public-a', az: `${EU}a`, cidr: '10.2.0.0/24', public: true, rtb: 'rtb-0devpublic00001' });
@@ -1427,8 +1428,66 @@ function devAccount(): AccountSnapshot {
       routes: [route('local', 'local', '10.2.0.0/16'), route('nat', 'nat-0dev00000000001', '0.0.0.0/0'), route('pcx', 'pcx-0proddev000000001', '10.0.0.0/16'), route('tgw', TGW_EU, '10.1.0.0/16'), route('tgw', TGW_EU, '172.16.0.0/12')],
     },
   );
+  // Referenced by `dev-app`'s ingress below. Nothing in the viewer draws a
+  // prefix list from a security group rule, but a fixture that names an object
+  // it does not contain is one someone eventually goes looking for.
+  r.prefixLists.push({
+    id: DEV_PREFIX_LIST,
+    arn: `arn:aws:ec2:${EU}:${ACCT.dev}:prefix-list/${DEV_PREFIX_LIST}`,
+    name: 'acme-office-ranges',
+    tags: { env: 'dev' },
+    cidrs: ['203.0.113.0/24', '198.51.100.0/24'],
+    ownerId: ACCT.dev,
+    maxEntries: 20,
+  });
   r.securityGroups.push(
-    { id: sg, name: 'dev-app', tags: {}, vpcId: vpc, description: 'dev', ingress: [], egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }] },
+    {
+      id: sg,
+      name: 'dev-app',
+      tags: {},
+      vpcId: vpc,
+      description: 'dev',
+      // The fan-out case, and the reason this group's ingress is not empty.
+      //
+      // `aws_security_group` nests its rules; terraform models each as its own
+      // `aws_security_group_rule`, so an import block for the group alone
+      // adopts the group and leaves every rule unmanaged. The expander in
+      // `tf-import-blocks` closes that, and the fan-out is *not* one child per
+      // source: `cidr_blocks`, `ipv6_cidr_blocks` and `prefix_list_ids` all
+      // live on one resource (they conflict only with
+      // `source_security_group_id`), so the first permission below — five
+      // network sources — is exactly **one** rule resource, and the group
+      // reference beside them is a **second**. Every SG in the rest of this
+      // estate has a single source per permission, which is precisely the tidy
+      // shape that would have let a one-child-per-source bug ship unseen.
+      ingress: [
+        {
+          protocol: 'tcp',
+          fromPort: 443,
+          toPort: 443,
+          cidrs: ['10.2.0.0/16', '10.0.0.0/16', '192.0.2.0/24'],
+          ipv6Cidrs: ['2001:db8::/48'],
+          prefixListIds: [DEV_PREFIX_LIST],
+          securityGroupRefs: [{ groupId: 'sg-0dev0000000002' }],
+          description: 'https from the office ranges, the peered VPCs and the default group',
+        },
+        // Self-referencing: AWS reports the group's own id as a
+        // `UserIdGroupPair`, and a scan cannot tell `self = true` from
+        // `source_security_group_id = <own id>` — the provider issues the same
+        // API call for both. The emitted block says so rather than guessing.
+        {
+          protocol: 'tcp',
+          fromPort: 9000,
+          toPort: 9100,
+          cidrs: [],
+          ipv6Cidrs: [],
+          prefixListIds: [],
+          securityGroupRefs: [{ groupId: sg }],
+          description: 'cluster gossip within the group',
+        },
+      ],
+      egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }],
+    },
     // Every VPC has one of these and they are all called `default` — which is
     // why a synthesised import address (`aws_security_group.default`) collides
     // the moment a bulk emit spans more than one VPC. The prod VPC has the
