@@ -10,13 +10,14 @@ is never a valid import id at all. Enough types work by accident that a naive
 "use the `id`" generator looks correct on a demo and silently emits garbage for
 the composite and attachment resources that make up the bulk of a real state.
 
-The rule table in `src/rules/` is this package's asset. The two entry points are
-thin adapters onto it that differ only in what they can feed it.
+The rule table in `src/rules/` is this package's asset. The entry points are thin
+adapters onto it that differ only in what they can feed it.
 
 | entry point | source | what it has |
 | --- | --- | --- |
 | `importsFromState(json, label)` | a Terraform state file | real attributes, so composite ids are computable exactly |
 | `resolveScanned(subject)` | a scanned AWS resource | only a snapshot, so composite ids must be reconstructed |
+| `resolveScannedExpanded(subject)` | the same | plus the terraform resources the snapshot keeps *inside* that one — see [Nested resources](#nested-resources--one-scanned-parent-several-import-blocks) |
 
 Where a type supports both, the two **must produce the same string**.
 `test/golden.test.ts` asserts it.
@@ -190,6 +191,85 @@ Pick the candidate from the console or from what you know of the resource, put
 it in `to =` with a name of your choosing, and uncomment. Where the id is also
 flagged — the `lb` and `datasync-location` rows above — a second `VERIFY` line
 says so, and that one you have to look up.
+
+## Nested resources — one scanned parent, several import blocks
+
+**A scanned resource is not always one terraform resource.** The snapshot nests
+some relationships inside the resource they belong to — `SecurityGroup.ingress`
+and `.egress` are the live case — while Terraform models each as a resource of
+its own with its own import id. Nothing draws them on a graph, so they had
+nothing to hang an import block on, and the result was a half-adoption that
+looks complete: an `aws_security_group` block you can paste, and rules Terraform
+still does not manage.
+
+`resolveScannedExpanded(subject)` returns `{ parent, children }`;
+`resolveScannedManyExpanded(subjects)` flattens for `emitBlocks`, **each parent
+immediately followed by its own children** — that ordering is the contract, not
+an implementation detail. `resolveScanned` is unchanged and never expands, so a
+caller that wants one block per subject still gets exactly that.
+
+**Only `sg` expands today.** `NetworkAcl.entries` and `RouteTable.routes` sit on
+the same seam and are the obvious next two; nothing else is registered. A kind
+with no expander returns no children, so callers can use the expanded form
+unconditionally.
+
+### The fan-out is not one child per source
+
+One AWS `IpPermission` is **not** one rule resource per CIDR. From the provider
+schema (`internal/service/ec2/vpc_security_group_rule.go`), `cidr_blocks` and
+`ipv6_cidr_blocks` conflict with `source_security_group_id` and `self`, while
+`prefix_list_ids` conflicts with nothing — so every CIDR-shaped source of one
+permission belongs to a **single** resource carrying all of them, and each
+referenced security group is a resource of its own.
+`r/security_group_rule.html.markdown` documents exactly that with
+`sg-4973616163_ingress_tcp_100_121_10.1.0.0/16_2001:db8::/48_…`. A permission
+allowing three IPv4 ranges, an IPv6 range, a prefix list and one peer group is
+therefore **two** blocks, not six.
+
+### Why the emitted child type is the legacy one
+
+`aws_security_group_rule` opens with `~> **NOTE:** Avoid using the
+aws_security_group_rule resource`, recommending
+`aws_vpc_security_group_ingress_rule` / `_egress_rule` instead. Those import by
+`security_group_rule_id` — an `sgr-…` value that comes from
+`DescribeSecurityGroupRules`, a call no collector in this repo makes and a field
+the snapshot does not carry. Emitting a guessed `sgr-…` would be precisely the
+confidently-wrong block this package exists to prevent, so the legacy composite
+type — which composes exactly from fields the scan does hold — is the only
+derivable one, and every child block says so rather than leaving the reader to
+find out.
+
+Every child block also carries the provider's `!> **WARNING:**`: combining
+`aws_security_group_rule` with inline `ingress`/`egress` blocks on the
+`aws_security_group`, or with the modern rule resources, "may cause rule
+conflicts, perpetual differences, and result in rules being overwritten". That
+is the one a reader genuinely needs, because these blocks ship **adjacent to an
+`aws_security_group` block** — if the target configuration writes its rules
+inline, pasting both is the documented way to lose rules. It stays on every
+block: a `.tf` file is read with no UI around it.
+
+A self-referencing rule names its own alternative rather than guessing. AWS
+reports it as a `UserIdGroupPair` holding the group's own id, and
+`expandIPPermission` issues the same API call for `self = true` and for
+`source_security_group_id = <own id>` — a scan cannot tell which the
+configuration used, so the id reports what AWS reported and the comment says how
+to rewrite it.
+
+### Writing an expander
+
+The contract is in `ExpandedChild` in `src/types.ts`; read it first. In short:
+**never throw and never drop** (a relationship you cannot express is a child with
+`problem` set, which renders the stanza commented out — a dropped child is
+invisible, and nothing in the UI would say it was ever considered); **one
+relationship, one side**, because nothing detects a relationship registered on
+both ends; and **scanned path only** — a state file already holds these as
+first-class resources, so expanding there would emit every one of them twice.
+`src/from-state.ts` does not import `src/from-scanned.ts`, and
+`test/scanned-expand.test.ts` asserts it.
+
+Expansion is one level: there are no grandchildren, an expander sees only its own
+subject and cannot read the rest of the snapshot, and `import` blocks express no
+ordering between children.
 
 ## Coverage — terraform types (from a state file)
 
@@ -422,7 +502,9 @@ tidier than a real one. Known gaps, so nobody has to rediscover them:
 3. Add the rule to the right module — `rules/state.ts` for `fromState`,
    `rules/scanned-network.ts` / `rules/scanned-workload.ts` for `fromScanned` —
    and set `doc` to the page. `rules/registry.ts` merges by type and needs no
-   edit; if you think it does, the module boundary is wrong.
+   edit; if you think it does, the module boundary is wrong. The merge covers
+   `expand` too, so a type declared in two modules keeps its expander whichever
+   module declares it and whatever order `SOURCES` is in.
 4. Add a case to that module's test. `test/state-rules.test.ts` asserts its case
    table is **complete**, so a resolver with no case fails the build.
 5. If the type has no documented import, give it `notImportable` with a reason a
@@ -440,4 +522,5 @@ npm test          # tsx --test "packages/*/test/**/*.test.ts", from the repo roo
 | `test/emit.test.ts` | escaping, address sanitising, collision dedupe, state parsing |
 | `test/state-rules.test.ts` | every `fromState` resolver, and that the table is complete |
 | `test/scanned-network.test.ts`, `test/scanned-workload.test.ts` | every `fromScanned` resolver |
+| `test/scanned-expand.test.ts` | expansion: the fan-out rule, the provider notes, that the state path never expands, and that every declared expander survives the registry merge |
 | `test/golden.test.ts` | the whole thing, both paths, and that they agree |

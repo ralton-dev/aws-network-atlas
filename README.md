@@ -397,6 +397,30 @@ kinds the viewer can build resolve to a rule; the three that don't and why each
 is deliberate are under "Coverage — atlas kinds" in
 [`packages/tf-import-blocks/README.md`](packages/tf-import-blocks/README.md).
 
+**Nested resources.** Some resources are more than one Terraform resource. A
+security group's rules live *inside* the group in the snapshot, and are never
+nodes on the graph — but Terraform models each as its own
+`aws_security_group_rule` with its own import id, so a block that adopts the
+group alone leaves every rule it contains unmanaged. Selecting an unmanaged
+security group therefore offers the group's block **and one per rule**,
+collapsible, with the address of each rule reading as a child of its group
+(`aws_security_group_rule.web_ingress_tcp_443_cidr` beside
+`aws_security_group.web`). Copy takes all of them.
+
+The fan-out follows the provider's schema, not intuition: `cidr_blocks`,
+`ipv6_cidr_blocks` and `prefix_list_ids` all live on one resource, so an ingress
+rule allowing four ranges is **one** block, while each referenced security group
+is a block of its own. Every rule block carries two provider notices —
+`aws_security_group_rule` is the legacy type (the modern
+`aws_vpc_security_group_ingress_rule` imports by an `sgr-…` id no scan collects,
+so it is not derivable), and combining it with inline `ingress`/`egress` blocks
+on the group "may cause rule conflicts, perpetual differences, and result in
+rules being overwritten". That second one matters: these blocks arrive beside an
+`aws_security_group` block, so if your configuration writes its rules inline,
+pasting both is the documented way to lose rules. The panel states it once above
+the list; the copied text repeats it on every block, because a `.tf` file is read
+with no UI around it. Only security groups expand today.
+
 This needs `npm run tf-import` to have been run at least once. The block is
 gated on Terraform state being loaded on purpose: with no state imported the
 viewer can't tell an unmanaged resource from one whose stack you simply haven't
@@ -420,12 +444,18 @@ Two things differ from the CLI path, because a scan has no state file to read:
   recoverable; a confidently wrong type is not.
 
 **Bulk copy.** The Layers panel's Terraform section has a **Copy N import
-blocks** button beside the managed/unmanaged filter: one block per unmanaged
-node in the current view, grouped under `# account … · region …` banners (a bulk
-paste crossing accounts being exactly what those comments exist for), with
-colliding suggested addresses deduped `_2`, `_3` — every VPC has a security
-group called `default`. The note under the button says how many of them pasted
-commented out.
+blocks** button beside the managed/unmanaged filter, grouped under
+`# account … · region …` banners (a bulk paste crossing accounts being exactly
+what those comments exist for), with colliding suggested addresses deduped `_2`,
+`_3` — every VPC has a security group called `default`.
+
+**N counts blocks, not nodes**, and it is deliberately the larger number: with
+nested resources expanded, adopting 11 unmanaged resources can take 17 blocks,
+and the number that matters when you paste is the number you are pasting. The
+note under the button reconciles it against the unmanaged count directly above —
+how many blocks, for how many resources, of which how many are nested — and says
+how many pasted commented out. Each parent is followed immediately by its own
+children, so a rule never ends up pages away from its group.
 
 ## Configuration — `atlas.config.json`
 
@@ -533,8 +563,9 @@ npm workspaces monorepo:
   Adaptive retry, paginated, per-region concurrency; every step is error-isolated and
   output is deterministically sorted for clean diffs.
 - **`packages/tf-import-blocks`** — the per-type `(terraform type, import id)` rule
-  table behind `npm run tf-blocks` and the viewer's import blocks, with the two
-  entry points (from a state file, from a scanned resource) as thin adapters onto
+  table behind `npm run tf-blocks` and the viewer's import blocks, with the
+  entry points (from a state file, from a scanned resource, and from a scanned
+  resource *plus the terraform resources nested inside it*) as thin adapters onto
   it. It imports nothing from `@atlas/*` and has **no runtime dependencies** —
   not an HCL library, not a YAML parser — because it's expected to move to its
   own repository; lifting it out is `git mv packages/tf-import-blocks` plus a
