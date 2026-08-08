@@ -222,7 +222,7 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
   // emitted commented out (decision 5) and will not apply. Counting it as
   // pasteable is exactly the surprise this note exists to prevent.
   const blockCount = bulk.blocks.length;
-  const { resources, nested, commentedOut, unproven, partiallyManaged } = bulk;
+  const { resources, nested, commentedOut, unproven, partiallyManaged, nestedUnderManaged } = bulk;
   const bulkNote =
     copyState === 'copied'
       ? `${blockCount} block${blockCount === 1 ? '' : 's'} copied, grouped by account and region.`
@@ -234,7 +234,7 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
               : `${blockCount} blocks: ${resources} unmanaged resource${resources === 1 ? '' : 's'} the diagram draws, and ${nested} nested resource${nested === 1 ? '' : 's'} such as security group rules, which Terraform manages separately and the diagram does not draw.`,
             partiallyManaged === 0
               ? ''
-              : `${partiallyManaged} of those nested blocks ${partiallyManaged === 1 ? 'sits' : 'sit'} inside a resource Terraform already manages — the group is adopted, its rules are not.`,
+              : `${nestedUnderManaged} of those nested blocks ${nestedUnderManaged === 1 ? 'comes' : 'come'} from ${partiallyManaged} resource${partiallyManaged === 1 ? '' : 's'} Terraform already manages — the group is adopted, its rules are not.`,
             // Stated in the same breath as the count, because "unproven" is
             // the one number that changes what a reader should do with the
             // file: paste it and check, rather than paste it.

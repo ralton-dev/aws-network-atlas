@@ -530,6 +530,8 @@ export interface BulkImportBlocks {
    * group's unmanaged rules disappear from the bulk paste entirely.
    */
   readonly partiallyManaged: number;
+  /** Of `nested`, how many came from one of those. Never equal to it. */
+  readonly nestedUnderManaged: number;
   /** How many carry an id a rule actually computed. */
   readonly withRule: number;
   /** How many are `# VERIFY` fallbacks, including unknown-type blocks. */
@@ -602,9 +604,9 @@ export function importBlocksFor(
     (n, f) => n + f.verdicts.filter((v) => v.status === 'unproven').length,
     0,
   );
-  const partiallyManaged = families.filter(
-    (f) => f.parentManaged && f.offeredChildren.length > 0,
-  ).length;
+  const partial = families.filter((f) => f.parentManaged && f.offeredChildren.length > 0);
+  const partiallyManaged = partial.length;
+  const nestedUnderManaged = partial.reduce((n, f) => n + f.offeredChildren.length, 0);
   const resolved = dedupeAddresses(
     families.flatMap((f) => (f.parentManaged ? f.offeredChildren : [f.parent, ...f.offeredChildren])),
   );
@@ -656,6 +658,7 @@ export function importBlocksFor(
     alreadyManaged,
     unproven,
     partiallyManaged,
+    nestedUnderManaged,
     withRule: resolved.filter((r) => r.verified).length,
     needsVerify: resolved.filter((r) => !r.verified).length,
     // Two different failures render the same way and a reader about to paste
