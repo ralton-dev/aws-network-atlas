@@ -424,8 +424,14 @@ repo and `import { emitBlocks } from 'tf-import-blocks'` resolves, typechecks
 and runs. `npm publish --dry-run` reports the intended file list and version
 `0.1.0`. Nothing is published.
 
-Owns: `package.json`, `README.md`, `NOTICE` at the **root** of WP-2's split
-branch (decision 27 — there is no `packages/` directory there).
+**`LICENSE` and `NOTICE` already exist — WP-2 created both.** The two packages'
+bullets double-owned them, and WP-2 got there first and said so. WP-4 **reviews**
+`NOTICE` and must not touch `LICENSE`; the routed "the package has no licence
+text" finding above is **resolved**, and is left in place only because a
+dismissal is dated evidence, not a settled fact.
+
+Owns: `package.json`, `README.md`, `NOTICE` (review only) at the **root** of
+WP-2's repo (decision 27 — there is no `packages/` directory there).
 Size **M**. Depends: WP-2.
 
 ---
