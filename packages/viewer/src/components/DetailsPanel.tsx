@@ -6,7 +6,12 @@ import type { AtlasIndex, ResourceRef } from '../data.js';
 import type { AtlasEdgeData } from '../model/graph-types.js';
 import { AwsLogo, iconFor } from '../icons.js';
 import { consoleUrl } from '../console-link.js';
-import { copyToClipboard, importBlockFor, type NestedBlock } from '../model/tf-import.js';
+import {
+  copyToClipboard,
+  importBlockFor,
+  type NestedBlock,
+  type TerraformKnowledge,
+} from '../model/tf-import.js';
 import { TerraformMark } from './nodes.js';
 
 export type Selection =
@@ -108,7 +113,7 @@ function RepoRef({ repo }: { repo: string }): React.ReactElement {
 }
 
 /**
- * The paste-this block for a resource no imported state claims.
+ * The paste-this block for whatever an imported state does not already manage.
  *
  * Finding drift is only half the job: the panel used to say "not claimed by any
  * imported state" and stop, leaving the reader to work out the Terraform type
@@ -118,21 +123,31 @@ function RepoRef({ repo }: { repo: string }): React.ReactElement {
  * `tf-import-blocks` knows the difference; this renders what it says.
  *
  * It also renders what the snapshot keeps *inside* the resource. A security
- * group's rules are not nodes on the graph, so selecting an unmanaged group
- * used to offer an `aws_security_group` block and nothing else — a
- * half-adoption that looks complete, and the defect this panel was reported
- * for. Each nested resource now gets its own block.
+ * group's rules are not nodes on the graph, so selecting a group used to offer
+ * an `aws_security_group` block and nothing else — a half-adoption that looks
+ * complete, and the defect this panel was reported for.
+ *
+ * **And it renders for a managed parent**, which is the second half of that
+ * same defect and the commoner shape by far. A group adopted years ago whose
+ * rules were never imported showed "claimed by stack X" and offered nothing at
+ * all, so the rules stayed unmanaged indefinitely with the panel implying
+ * everything was fine. What is withheld now is only what an imported state
+ * *provably* claims, resource by resource.
  *
  * Nothing is hidden when there is no rule (decision 5): a resource the table
  * cannot type is shown commented out, with the reason, because silently
  * omitting it is how a resource gets forgotten.
  */
-function ImportBlock({ subject }: { subject: ResourceRef }): React.ReactElement {
-  const block = useMemo(() => importBlockFor(subject), [subject]);
+function ImportBlock({
+  subject,
+  knowledge,
+}: {
+  subject: ResourceRef;
+  knowledge: TerraformKnowledge;
+}): React.ReactElement | null {
+  const block = useMemo(() => importBlockFor(subject, knowledge), [subject, knowledge]);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  const { resolved, children, sharedChildComments } = block;
-  const total = 1 + children.length;
-  const unusable = children.filter((c) => !c.resolved.verified).length;
+  const { resolved, children, sharedChildComments, parentManaged, offered, uncertainty } = block;
 
   const copy = (): void => {
     void copyToClipboard(block.text).then((ok) => {
@@ -141,29 +156,63 @@ function ImportBlock({ subject }: { subject: ResourceRef }): React.ReactElement 
     });
   };
 
+  // A managed resource with nothing nested inside it — an instance, a VPC —
+  // has nothing to say beyond the binding above, and saying anything would be
+  // noise on the overwhelming majority of managed resources.
+  if (parentManaged && children.length === 0) return null;
+
+  const copyButton = (
+    <button
+      className={copyState === 'copied' ? 'tf-copy-btn is-copied' : 'tf-copy-btn'}
+      onClick={copy}
+      title={
+        offered === 1
+          ? 'Copy this block to the clipboard'
+          : `Copy all ${offered} blocks to the clipboard`
+      }
+    >
+      {copyState === 'copied'
+        ? 'Copied'
+        : copyState === 'failed'
+          ? 'Copy failed'
+          : offered === 1
+            ? 'Copy'
+            : `Copy all ${offered}`}
+    </button>
+  );
+
+  // The managed parent's own stanza is never offered — adopting it twice is
+  // what the binding above already rules out — so this is the nested list and
+  // nothing else.
+  if (parentManaged) {
+    return (
+      <div className="tf-import">
+        <div className="tf-import-head">
+          <span className="tf-import-title">
+            {offered === 0
+              ? 'Nested resources'
+              : `Nested resources not in state (${offered})`}
+          </span>
+          {offered > 0 && copyButton}
+        </div>
+        <NestedBlocks
+          kind={subject.kind}
+          blocks={children}
+          sharedComments={sharedChildComments}
+          uncertainty={uncertainty}
+          parentManaged
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="tf-import">
       <div className="tf-import-head">
         <span className="tf-import-title">
-          {total === 1 ? 'Import block' : `Import blocks (${total})`}
+          {offered === 1 ? 'Import block' : `Import blocks (${offered})`}
         </span>
-        <button
-          className={copyState === 'copied' ? 'tf-copy-btn is-copied' : 'tf-copy-btn'}
-          onClick={copy}
-          title={
-            children.length === 0
-              ? 'Copy this block to the clipboard'
-              : `Copy all ${total} blocks — this resource and its ${children.length} nested resource${children.length === 1 ? '' : 's'}`
-          }
-        >
-          {copyState === 'copied'
-            ? 'Copied'
-            : copyState === 'failed'
-              ? 'Copy failed'
-              : total === 1
-                ? 'Copy'
-                : `Copy all ${total}`}
-        </button>
+        {copyButton}
       </div>
       {resolved.type === '' && (
         <p className="tf-import-warn">
@@ -193,18 +242,34 @@ function ImportBlock({ subject }: { subject: ResourceRef }): React.ReactElement 
           kind={subject.kind}
           blocks={children}
           sharedComments={sharedChildComments}
-          unusable={unusable}
+          uncertainty={uncertainty}
+          parentManaged={false}
         />
       )}
     </div>
   );
 }
 
+/** How one nested resource's Terraform status reads on screen. */
+function NestedStatusChip({ block }: { block: NestedBlock }): React.ReactElement {
+  if (block.status === 'managed') {
+    return <span className="tf-status is-managed">in state</span>;
+  }
+  if (block.status === 'unproven') {
+    return (
+      <span className="tf-status is-unproven" title="Cannot be checked against the imported state">
+        can’t tell
+      </span>
+    );
+  }
+  return <span className="tf-status is-unmanaged">unmanaged</span>;
+}
+
 /**
- * The nested terraform resources a scanned parent contains, rendered so a group
- * with a dozen rules stays readable.
+ * The nested terraform resources a scanned parent contains, each with what can
+ * actually be proved about it.
  *
- * Two things make it readable, and both matter more than they look:
+ * Three things make it readable, and all three matter more than they look:
  *
  * - **The shared notes are stated once.** Every child block correctly carries
  *   the provider's warning about mixing `aws_security_group_rule` with inline
@@ -217,39 +282,81 @@ function ImportBlock({ subject }: { subject: ResourceRef }): React.ReactElement 
  * - **It collapses.** Open by default, because the whole point is that these
  *   were invisible; collapsible, because a default security group in a busy
  *   VPC has more rules than the panel is tall.
+ * - **"Unproven" is not "unmanaged".** A rule whose import id the state writes
+ *   differently — `self = true` is the case this repo has met — cannot be
+ *   matched, and calling that unmanaged would put an `import` block for a
+ *   resource already in someone's state on the clipboard. It is offered, and
+ *   it is labelled, and the label says which one it is.
  */
 function NestedBlocks({
   kind,
   blocks,
   sharedComments,
-  unusable,
+  uncertainty,
+  parentManaged,
 }: {
   kind: string;
   blocks: readonly NestedBlock[];
   sharedComments: readonly string[];
-  unusable: number;
+  uncertainty?: string | undefined;
+  parentManaged: boolean;
 }): React.ReactElement {
+  const offered = blocks.filter((b) => b.status !== 'managed');
+  const managed = blocks.length - offered.length;
+  const unproven = blocks.filter((b) => b.status === 'unproven').length;
+  const unusable = offered.filter((b) => !b.resolved.verified).length;
+
   return (
-    <details className="tf-nested" open>
+    <details className="tf-nested" open={offered.length > 0}>
       <summary>
         <span className="tf-nested-count">{blocks.length}</span>
         nested resource{blocks.length === 1 ? '' : 's'} inside this {kind}
+        {managed > 0 && <span className="tf-nested-sub"> · {managed} already in state</span>}
       </summary>
       <p className="tf-import-note">
-        Terraform models these as resources of their own, so the block above adopts the{' '}
-        <code>{kind}</code> and leaves them unmanaged. Each needs its own import block.
+        Terraform models these as resources of their own.{' '}
+        {offered.length === 0 ? (
+          <>
+            Every one of them is already in an imported state, so there is nothing here to
+            adopt.
+          </>
+        ) : parentManaged ? (
+          <>
+            The stack above adopts the <code>{kind}</code> itself and not{' '}
+            {offered.length === blocks.length ? 'these' : `these ${offered.length}`} — each
+            needs its own import block.
+          </>
+        ) : (
+          <>
+            The block above adopts the <code>{kind}</code> and leaves them unmanaged. Each
+            needs its own import block.
+          </>
+        )}
         {unusable > 0 && (
           <>
             {' '}
             <strong>
-              {unusable} of {blocks.length}
+              {unusable} of {offered.length}
             </strong>{' '}
             could not be turned into a usable import id and {unusable === 1 ? 'is' : 'are'}{' '}
             emitted commented out, with the reason on the block.
           </>
         )}
       </p>
-      {sharedComments.length > 0 && (
+      {uncertainty !== undefined && (
+        <p className="tf-import-warn">
+          <strong>Cannot be checked in full.</strong> {uncertainty}
+        </p>
+      )}
+      {unproven > 0 && uncertainty === undefined && (
+        <p className="tf-import-warn">
+          {unproven === 1 ? '1 block below is' : `${unproven} blocks below are`} marked{' '}
+          <em>can’t tell</em>: the imported state may already hold{' '}
+          {unproven === 1 ? 'it' : 'them'} under an import id this scan cannot reproduce.
+          Check before pasting.
+        </p>
+      )}
+      {sharedComments.length > 0 && offered.length > 0 && (
         <div className="tf-nested-notes">
           <span className="tf-nested-notes-title">Applies to every block below</span>
           <ul>
@@ -261,8 +368,18 @@ function NestedBlocks({
       )}
       <ul className="tf-nested-list">
         {blocks.map((child) => (
-          <li key={`${child.resolved.address}:${child.resolved.id}`}>
-            <pre className="tf-import-block">{child.text}</pre>
+          <li key={`${child.resolved.address}:${child.resolved.id}`} className={`is-${child.status}`}>
+            <div className="tf-nested-status">
+              <NestedStatusChip block={child} />
+              {child.claim && (
+                <span className="tf-nested-claim">
+                  <code className="tf-address">{child.claim.address}</code> in{' '}
+                  <strong>{child.claim.stack}</strong>
+                </span>
+              )}
+            </div>
+            {child.doubt !== undefined && <p className="tf-import-note">{child.doubt}</p>}
+            {child.status !== 'managed' && <pre className="tf-import-block">{child.text}</pre>}
           </li>
         ))}
       </ul>
@@ -471,6 +588,14 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
               </li>
             ))}
           </ul>
+          {/*
+            A binding covers the resource, never what terraform models as
+            separate resources inside it. The panel used to stop at the address
+            above, so an adopted security group whose rules were never imported
+            read as fully managed — the ordinary shape of drift, and the one the
+            defect was reported for.
+          */}
+          <ImportBlock subject={ref} knowledge={index} />
         </section>
       )}
       {tfBindings.length === 0 && index.terraform.length > 0 && (
@@ -481,7 +606,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
             {index.terraform.length === 1 ? '' : 's'} imported) — created outside
             Terraform, or managed by a stack that hasn't been imported.
           </p>
-          <ImportBlock subject={ref} />
+          <ImportBlock subject={ref} knowledge={index} />
         </section>
       )}
 

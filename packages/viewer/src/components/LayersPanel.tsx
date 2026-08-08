@@ -131,6 +131,17 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
 
   // tfManaged is only stamped when Terraform stacks are imported, so absence
   // of the flag on every node means no tf-import yet → hide the section.
+  //
+  // **These stay node counts, and they are the counts of the radio buttons
+  // beside them.** A filter's number has to be what the filter leaves on the
+  // diagram or the filter looks broken, and the diagram draws no security group
+  // rules and no routes. The number is therefore true and dangerously
+  // incomplete at the same time: on the shipped fixture 8 security groups stand
+  // in for 15 rules and 9 route tables for 34 routes, so an estate a quarter
+  // adopted renders "Terraform-managed 17 · Unmanaged 0" and reads as done. The
+  // fix is not to bend these numbers into meaning something else — it is the
+  // third row below, which counts the nested resources under a label that says
+  // nested resources, and says the diagram draws none of them.
   const tf = useMemo(() => {
     let managed = 0;
     let unmanaged = 0;
@@ -147,10 +158,16 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
     { value: 'unmanaged', label: 'Unmanaged only', count: tf.unmanaged },
   ];
 
-  // Every unmanaged node in this view, back to the resource it draws.
-  // `tfManaged === false` is stamped through this exact lookup by
-  // `applyTerraformBadges`, so a node carrying the flag resolves by
-  // construction — the guards are for a view rebuilt without re-badging.
+  // Every resource node in this view, back to the resource it draws.
+  //
+  // **Not "every unmanaged node".** It was, and that is the defect: a node was
+  // dropped here for carrying `tfManaged === true`, and every terraform
+  // resource nested inside it went with it. A security group adopted by a stack
+  // whose rules were never imported is the ordinary shape of drift, and it left
+  // the pasted `.tf` file silently short — `terraform plan` came back clean and
+  // the rules stayed unmanaged. Which blocks a managed parent still owes is a
+  // question only the state can answer, so the whole set goes to
+  // `importBlocksFor` and the model withholds what an import already claims.
   //
   // Deduped by ref identity, not by node: `index.byKey` holds the same
   // `ResourceRef` object under both its id and its ARN, so one resource drawn
@@ -158,11 +175,11 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
   // it. That is a worse outcome than an undercount, because the second block
   // would be silently renamed `_2` by the dedupe and read as a second
   // resource.
-  const unmanagedRefs = useMemo(() => {
+  const importCandidates = useMemo(() => {
     const seen = new Set<ResourceRef>();
     const refs: ResourceRef[] = [];
     for (const n of graph.nodes) {
-      if (n.data.tfManaged !== false || n.data.refId === undefined) continue;
+      if (n.data.tfManaged === undefined || n.data.refId === undefined) continue;
       const ref = index.byKey.get(n.data.refId);
       if (ref === undefined || seen.has(ref)) continue;
       seen.add(ref);
@@ -177,8 +194,8 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
   // split into per-account sections, or the collisions land in different
   // sections un-suffixed and Terraform rejects the paste.
   const bulk = useMemo(
-    () => importBlocksFor(unmanagedRefs, { accountLabel: index.accountLabel }),
-    [unmanagedRefs, index],
+    () => importBlocksFor(importCandidates, index, { accountLabel: index.accountLabel }),
+    [importCandidates, index],
   );
 
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
@@ -205,7 +222,7 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
   // emitted commented out (decision 5) and will not apply. Counting it as
   // pasteable is exactly the surprise this note exists to prevent.
   const blockCount = bulk.blocks.length;
-  const { resources, nested, commentedOut } = bulk;
+  const { resources, nested, commentedOut, unproven, partiallyManaged } = bulk;
   const bulkNote =
     copyState === 'copied'
       ? `${blockCount} block${blockCount === 1 ? '' : 's'} copied, grouped by account and region.`
@@ -213,8 +230,19 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
         ? 'The browser refused the clipboard — nothing was copied.'
         : [
             nested === 0
-              ? 'One per unmanaged resource in this view.'
-              : `${blockCount} blocks for the ${resources} unmanaged resource${resources === 1 ? '' : 's'} in this view — ${nested} are nested resources such as security group rules, which Terraform manages separately and the graph does not draw.`,
+              ? `One per unmanaged resource in this view${resources === blockCount ? '' : '.'}`
+              : `${blockCount} blocks: ${resources} unmanaged resource${resources === 1 ? '' : 's'} the diagram draws, and ${nested} nested resource${nested === 1 ? '' : 's'} such as security group rules, which Terraform manages separately and the diagram does not draw.`,
+            partiallyManaged === 0
+              ? ''
+              : `${partiallyManaged} of those nested blocks ${partiallyManaged === 1 ? 'sits' : 'sit'} inside a resource Terraform already manages — the group is adopted, its rules are not.`,
+            // Stated in the same breath as the count, because "unproven" is
+            // the one number that changes what a reader should do with the
+            // file: paste it and check, rather than paste it.
+            unproven === 0
+              ? ''
+              : unproven === 1
+                ? '1 could not be checked against the imported state and may already be managed — it is marked in the file.'
+                : `${unproven} could not be checked against the imported state and may already be managed — each is marked in the file.`,
             commentedOut === 0
               ? ''
               : commentedOut === 1
@@ -247,6 +275,19 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
               {count !== undefined && <span className="count">{count}</span>}
             </label>
           ))}
+          {(nested > 0 || bulk.alreadyManaged > 0) && (
+            <>
+              <div className="layer-row is-static" title="Security group rules and the like — Terraform models these as resources of their own">
+                <span className="layer-label">Unmanaged nested resources</span>
+                <span className="count">{nested}</span>
+              </div>
+              <p className="tf-bulk-note">
+                The diagram draws no nested resources, so the two counts above do not include
+                them.
+                {bulk.alreadyManaged > 0 && ` ${bulk.alreadyManaged} more ${bulk.alreadyManaged === 1 ? 'is' : 'are'} already in an imported state.`}
+              </p>
+            </>
+          )}
           <button
             className={copyState === 'copied' ? 'tf-bulk-btn is-copied' : 'tf-bulk-btn'}
             onClick={copyBulk}

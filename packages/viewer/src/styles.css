@@ -378,6 +378,34 @@ html, body, #root { margin: 0; height: 100%; }
 .tf-nested-list > li:last-child { margin-bottom: 0; }
 .tf-nested-list .tf-import-block { max-height: none; font-size: 10px; padding: 7px 9px; }
 
+/* Three verdicts, three colours, and the middle one is the point.
+   Green is settled and offers nothing. Purple is the ordinary offer — the
+   resource is drift and the block adopts it. Amber is *cannot tell*: the block
+   is still offered, because hiding real drift is the failure this panel was
+   built to fix, but an import block for a resource already in someone's state
+   costs them a `terraform plan` and an afternoon, so it never wears the same
+   colour as a verdict we can actually defend. */
+.tf-status {
+  border-radius: 3px; padding: 1px 6px; font-size: 9.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.4px; flex-shrink: 0;
+}
+.tf-status.is-managed { background: #e3f5e6; border: 1px solid #a8ddb1; color: #1f7a4d; }
+.tf-status.is-unproven { background: #fff7e6; border: 1px solid #f0d9a8; color: #7a4a00; }
+.tf-status.is-unmanaged { background: #ede8fa; border: 1px solid #c9bdec; color: #5c4d9a; }
+.tf-nested-status { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 3px; }
+.tf-nested-claim { font-size: 11px; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.tf-nested-sub { font-weight: 400; color: var(--muted); }
+/* A rule already in state is kept on screen rather than dropped — "2 of these 4
+   are done" is a different message from silently showing two — but it is not
+   what the reader is here to act on. */
+.tf-nested-list > li.is-managed { opacity: 0.72; }
+
+/* Not a filter: the diagram draws no nested resources, so there is nothing for
+   a radio to leave behind. It sits with the filter counts because it is the
+   number they cannot show. */
+.layer-row.is-static { cursor: default; padding-left: 25px; }
+.layer-row.is-static:hover { background: none; }
+
 /* Layers-panel bulk copy (every unmanaged node in the current view). */
 .tf-bulk-btn {
   display: block; width: 100%; margin-top: 8px;
