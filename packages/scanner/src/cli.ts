@@ -4,7 +4,7 @@ import { loadConfig } from './config.js';
 import { verifyAwsCli } from './preflight.js';
 import { scanAccount } from './scan.js';
 import { bundle, readAccountSnapshots, writeAccountSnapshot } from './bundle.js';
-import { collectSnapshotKeys, formatMatchReport, matchReport, tfImport } from './terraform.js';
+import { formatMatchReport, matchReport, snapshotKeyIndex, tfImport } from './terraform.js';
 import { displayPath, formatSummary, tfBlocks, writeBlocks } from './tf-blocks.js';
 
 const HELP = `atlas-scan — read-only AWS inventory scanner for the network atlas
@@ -142,11 +142,20 @@ async function main(): Promise<void> {
     // Match report against whatever snapshots are committed — purely
     // informational; the viewer re-matches per resource at load time.
     const snapshots = await readAccountSnapshots(config);
-    const keys = collectSnapshotKeys(snapshots);
-    for (const { file, stack } of results) {
+    const index = snapshotKeyIndex(snapshots);
+    // A registered expander this scanner cannot feed is a silent loss of
+    // matching, so it says so once rather than per stack.
+    if (index.unreachableExpanders.length > 0) {
+      console.log(
+        `tf-import: no scanned records for ${index.unreachableExpanders.join(', ')} — ` +
+          'their nested resources cannot be matched (add the kind to NESTING_COLLECTIONS)',
+      );
+    }
+    for (const { file, stack, resources } of results) {
       console.log(`[${stack.stack}] wrote ${file} (${stack.resources.length} AWS resource(s), repo: ${stack.repo})`);
       if (snapshots.length === 0) continue;
-      for (const line of formatMatchReport(matchReport(stack, keys), snapshots.length)) {
+      const report = matchReport(stack.stack, resources, index);
+      for (const line of formatMatchReport(report, snapshots.length)) {
         console.log(`[${stack.stack}] ${line}`);
       }
     }

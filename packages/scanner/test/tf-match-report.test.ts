@@ -29,11 +29,13 @@ import {
 
 import type { ResolvedConfig } from '../src/config.js';
 import {
-  collectSnapshotKeys,
   formatMatchReport,
   matchReport,
   parseTerraformState,
+  snapshotKeyIndex,
   tfImport,
+  type MatchableResource,
+  type StackMatchReport,
 } from '../src/terraform.js';
 
 const ACCOUNT = '111122223333';
@@ -236,54 +238,77 @@ function stateFile(): Record<string, unknown> {
   };
 }
 
-function stack(): TerraformStackFile {
-  const parsed = parseTerraformState(stateFile(), 'awkward.tfstate');
-  return {
-    version: 1,
-    stack: 'awkward',
-    repo: 'org/infra',
-    importedAt: '2026-08-08T00:00:00.000Z',
-    resources: parsed.resources,
-  };
+function resources(): MatchableResource[] {
+  return parseTerraformState(stateFile(), 'awkward.tfstate').resources;
 }
 
-function addresses(resources: ReadonlyArray<{ address: string }>): string[] {
-  return resources.map((r) => r.address).sort();
+function report(account: AccountSnapshot = snapshot()): StackMatchReport {
+  return matchReport('awkward', resources(), snapshotKeyIndex([account]));
+}
+
+function addresses(list: ReadonlyArray<{ address: string }>): string[] {
+  return list.map((r) => r.address).sort();
 }
 
 test('the match report separates stale state from types it cannot check', () => {
-  const report = matchReport(stack(), collectSnapshotKeys([snapshot()]));
+  const r = report();
 
-  assert.equal(report.total, 12);
+  assert.equal(r.total, 12);
 
-  // Stale: alarming, actionable, and nothing else is in here.
-  assert.deepEqual(addresses(report.stale), ['aws_ecs_cluster.green', 'aws_s3_bucket.gone']);
-
-  // Not indexed: expected, needs no action, and must not drag the ratio down.
-  // Security group rules are here because nothing in the scan can produce their
-  // composite id yet — matching them is the second half of this fix.
-  assert.deepEqual(addresses(report.notIndexed), [
-    'aws_network_acl_rule.deny',
-    'aws_route.default',
-    'aws_security_group_rule.web_egress',
-    'aws_security_group_rule.web_ingress',
+  // Stale: alarming, actionable, and nothing else is in here. `web_self` is a
+  // false positive and a known limit, not an accident — see the test below.
+  assert.deepEqual(addresses(r.stale), [
+    'aws_ecs_cluster.green',
+    'aws_s3_bucket.gone',
     'aws_security_group_rule.web_self',
   ]);
 
+  // Not indexed: expected, needs no action, and must not drag the ratio down.
+  // `RouteTable.routes` and `NetworkAcl.entries` are nested exactly as security
+  // group rules are, and stay here until someone registers an expander for
+  // them — at which point this file needs no edit at all.
+  assert.deepEqual(addresses(r.notIndexed), ['aws_network_acl_rule.deny', 'aws_route.default']);
+
   // No rule at all — folding this into either of the above would be a claim
   // the registry cannot support.
-  assert.deepEqual(addresses(report.unknownType), ['aws_s3_object.readme']);
+  assert.deepEqual(addresses(r.unknownType), ['aws_s3_object.readme']);
 
-  // The honest ratio: 4 of 6 checkable, with 6 counted beside it. The old
-  // headline for this stack was 4/12, which reads as two thirds of it drifting.
-  assert.equal(report.matched, 4);
-  assert.equal(report.checkable, 6);
-  assert.equal(report.total - report.checkable, 6);
+  // The honest ratio: 6 of 9 checkable, with 3 counted beside it. The same
+  // stack reported `matched 4/12` before this fix — see the commit body.
+  assert.equal(r.matched, 6);
+  assert.equal(r.checkable, 9);
+  assert.equal(r.total - r.checkable, 3);
+});
+
+test('security group rules match the ids reconstructed from the scanned group', () => {
+  const matched = new Set(
+    resources()
+      .filter((res) => snapshotKeyIndex([snapshot()]).keys.has(res.importId ?? ' '))
+      .map((res) => res.address),
+  );
+  // Neither of these can match on `id`: the provider stores `sgrule-<hash>`,
+  // which corresponds to nothing AWS ever returns.
+  assert.deepEqual(
+    [...matched].sort(),
+    ['aws_security_group_rule.web_egress', 'aws_security_group_rule.web_ingress'],
+  );
+  assert.equal(
+    resources().find((res) => res.address === 'aws_security_group_rule.web_ingress')?.importId,
+    `${SG}_ingress_tcp_8000_8000_10.0.3.0/24`,
+  );
+
+  // The known limit. The configuration wrote `self = true`, so the state's
+  // import id ends in `self`; AWS reports the group's own id and the expander
+  // can only emit that, and no scan can tell the two spellings apart. It is
+  // reported as stale — a false alarm we can see and explain, rather than one
+  // hidden in a list of forty.
+  const selfRule = resources().find((res) => res.address === 'aws_security_group_rule.web_self');
+  assert.equal(selfRule?.importId, `${SG}_ingress_tcp_443_443_self`);
+  assert.ok(snapshotKeyIndex([snapshot()]).keys.has(`${SG}_ingress_tcp_443_443_${SG}`));
 });
 
 test('an unmatched resource is stale when a sibling of its type matched', () => {
-  const full = matchReport(stack(), collectSnapshotKeys([snapshot()]));
-  assert.ok(addresses(full.stale).includes('aws_ecs_cluster.green'));
+  assert.ok(addresses(report().stale).includes('aws_ecs_cluster.green'));
 
   // `aws_ecs_cluster` declares no kinds — the viewer never draws it — so the
   // registry alone says "not indexed". It is only checkable because the tagging
@@ -291,20 +316,27 @@ test('an unmatched resource is stale when a sibling of its type matched', () => 
   // honest answer changes with it.
   const withoutSweep = snapshot();
   withoutSweep.regions[0]!.generic = [];
-  const report = matchReport(stack(), collectSnapshotKeys([withoutSweep]));
-  assert.ok(addresses(report.notIndexed).includes('aws_ecs_cluster.blue'));
-  assert.ok(addresses(report.notIndexed).includes('aws_ecs_cluster.green'));
-  assert.deepEqual(addresses(report.stale), ['aws_s3_bucket.gone']);
-  assert.equal(report.matched, 3);
-  assert.equal(report.checkable, 4);
+  const r = report(withoutSweep);
+  assert.ok(addresses(r.notIndexed).includes('aws_ecs_cluster.blue'));
+  assert.ok(addresses(r.notIndexed).includes('aws_ecs_cluster.green'));
+  assert.deepEqual(addresses(r.stale), ['aws_s3_bucket.gone', 'aws_security_group_rule.web_self']);
+  assert.equal(r.matched, 5);
+  assert.equal(r.checkable, 7);
+});
+
+test('every registered expander can be fed from a snapshot', () => {
+  // The gap this would catch: an expander added for a kind `NESTING_COLLECTIONS`
+  // has no entry for silently stops contributing keys, and the resources it
+  // covers go quietly back to being reported as unmatchable.
+  assert.deepEqual(snapshotKeyIndex([snapshot()]).unreachableExpanders, []);
 });
 
 test('the console report names stale resources and only counts the rest', () => {
-  const lines = formatMatchReport(matchReport(stack(), collectSnapshotKeys([snapshot()])), 1);
+  const lines = formatMatchReport(report(), 1);
   const text = lines.join('\n');
 
-  assert.match(text, /^matched 4\/6 checkable against 1 scanned account snapshot\(s\)$/m);
-  assert.match(text, /6 of 12 are not checkable against a scan/);
+  assert.match(text, /^matched 6\/9 checkable against 1 scanned account snapshot\(s\)$/m);
+  assert.match(text, /3 of 12 are not checkable against a scan/);
   assert.match(text, /- aws_s3_bucket\.gone \(arn:aws:s3:::atlas-gone\)/);
   assert.match(text, /aws_route ×1/);
   assert.match(text, /aws_s3_object ×1/);

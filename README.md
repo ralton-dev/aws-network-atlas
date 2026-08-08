@@ -214,10 +214,20 @@ registry can't say which of the two it is.
 Matching is by ARN, falling back to the AWS-native id. That's a *matching* key
 and nothing more: `tf-import` keeps both `id` and `arn` from every state entry
 and the scanner records both for every resource, so a node and a state entry
-join on whichever they have in common. Relationship-only resources (`aws_route`,
-`aws_security_group_rule`, attachment/association resources) have synthetic ids
-that don't correspond to a drawable resource; they're imported but simply never
-match a node.
+join on whichever they have in common.
+
+Relationship resources have neither. `aws_security_group_rule`'s state `id` is
+`sgrule-<hash>` and `aws_route`'s is `r-<rtb><hash>` — strings the provider
+synthesises, corresponding to nothing AWS ever returns — and the scanner keeps
+those relationships *inside* their parent (`SecurityGroup.ingress`), where they
+have no id of their own either. Neither side holds a key, so they could never
+match. What both sides *can* compute is the documented **import** id, and for
+security group rules both now do: the state side asks the type's rule, the
+scanned side reconstructs the same string from the group via
+`ImportRule.expand`. They agree because agreeing is what the rule table is
+for. Routes and NACL entries are nested identically and will match the day
+someone registers an expander for them. Note that this is a matching key
+only — the sidecar still holds nothing but `id` and `arn`.
 
 **A matching key is not an import id, and the AWS provider has no single
 convention for `id`.** `aws_lambda_function`'s `id` is the function *name*, not
