@@ -315,9 +315,13 @@ with bodies intact and nothing from the scanner, viewer or schema. Nothing is
 pushed and no GitHub repo is created — WP-5 does that once WP-3 and WP-4 have
 landed on the branch.
 
-Owns: nothing in `main`'s working tree — this package works on a split branch
-and in a scratch directory. It must not modify `packages/tf-import-blocks/` on
-`main`.
+Owns: nothing in `main`'s working tree. This package works on a split branch
+checked out at **`/Users/benralton/repos/BEN_WORKING/tf-import-blocks/`** — a
+sibling of this repo, and where the new repo lives permanently, rather than a
+scratch directory that gets discarded. Ben asked for that explicitly on
+2026-08-08: only WP-1 and WP-6 have any business inside `aws-network-atlas`,
+and the plan read as though all five waves did. It must not modify
+`packages/tf-import-blocks/` on `main`.
 Size **M**. Depends: WP-1.
 
 ---
@@ -349,6 +353,15 @@ Size **M**. Depends: WP-1.
 - Add `--provenance` only if the chosen mechanism actually supports it; a
   provenance flag with the wrong auth mode fails the publish rather than
   degrading.
+- **Routed from WP-1 — the trap most likely to bite here.** `dist/` is
+  gitignored and rebuilt by a `prepare` script. WP-1 verified `prepare` fires on
+  `npm install` **for a workspace package**; it did not verify `npm ci` fires it
+  for a **root** package, which is what `tf-import-blocks` becomes in the new
+  repo (decision 27). Different code path. If it does not fire, CI runs `npm
+  test` against a missing `dist/` and every consumer-facing test fails with
+  `TS2307: Cannot find module 'tf-import-blocks'`. Either prove it fires, or —
+  better — run `npm run build` as an explicit step before typecheck and test, so
+  the workflow does not depend on the answer at all.
 
 **Acceptance:** the workflow file is syntactically valid (`actionlint` or
 equivalent) and its steps are exactly the gate this project already uses. It
@@ -371,6 +384,15 @@ Size **M**. Depends: WP-2.
 - `publishConfig.access: "public"` — an unscoped package does not strictly
   need it, but it is explicit and harmless.
 - Add the README section and `NOTICE` of decision 25.
+- **Routed from WP-1: the package has no `LICENSE` file of its own.** WP-1's
+  `npm pack --dry-run` shows 52 files and not one of them is a licence — the
+  MIT text lives only at this repo's root, which does not travel. Declaring
+  `license: MIT` in `package.json` while shipping no licence text is the exact
+  gap to close, and it is WP-4's, not WP-2's, because it is a publish concern.
+- **Routed from WP-1: the package README has no install or build section at
+  all**, and `packages/tf-import-blocks/README.md:517` documents `npm test` as
+  `tsx --test "packages/*/test/**/*.test.ts"` run "from the repo root", which
+  is this repo's invocation and does not travel either.
 - **Carry the design decisions into the package README** (decision 26). Measured
   on 2026-08-08: the package contains **52 references to 9 distinct decisions**
   (8, 5, 9, 6, 3, 10, 14, 11, 13) across `src/`, `test/` and its own README —
@@ -466,6 +488,30 @@ contains it.
   workspace list and the "four workspaces" phrasing in the gate all become
   wrong.
 - **Remove `{ todo: true }` from the pin.**
+
+**Routed from WP-1 — found by hunting, not in the original bullet list:**
+
+- **`packages/scanner/test/tf-blocks.test.ts:21`** builds `FIXTURES` from
+  `packages/tf-import-blocks/test/fixtures`. Deleting the directory takes
+  **three passing tests** with it (assertions at ~32, ~50, ~62). This is the
+  largest thing WP-6 must handle and the original plan missed it entirely. The
+  fix already exists, at the top of `consumed-from-npm.test.ts`: resolve
+  `tf-import-blocks/package.json`, `path.dirname`, then `test/fixtures`. It
+  works before *and* after the split, which is why the package ships its
+  fixtures (WP-1's deliberate `files` decision).
+- Stale docs WP-1's change created, all WP-6's to fix:
+  `ORCHESTRATION.md:107` (the bundle now carries `dist/emit.js` and
+  `dist/rules/registry.js`, not the `src/*.ts` it names);
+  `ORCHESTRATION.md:22-24` (`TS2307` has a second cause now — `Cannot find
+  module 'tf-import-blocks'` means `dist/` is unbuilt; same remedy, so add a
+  clause rather than rewriting the lesson); `ORCHESTRATION.md:47-53` (the
+  repo-shape table **already omits** `tf-import-blocks` — pre-existing, so
+  there is no row to delete, but the `packages/viewer` row's "consumes
+  `@atlas/schema` as a workspace dep" needs updating); `README.md:632` and
+  `packages/viewer/src/model/tf-import.ts:11` (both still claim lifting the
+  package out is `git mv` plus a `package.json`, now measurably falser);
+  `README.md:548` and `README.md:560` (`npm run build` no longer rebuilds only
+  `site/index.html`).
 
 **Acceptance:** `packages/tf-import-blocks/` does not exist; `npm test` green
 with **0 todo** and the pin passing as a plain assertion; `npm run typecheck`
