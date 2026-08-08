@@ -122,6 +122,11 @@ Continuing the numbering from `TERRAFORM-IMPORT-BLOCKS.md`.
     A `NOTICE` and a README section stating the provenance is honest and
     costs nothing. This is attribution, not a licence obligation — do not
     relicense anything.
+26. **The design decisions travel with the package.** They are referenced 52
+    times from inside it and defined only in a root document that stays behind.
+    WP-4 copies them into the package README, numbered to match so no in-code
+    reference needs editing. This is not documentation polish — one of those
+    pointers is already dangling and the package has not even moved yet.
 
 ---
 
@@ -290,6 +295,21 @@ Size **S**. Depends: WP-2.
 - `publishConfig.access: "public"` — an unscoped package does not strictly
   need it, but it is explicit and harmless.
 - Add the README section and `NOTICE` of decision 25.
+- **Carry the design decisions into the package README** (decision 26). Measured
+  on 2026-08-08: the package contains **52 references to 9 distinct decisions**
+  (8, 5, 9, 6, 3, 10, 14, 11, 13) across `src/`, `test/` and its own README —
+  and the package README defines **none** of them. They live in
+  `TERRAFORM-IMPORT-BLOCKS.md` at *this* repo's root, which does not travel.
+  `packages/tf-import-blocks/README.md:491` ("escaped where decision 9 covers
+  them") is therefore **a dangling pointer already**, in the file a new reader
+  starts from. Add a "Design decisions" section numbered to match, so all 52
+  in-code references resolve without editing one of them. Decisions **3** and
+  **5** matter most at the point of use — 3 is why every id was read off the
+  `id = "…"` block rather than the `identity = { … }` form the provider docs now
+  print first, and 5 is why a guard returns `undefined` and earns a `# VERIFY`
+  rather than a plausible wrong answer. A contributor who cannot resolve those
+  two may well "fix" a guard into a passthrough, which is the precise defect
+  this package exists to prevent.
 - **Verify the tarball, not the intent**: `npm pack`, extract it into a scratch
   directory, `npm install` it into a throwaway project, and `import` from it —
   proving the `exports` map, the `.d.ts` and the ESM resolution all work from
