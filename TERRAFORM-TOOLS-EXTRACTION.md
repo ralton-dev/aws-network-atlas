@@ -638,3 +638,60 @@ looks at the artifact the way a stranger will, and it runs once, by hand, near
 the end. If a defect survives this plan, that is where it will be — and it will
 be found by someone running `npm install tf-import-blocks` in a repo none of us
 has seen.
+
+---
+
+## Outcome — 2026-08-08
+
+Complete. `tf-import-blocks@0.1.0` is on npm, its source is at
+`ralton-dev/tf-import-blocks` with CI green on Node 20 and 24 and `main`
+protected, and `aws-network-atlas` consumes it from the registry with no local
+copy. The pin passes as a plain assertion at `89cd858`, which is the only
+definition of done this plan recognised.
+
+**What the plan got wrong, recorded because the corrections are the value:**
+
+- **The per-symbol consumer list omitted `scanner/src/terraform.ts` entirely.**
+  It imports `RULES`, `ruleForType`, `ExpandedChild` and `ScannedSubject` —
+  and `RULES` is a symbol nobody predicted. The plan told WP-6 not to trust its
+  own list, which is the only reason this was found rather than discovered as a
+  red build.
+- **The red pin's warning about `require.resolve` was false.** Node's CJS
+  resolver already calls `realpathSync` unless `--preserve-symlinks` is set. The
+  warning is true of `import.meta.resolve`.
+- **"52 references to 9 decisions" was 64 to 14**, reproducible against the
+  original directory, so the split did not cause it. Decision 1 was referenced
+  and absent from the list.
+- **"Three passing tests" depending on the deleted fixtures was two.**
+- **The "four workspaces" phrasing this plan told WP-6 to fix does not exist**
+  in either doc. A routed finding can itself be drift.
+- **One routed fix self-reverted**: `README.md` describing `npm run build` as
+  rebuilding only the site became true again when the deletion removed WP-1's
+  package build script.
+- **`NOTICE` reached no consumer.** npm always ships `package.json`, `README*`
+  and `LICENSE*` regardless of `files`, but **not** `NOTICE` — so decision 25's
+  attribution existed and shipped nowhere until WP-4 caught it against
+  `npm pack --dry-run`.
+- **The attribution was materially incomplete.** The package also read Terraform
+  **core** (BUSL-1.1 from v1.6) for the two state formats and the `import`
+  block's validation rules, not only the MPL-2.0 provider.
+
+**The two failures that no local check could have caught**, both worth
+generalising:
+
+1. **The test glob.** `tsx --test "test/**/*.test.ts"` fails on Node 20, which
+   both repos declared as their floor. Three agents and the orchestrator all
+   verified the suite green — all four on Node 23. A CI matrix found it in
+   ninety seconds. The dangerous variant is `tsx --test test/`, which on Node 20
+   reports `# tests 0` and **exits 0**: an empty suite behind a green tick.
+2. **The lock file.** The first `npm install` after repointing the dependency
+   silently kept `"link": true` and a dead symlink, reporting "changed 1
+   package" both times. npm will not reconcile a lock still carrying workspace
+   entries; they must be removed first. "The install succeeded" is not evidence
+   that the resolution changed.
+
+**Decision 20 has expired.** It deferred the CLI because it was "entangled with
+the scanner's argument parsing and help text". Measured on 2026-08-08,
+`scanner/src/tf-blocks.ts` imports only `node:fs/promises`, `node:path` and
+`tf-import-blocks` — zero scanner coupling. The entanglement is entirely in
+`cli.ts`, the multi-command dispatcher. WP-7 acts on that.
