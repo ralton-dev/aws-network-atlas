@@ -31,6 +31,7 @@ import {
   type TerraformStackFile,
 } from '@atlas/schema';
 import { jsonScriptPayload } from './bundle.js';
+import { parseTerraformState } from './terraform.js';
 
 /** Build an account-global container, defaulting the many empty arrays. */
 function mkGlobal(partial: Partial<AccountSnapshot['global']>): AccountSnapshot['global'] {
@@ -60,6 +61,16 @@ const ATT = {
   dx: 'tgw-attach-0dxg00000000001',
   peer: 'tgw-attach-0peer0000000001', // eu<->us TGW peering
 };
+
+// Security groups the imported Terraform stacks at the bottom of this file name
+// by id. They are up here so the two halves of the fixture cannot drift apart:
+// a stack that names a group the estate does not contain is a fixture that
+// tests nothing, and it is silent about it.
+const PROD_APP_SG = 'sg-0prodapp000000001';
+const PROD_ALB_SG = 'sg-0prodalb000000001';
+const DEV_APP_SG = 'sg-0dev0000000001';
+const DEV_DEFAULT_SG = 'sg-0dev0000000002';
+const DEV_PREFIX_LIST = 'pl-0dev00000000001';
 
 // ---------------------------------------------------------------------------
 // Small factory helpers (fill schema defaults; keep the builders below terse)
@@ -122,8 +133,8 @@ function addInstance(
 function prodEuWest1(): RegionSnapshot {
   const r = emptyRegionSnapshot(EU);
   const vpc = 'vpc-0prod00000000000a1';
-  const sg = 'sg-0prodapp000000001';
-  const albSg = 'sg-0prodalb000000001';
+  const sg = PROD_APP_SG;
+  const albSg = PROD_ALB_SG;
   const dbSg = 'sg-0proddb0000000001';
 
   r.vpcs.push({
@@ -1405,8 +1416,7 @@ function sharedAccount(): AccountSnapshot {
 function devAccount(): AccountSnapshot {
   const r = emptyRegionSnapshot(EU);
   const vpc = 'vpc-0dev000000000000a1';
-  const sg = 'sg-0dev0000000001';
-  const DEV_PREFIX_LIST = 'pl-0dev00000000001';
+  const sg = DEV_APP_SG;
 
   r.vpcs.push({ id: vpc, name: 'dev-vpc', tags: { Name: 'dev-vpc', env: 'dev' }, cidrBlocks: ['10.2.0.0/16'], ipv6CidrBlocks: [], isDefault: false, state: 'available' });
   addSubnet(r, vpc, { id: 'subnet-0devpub00000001', name: 'dev-public-a', az: `${EU}a`, cidr: '10.2.0.0/24', public: true, rtb: 'rtb-0devpublic00001' });
@@ -1460,6 +1470,12 @@ function devAccount(): AccountSnapshot {
       // reference beside them is a **second**. Every SG in the rest of this
       // estate has a single source per permission, which is precisely the tidy
       // shape that would have let a one-child-per-source bug ship unseen.
+      //
+      // This group is also **adopted by the `dev-platform` stack while only
+      // three of these four rules are in its state** — the mixed case the whole
+      // partial-management question turns on. See `devPlatformState` at the
+      // bottom of this file; edit the two together or the fixture stops
+      // meaning anything.
       ingress: [
         {
           protocol: 'tcp',
@@ -1468,7 +1484,7 @@ function devAccount(): AccountSnapshot {
           cidrs: ['10.2.0.0/16', '10.0.0.0/16', '192.0.2.0/24'],
           ipv6Cidrs: ['2001:db8::/48'],
           prefixListIds: [DEV_PREFIX_LIST],
-          securityGroupRefs: [{ groupId: 'sg-0dev0000000002' }],
+          securityGroupRefs: [{ groupId: DEV_DEFAULT_SG }],
           description: 'https from the office ranges, the peered VPCs and the default group',
         },
         // Self-referencing: AWS reports the group's own id as a
@@ -1492,7 +1508,7 @@ function devAccount(): AccountSnapshot {
     // why a synthesised import address (`aws_security_group.default`) collides
     // the moment a bulk emit spans more than one VPC. The prod VPC has the
     // matching half of this pair.
-    { id: 'sg-0dev0000000002', name: 'default', tags: {}, vpcId: vpc, description: 'default VPC security group', ingress: [{ protocol: '-1', cidrs: [], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [{ groupId: 'sg-0dev0000000002' }], description: 'self' }], egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }] },
+    { id: DEV_DEFAULT_SG, name: 'default', tags: {}, vpcId: vpc, description: 'default VPC security group', ingress: [{ protocol: '-1', cidrs: [], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [{ groupId: DEV_DEFAULT_SG }], description: 'self' }], egress: [{ protocol: '-1', cidrs: ['0.0.0.0/0'], ipv6Cidrs: [], prefixListIds: [], securityGroupRefs: [] }] },
   );
   ['a', 'b'].forEach((az, i) =>
     addInstance(r, { id: `i-0devapp00000${i}01`, name: `dev-app-${az}`, vpcId: vpc, subnetId: `subnet-0devpriv0000${i}01`, az: `${EU}${az}`, ip: `10.2.1${i}.20`, sg, type: 't4g.small' }),
@@ -1606,9 +1622,133 @@ const annotations: AnnotationMap = {
   },
 };
 
-// Two imported Terraform stacks (as `atlas-scan tf-import` would produce):
-// prod networking is fully managed, dev is partially managed, and the whole
-// shared-services account is unmanaged — so the viewer demos all three cases.
+// ---------------------------------------------------------------------------
+// Imported Terraform stacks
+// ---------------------------------------------------------------------------
+
+/** One managed resource, in raw state v4 shape. */
+function tfState(type: string, name: string, attributes: Record<string, unknown>): Record<string, unknown> {
+  return {
+    mode: 'managed',
+    type,
+    name,
+    provider: 'provider["registry.terraform.io/hashicorp/aws"]',
+    instances: [{ schema_version: 1, attributes }],
+  };
+}
+
+/**
+ * The dev stack's state file, parsed by the same function `npm run tf-import`
+ * parses a real one with — so `dev-platform` below is not a hand-written guess
+ * at what an import produces, it *is* what an import produces.
+ *
+ * **The shape this exists for: a managed group whose rules are only partly
+ * managed.** `dev-app` is adopted, and terraform models each of its rules as a
+ * separate `aws_security_group_rule`; three of the four the scan reconstructs
+ * from the group are in this state and one is not. A group where all the rules
+ * are managed, or none are, exercises nothing — the viewer cannot get that
+ * wrong. This one it can.
+ *
+ * The scan expands `dev-app` into four rules. Against this state:
+ *
+ *   1. https from the CIDR/IPv6/prefix-list sources → in state, MATCHES.
+ *      One state resource carrying five sources, because `cidr_blocks`,
+ *      `ipv6_cidr_blocks` and `prefix_list_ids` do not conflict.
+ *   2. https from the default group           → NOT in state. Genuinely
+ *      unmanaged, and the one an import block should be offered for.
+ *   3. cluster gossip from the group itself   → in state, and NOT matchable.
+ *      The configuration wrote `self = true`, so the state's import id ends in
+ *      `self`; AWS reports the group's own id and the expander can only emit
+ *      that. Managed, and provably unprovable — the documented limit, present
+ *      here on purpose so it is met in a fixture rather than in someone's
+ *      estate.
+ *   4. all egress to 0.0.0.0/0                → in state, MATCHES.
+ *
+ * So a reader of the dev VPC sees four rules on `dev-app`, can prove two
+ * managed, and must show the other two as unproven — one of which really is
+ * unmanaged. Beside it in the same view sits `default`, a group in no stack at
+ * all, whose two rules are unmanaged with nothing to check them against.
+ *
+ * `description` is on every rule here for the same reason it is in
+ * `test/tf-match-report.test.ts`: it is an attribute value, it is not part of
+ * any import id, and it must not appear in the output.
+ */
+const devPlatformState: Record<string, unknown> = {
+  version: 4,
+  terraform_version: '1.8.2',
+  serial: 87,
+  lineage: '6f2a1c4e-dev0-4b1a-9c3d-0a1b2c3d4e5f',
+  resources: [
+    tfState('aws_vpc', 'dev', { id: 'vpc-0dev000000000000a1', cidr_block: '10.2.0.0/16' }),
+    tfState('aws_dynamodb_table', 'scratch', {
+      id: 'dev-scratch',
+      arn: `arn:aws:dynamodb:${EU}:${ACCT.dev}:table/dev-scratch`,
+    }),
+    tfState('aws_s3_bucket', 'sandbox', { id: 'acme-dev-sandbox', arn: 'arn:aws:s3:::acme-dev-sandbox' }),
+    tfState('aws_iam_role', 'app', {
+      id: 'dev-app-role',
+      arn: `arn:aws:iam::${ACCT.dev}:role/dev-app-role`,
+    }),
+
+    // The group itself — adopted, and matched on its plain `id`.
+    tfState('aws_security_group', 'app', { id: DEV_APP_SG, name: 'dev-app', vpc_id: 'vpc-0dev000000000000a1' }),
+    // (1) Every CIDR-shaped source of one permission on one resource. The state
+    // `id` is the provider's `sgrule-<hash>` and matches nothing; the composite
+    // is what both sides can derive.
+    tfState('aws_security_group_rule', 'app_https', {
+      id: 'sgrule-2103991834',
+      security_group_id: DEV_APP_SG,
+      type: 'ingress',
+      protocol: 'tcp',
+      from_port: 443,
+      to_port: 443,
+      cidr_blocks: ['10.2.0.0/16', '10.0.0.0/16', '192.0.2.0/24'],
+      ipv6_cidr_blocks: ['2001:db8::/48'],
+      prefix_list_ids: [DEV_PREFIX_LIST],
+      description: 'https from the office ranges, the peered VPCs and the default group',
+    }),
+    // (3) `self = true`, which no scan can distinguish from the group id.
+    tfState('aws_security_group_rule', 'app_gossip', {
+      id: 'sgrule-0448127760',
+      security_group_id: DEV_APP_SG,
+      type: 'ingress',
+      protocol: 'tcp',
+      from_port: 9000,
+      to_port: 9100,
+      self: true,
+      description: 'cluster gossip within the group',
+    }),
+    // (4) Any/any egress: the state holds protocol -1 and both ports 0.
+    tfState('aws_security_group_rule', 'app_egress', {
+      id: 'sgrule-1877610445',
+      security_group_id: DEV_APP_SG,
+      type: 'egress',
+      protocol: '-1',
+      from_port: 0,
+      to_port: 0,
+      cidr_blocks: ['0.0.0.0/0'],
+      description: 'all egress',
+    }),
+    // (2) is absent, deliberately. Nothing to see here is the point.
+
+    // Skipped by the parser, as it is in a real state — proof the fixture goes
+    // through the same door as an import rather than around it.
+    {
+      mode: 'data',
+      type: 'aws_caller_identity',
+      name: 'current',
+      provider: 'provider["registry.terraform.io/hashicorp/aws"]',
+      instances: [{ attributes: { id: ACCT.dev } }],
+    },
+  ],
+};
+
+const devPlatform = parseTerraformState(devPlatformState, 'states/dev-platform.tfstate');
+
+// Three imported Terraform stacks' worth of situations, on one estate: prod
+// networking is managed by a sidecar written before `importId` existed, dev is
+// partially managed by a current one, and the whole shared-services account is
+// unmanaged.
 const terraform: TerraformStackFile[] = [
   {
     version: 1,
@@ -1618,12 +1758,26 @@ const terraform: TerraformStackFile[] = [
     importedAt: '2026-07-06T09:19:00.000Z',
     terraformVersion: '1.9.5',
     serial: 412,
+    // Hand-written, and deliberately left in the **old format**: not one
+    // resource here carries an `importId`, because this is what every sidecar
+    // committed before 2026-08 looks like. It has to keep working untouched.
+    //
+    // The last two entries are what make that more than a claim. `prod-app` is
+    // adopted and matches on its id, and one of its two rules is in state — but
+    // with only `sgrule-<hash>` to offer, which corresponds to nothing AWS
+    // returns. A reader cannot prove either rule managed *or* unmanaged from
+    // this stack, and must say so: absent `importId` is "cannot tell". Offering
+    // an import block for a rule that is already in this state would be the
+    // failure. Re-running `npm run tf-import` against the same state file is
+    // all it takes to move this stack into the case below.
     resources: [
       { address: 'module.vpc.aws_vpc.main', type: 'aws_vpc', id: 'vpc-0prod00000000000a1' },
       { address: 'module.vpc.aws_internet_gateway.main', type: 'aws_internet_gateway', id: 'igw-0prod000000000001' },
       { address: 'aws_lb.prod_alb', type: 'aws_lb', id: `arn:aws:elasticloadbalancing:${EU}:${ACCT.prod}:loadbalancer/app/prod-alb/abc123`, arn: `arn:aws:elasticloadbalancing:${EU}:${ACCT.prod}:loadbalancer/app/prod-alb/abc123` },
       { address: 'module.db.aws_rds_cluster.aurora', type: 'aws_rds_cluster', id: 'prod-aurora', arn: `arn:aws:rds:${EU}:${ACCT.prod}:cluster:prod-aurora` },
       { address: 'aws_lambda_function.worker', type: 'aws_lambda_function', id: 'prod-worker', arn: `arn:aws:lambda:${EU}:${ACCT.prod}:function:prod-worker` },
+      { address: 'module.app.aws_security_group.app', type: 'aws_security_group', id: PROD_APP_SG },
+      { address: 'module.app.aws_security_group_rule.from_alb', type: 'aws_security_group_rule', id: 'sgrule-1093887744' },
     ],
   },
   {
@@ -1632,14 +1786,12 @@ const terraform: TerraformStackFile[] = [
     repo: 'https://github.com/acme/dev-platform',
     source: 'states/dev-platform.tfstate',
     importedAt: '2026-07-06T09:19:30.000Z',
-    terraformVersion: '1.8.2',
-    serial: 87,
-    resources: [
-      { address: 'aws_vpc.dev', type: 'aws_vpc', id: 'vpc-0dev000000000000a1' },
-      { address: 'aws_dynamodb_table.scratch', type: 'aws_dynamodb_table', id: 'dev-scratch', arn: `arn:aws:dynamodb:${EU}:${ACCT.dev}:table/dev-scratch` },
-      { address: 'aws_s3_bucket.sandbox', type: 'aws_s3_bucket', id: 'acme-dev-sandbox', arn: 'arn:aws:s3:::acme-dev-sandbox' },
-      { address: 'aws_iam_role.app', type: 'aws_iam_role', id: 'dev-app-role', arn: `arn:aws:iam::${ACCT.dev}:role/dev-app-role` },
-    ],
+    terraformVersion: devPlatform.terraformVersion,
+    serial: devPlatform.serial,
+    lineage: devPlatform.lineage,
+    // `tfImport` sorts by address before writing; match it, so this file is
+    // byte-comparable with a real `data/terraform/dev-platform.json`.
+    resources: [...devPlatform.resources].sort((a, b) => a.address.localeCompare(b.address)),
   },
 ];
 
