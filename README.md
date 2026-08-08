@@ -392,7 +392,10 @@ not configuration. Once the apply is clean they've done their job.
 section shows an **Import block** with a Copy button — type and id from the same
 rule table, so an unmanaged SQS queue offers
 `id = "https://sqs.eu-west-1.amazonaws.com/…"` rather than its ARN. The Copy
-button puts exactly the block text on the clipboard.
+button puts exactly the block text on the clipboard. 136 of the 139 resource
+kinds the viewer can build resolve to a rule; the three that don't and why each
+is deliberate are under "Coverage — atlas kinds" in
+[`packages/tf-import-blocks/README.md`](packages/tf-import-blocks/README.md).
 
 This needs `npm run tf-import` to have been run at least once. The block is
 gated on Terraform state being loaded on purpose: with no state imported the

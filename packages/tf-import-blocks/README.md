@@ -94,7 +94,104 @@ Three attribute readers exist for reasons worth knowing before you write a rule:
 | `text()` | `str()` rejects `''`, and a Route 53 apex record imports as `Z4KAPRWWNC7JR__NS` — double underscore and all |
 | `bareName()` | `aws_ecs_service.cluster` holds the cluster **ARN** while the import id wants `prod-cluster`. Applied to IAM attachment principals for the same reason |
 
-## Coverage
+## Coverage — atlas kinds (from a scanned resource)
+
+**136 of the 139 `kind` values the viewer can build resolve to a rule.** This is
+the figure the details panel and the bulk copy depend on, and it is a different
+question from the terraform-type count below rather than a restatement of it.
+The two overlap in 105 types and neither contains the other: 31 rules are
+scanned-only, and the composite and attachment types that dominate a real state
+file are never drawn on a graph.
+
+**Derive this figure; do not count it by hand.** `kind` is assigned by four
+separate routes in `packages/viewer/src/data.ts` — the local `add()` helper, the
+`globalKinds` table, three inline `all.push` calls for `zone`, `dxgw` and `s3`,
+and the `generic` literal. A regex over `add('…')` sees only the first: it finds
+117 kinds of which all but `ecr-registry` resolve, and so reports **99.1%
+against a true 97.8%** — flattering, because two of the three unresolved kinds
+are assigned by routes it cannot see. (117 + 21 from `globalKinds` + 4 inline
+literals = 142, less the three WAF kinds the viewer builds both regionally and
+globally = 139.) The reliable method executes the builder rather than reading
+it, and so cannot miss a route:
+
+1. Fill every collection returned by `emptyRegionSnapshot()` and `emptyGlobal()`
+   with one item.
+2. Run the viewer's `buildIndex()` and take the distinct `kind` off the refs it
+   produced.
+3. Ask `ruleForKind()` about each; `coveredKinds()` is the same set from the
+   other end.
+
+Checked in both directions — `coveredKinds()` names no kind the viewer cannot
+build, so a typo in a rule's `kinds` array cannot inflate the count.
+
+### Kinds that resolve to nothing — 3
+
+Each is deliberate. None is "we could not work it out", and all three still emit
+a block — commented out, naming the kind — so a bulk copy cannot lose the
+resource silently.
+
+| kind | why there is no rule | what to do instead |
+| --- | --- | --- |
+| `generic` | the Resource Groups Tagging API and Cloud Control sweeps (`collect/generic.ts`, `collect/cloudcontrol.ts`) merge into one collection spanning every service in the estate — the kind is a catch-all for hundreds of AWS types, so no single terraform type can be named for it | the block carries the ARN it was discovered by; read the service and resource out of that and use the rule for its real type |
+| `ecr-registry` | `r/ecr_registry.html.markdown` is a **404**: the registry is an account-level singleton and the provider has no resource for it, only configuration attached to it | its three sub-resources do import, all three by the registry id — which is your account id: `aws_ecr_registry_policy`, `aws_ecr_registry_scanning_configuration`, `aws_ecr_replication_configuration` |
+| `sso-instance` | `r/ssoadmin_instance.html.markdown` is a **404**: Identity Center instances are exposed as a **data source** only, `d/ssoadmin_instances` | reference it with `data "aws_ssoadmin_instances"` and feed its ARN into the resources that take `instance_arn` — `aws_ssoadmin_permission_set` and the two `aws_ssoadmin_*_attachment` types are covered below |
+
+`generic` has no entry in a rule module at all; the other two are named in
+`NO_RULE_KINDS` in `rules/scanned-workload.ts`, and
+`test/scanned-workload.test.ts` asserts that list is exactly those two.
+
+### The terraform type is chosen per resource — 8 kinds
+
+`ImportRule.type` is a constant, and for these eight it is the merge key and
+nothing else — one atlas kind covers several provider resources and a collected
+field decides which. `typeFromScanned` reads that field and is **authoritative
+including when it answers `undefined`**, at which point `from-scanned.ts` emits
+no type at all rather than the dominant one.
+
+| kind | discriminator | candidates | when it cannot tell |
+| --- | --- | --- | --- |
+| `apigw` | `protocolType` | `aws_api_gateway_rest_api` (REST), `aws_apigatewayv2_api` (HTTP, WEBSOCKET) | id survives — both import by the bare API id |
+| `apigw-vpc-link` | `version` | `aws_api_gateway_vpc_link` (v1), `aws_apigatewayv2_vpc_link` (v2) | id survives — both import by the bare link id |
+| `apigw-domain` | `endpointTypes` | `aws_api_gateway_domain_name` (EDGE, PRIVATE), `aws_apigatewayv2_domain_name` | `REGIONAL` is valid on both, so the type is unknowable; the id (the domain name) survives. With **no** `endpointTypes` at all a private domain cannot be ruled out and the id is flagged too |
+| `lb` | `lbType` | `aws_lb` (application, network, gateway), `aws_elb` (classic) | **id flagged as well** — `aws_lb` imports by ARN and `aws_elb` by name, so the variants disagree about the id, not just the type |
+| `tgw-attachment` | `resourceType` | `aws_ec2_transit_gateway_vpc_attachment`, `_peering_attachment`, `aws_ec2_transit_gateway_connect` | id survives. `vpn` and `direct-connect-gateway` attachments have no attachment resource at all — they are created by `aws_vpn_connection` and `aws_dx_gateway_association` — so they decline here and stay declined |
+| `dx-vif` | `vifType` | `aws_dx_private_virtual_interface`, `_public_`, `_transit_` | id survives — all three import by the same `dxvif-…` |
+| `fsx` | `fileSystemType` | `aws_fsx_lustre_file_system`, `_windows_`, `_ontap_`, `_openzfs_` | id survives — all four import by the same `fs-…` |
+| `datasync-location` | `locationType` | eleven `aws_datasync_location_*` types | **id flagged as well** — the eleven do not share one id form |
+
+**The type and the id fail independently, and two kinds fail the other way
+round** — type known, id not:
+
+- `apigw-domain` with `PRIVATE` resolves to `aws_api_gateway_domain_name`, but a
+  private custom domain imports by `<name>/<domain_name_id>` and `domainNameId`
+  is not collected. Real `to =`, flagged id.
+- The four FSx-backed `datasync-location` types resolve exactly, but import by
+  `<location-arn>#<fsx-arn>` and the FSx ARN is not in the snapshot
+  (`collect/datasync.ts` keeps only `SecurityGroupArns` from
+  `DescribeLocationFsx*`). Nor can it be rebuilt from `locationUri`: the doc
+  example puts the file system in a *different account*.
+
+### Reading a commented-out block
+
+A block with no type cannot be pasted, so the emitter comments the whole stanza
+out rather than guessing at `to =`. This is what one looks like, and the comment
+above it is the whole explanation — including whether the id is still good:
+
+```hcl
+# account 111122223333 · region eu-west-1
+# VERIFY: the terraform resource type could not be determined — atlas kind "apigw-domain" covers several provider resources and the scanned fields do not identify one for this resource, so the block below is commented out. Candidates: aws_api_gateway_domain_name, aws_apigatewayv2_domain_name. The id below is right whichever of those it is
+# import {
+#   to = <replace with the terraform type and a name, e.g. aws_vpc.main>
+#   id = "dev.example.com"
+# }
+```
+
+Pick the candidate from the console or from what you know of the resource, put
+it in `to =` with a name of your choosing, and uncomment. Where the id is also
+flagged — the `lb` and `datasync-location` rows above — a second `VERIFY` line
+says so, and that one you have to look up.
+
+## Coverage — terraform types (from a state file)
 
 215 terraform types: **211 resolve** and **4 carry an explicit not-importable
 note**. Every format was read off
