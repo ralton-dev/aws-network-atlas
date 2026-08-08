@@ -36,7 +36,13 @@
  * `undefined`. A subject it cannot place emits no type at all rather than the
  * dominant one.
  */
-import { parseArn, str, type ImportRule, type ScannedSubject } from '../types.js';
+import {
+  parseArn,
+  str,
+  type ExpandedChild,
+  type ImportRule,
+  type ScannedSubject,
+} from '../types.js';
 
 const DOC_BASE =
   'https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/main/website/docs/r/';
@@ -101,6 +107,267 @@ function wafv2(type: string, kind: string, page: string): ImportRule {
   };
 }
 
+// ── security group rules: the first expander ───────────────────────────────
+//
+// `SecurityGroup` nests its rules (`ingress` / `egress`), so they are not nodes
+// in the viewer and had nothing to hang an import block on. Selecting an
+// unmanaged group offered `aws_security_group` and nothing else — a
+// half-adoption that looks complete. See `ExpandedChild` in `types.ts` for the
+// mechanism and what it can and cannot express.
+
+/**
+ * `securityGroupProtocolIntegers` from
+ * `internal/service/ec2/vpc_security_group.go:1511`. Insertion order matters:
+ * `protocolForValue` returns the first name whose number matches, exactly as
+ * the provider's `range` over this map does.
+ */
+const SG_PROTOCOL_NUMBERS: ReadonlyMap<string, number> = new Map([
+  ['icmpv6', 58],
+  ['udp', 17],
+  ['tcp', 6],
+  ['icmp', 1],
+  ['all', -1],
+]);
+
+/**
+ * The provider's `protocolForValue` (`vpc_security_group.go:1473-1503`),
+ * reimplemented rather than approximated.
+ *
+ * The scanner stores AWS's raw `IpProtocol` (`collect/network.ts:79`); the
+ * state stores whatever `protocolStateFunc` normalised it to. Without this the
+ * two paths would import the same rule under different strings — `6` here,
+ * `tcp` there — and the plan's agreement property would hold only by luck of
+ * what the API happened to return.
+ */
+function protocolForValue(raw: string): string {
+  const protocol = raw.toLowerCase();
+  if (protocol === '-1' || protocol === 'all') return '-1';
+  if (SG_PROTOCOL_NUMBERS.has(protocol)) return protocol;
+  const asNumber = Number.parseInt(protocol, 10);
+  if (Number.isNaN(asNumber)) return protocol;
+  for (const [name, value] of SG_PROTOCOL_NUMBERS) if (value === asNumber) return name;
+  return protocol;
+}
+
+/**
+ * A list-of-strings field. `undefined` means *malformed* — mirroring
+ * `list()` in `rules/state.ts`, an element that is not a non-empty string makes
+ * the whole list unreadable rather than silently shortening the import id.
+ * An absent field is an empty list, which is different and common.
+ */
+function strList(value: unknown): string[] | undefined {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) return undefined;
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string' || item.length === 0) return undefined;
+    out.push(item);
+  }
+  return out;
+}
+
+interface SgRef {
+  readonly groupId: string;
+  readonly accountId: string | undefined;
+}
+
+/** `SecurityGroupRule.securityGroupRefs`; `undefined` when malformed. */
+function sgRefs(value: unknown): SgRef[] | undefined {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) return undefined;
+  const out: SgRef[] = [];
+  for (const item of value) {
+    if (typeof item !== 'object' || item === null) return undefined;
+    const record = item as Record<string, unknown>;
+    const groupId = str(record['groupId']);
+    if (groupId === undefined) return undefined;
+    out.push({ groupId, accountId: str(record['accountId']) });
+  }
+  return out;
+}
+
+/** A port field. AWS omits both for `IpProtocol: "-1"`; the state holds 0. */
+function portValue(value: unknown): string {
+  return typeof value === 'number' && Number.isFinite(value) ? String(value) : '0';
+}
+
+/**
+ * Emitted on every rule block, because the block is only honest with it.
+ *
+ * `r/security_group_rule` opens with `~> **NOTE:** Avoid using the
+ * aws_security_group_rule resource … use the current best practice of the
+ * aws_vpc_security_group_egress_rule and aws_vpc_security_group_ingress_rule
+ * resources`. Those modern types import by `security_group_rule_id` (`sgr-…`),
+ * which requires `DescribeSecurityGroupRules` — a call no collector in this
+ * repo makes, and a field `SecurityGroupRule` does not carry. Emitting a
+ * guessed `sgr-…` would be precisely the confidently-wrong block this package
+ * exists to prevent, so the legacy composite type is the only derivable one and
+ * the reader is told that rather than left to discover it.
+ */
+const SGR_LEGACY_NOTE =
+  'aws_security_group_rule is the legacy composite type, and the only one derivable from a ' +
+  'scan. The provider docs recommend aws_vpc_security_group_ingress_rule / ' +
+  'aws_vpc_security_group_egress_rule instead, but those import by security_group_rule_id ' +
+  '(sgr-…), which this scan does not collect — so if your configuration uses the modern ' +
+  'types, this block names the wrong resource type for it and must not be pasted as-is';
+
+/**
+ * `r/security_group_rule`'s `!> **WARNING:**` — mixing this type with the
+ * modern rule resources, or with inline rules on the group, "may cause rule
+ * conflicts, perpetual differences, and result in rules being overwritten".
+ * The parent block this ships beside is an `aws_security_group`, so a reader
+ * whose configuration writes inline `ingress` / `egress` blocks is one paste
+ * away from that.
+ */
+const SGR_INLINE_NOTE =
+  'do not combine aws_security_group_rule with inline ingress/egress blocks on the ' +
+  'aws_security_group itself, or with the modern rule resources — the provider warns this ' +
+  'causes rule conflicts, perpetual diffs and overwritten rules';
+
+/**
+ * A rule whose source is the group itself. AWS reports it as a
+ * `UserIdGroupPair` holding the group's own id, and terraform accepts either
+ * `self = true` or `source_security_group_id = <own id>` —
+ * `expandIPPermission` (`vpc_security_group_rule.go:806-828`) issues the same
+ * API call for both. A scan cannot tell which the configuration used, so the
+ * id below reports what AWS reported and names the alternative rather than
+ * guessing.
+ */
+const SGR_SELF_NOTE =
+  "this rule's source is the group itself. Terraform writes that either as self = true or " +
+  'as source_security_group_id = <the group id>; the id below uses the group id, which is ' +
+  'what AWS reports. If your configuration uses self = true, replace the trailing group id ' +
+  'with the literal self';
+
+/**
+ * One AWS `IpPermission` — one entry in `SecurityGroup.ingress` / `.egress` —
+ * turned into the terraform resources that can represent it.
+ *
+ * **The fan-out rule, and it is not "one resource per source".** From the
+ * provider schema (`vpc_security_group_rule.go:67,96,129,137`):
+ * `cidr_blocks` and `ipv6_cidr_blocks` each conflict with
+ * `source_security_group_id` and `self`; `prefix_list_ids` conflicts with
+ * nothing; `source_security_group_id` is a `TypeString`, so one per resource.
+ * Therefore the CIDR-shaped sources of one permission are a **single**
+ * resource carrying all of them — `r/security_group_rule` documents exactly
+ * that with `sg-4973616163_ingress_tcp_100_121_10.1.0.0/16_2001:db8::/48_…` —
+ * and each referenced security group is a resource of its own.
+ *
+ * Source order is `cidr_blocks`, `ipv6_cidr_blocks`, `prefix_list_ids`, which
+ * is the order `rules/state.ts` composes them in. The importer classifies each
+ * trailing token by content, so order does not change *meaning*; it is matched
+ * so the two paths produce the same string, which is the plan's agreement
+ * property.
+ */
+function permissionRules(
+  subject: ScannedSubject,
+  groupId: string,
+  entry: Record<string, unknown>,
+  direction: 'ingress' | 'egress',
+): ExpandedChild[] {
+  const protocol = protocolForValue(str(entry['protocol']) ?? '-1');
+  const fromPort = portValue(entry['fromPort']);
+  const toPort = portValue(entry['toPort']);
+  const head = [groupId, direction, protocol, fromPort, toPort];
+
+  const protocolLabel = protocol === '-1' ? 'all' : protocol;
+  const portLabel =
+    protocol === '-1' && fromPort === '0' && toPort === '0'
+      ? ''
+      : fromPort === toPort
+        ? fromPort
+        : `${fromPort}_${toPort}`;
+  const stem = [direction, protocolLabel, portLabel].filter((p) => p !== '').join('_');
+
+  const cidrs = strList(entry['cidrs']);
+  const ipv6Cidrs = strList(entry['ipv6Cidrs']);
+  const prefixListIds = strList(entry['prefixListIds']);
+  const refs = sgRefs(entry['securityGroupRefs']);
+  const unreadable =
+    cidrs === undefined ||
+    ipv6Cidrs === undefined ||
+    prefixListIds === undefined ||
+    refs === undefined;
+
+  // `resourceSecurityGroupRuleImport` rejects anything without the prefix
+  // (`vpc_security_group_rule.go:459`), so a group id that never had one — an
+  // empty `id`, a snapshot written by hand — cannot produce a usable block.
+  const badGroupId = groupId.startsWith('sg-')
+    ? undefined
+    : `the scanned security group id ${JSON.stringify(groupId)} is not an sg-… identifier, ` +
+      'so the provider will reject this import id';
+
+  const child = (
+    sources: readonly string[],
+    label: string,
+    extra: readonly string[] = [],
+  ): ExpandedChild => ({
+    type: 'aws_security_group_rule',
+    label: `${stem}_${label}`,
+    id: [...head, ...sources].join('_'),
+    comments: [SGR_LEGACY_NOTE, SGR_INLINE_NOTE, ...extra],
+    problem:
+      badGroupId ??
+      (unreadable
+        ? 'this rule\'s source fields could not be read from the snapshot, so the import id ' +
+          'below is missing at least one source — complete it before using it'
+        : sources.length === 0
+          ? 'no source or destination was collected for this rule, so the import id below is ' +
+            'incomplete — append the source (an IPv4 CIDR, an IPv6 CIDR, a pl-… prefix list, ' +
+            'an sg-… group id, or the literal self) after a final underscore'
+          : undefined),
+  });
+
+  const out: ExpandedChild[] = [];
+  const network = [...(cidrs ?? []), ...(ipv6Cidrs ?? []), ...(prefixListIds ?? [])];
+  if (network.length > 0) {
+    // Prefix lists ride with the CIDRs because nothing forbids it and it keeps
+    // one permission to one resource. With no CIDRs they stand alone, which is
+    // the doc's `sg-62726f6479_egress_tcp_8000_8000_pl-6469726b` example.
+    const label = (cidrs?.length ?? 0) + (ipv6Cidrs?.length ?? 0) > 0 ? 'cidr' : 'prefix';
+    out.push(child(network, label));
+  }
+  for (const ref of refs ?? []) {
+    // `[OwnerID/]SecurityGroupID` — `expandIPPermission` splits on `/`
+    // (`vpc_security_group_rule.go:815-828`). AWS reports `UserId` on every
+    // pair including our own, so the prefix goes on only when it is genuinely
+    // another account; adding it everywhere would disagree with the state path,
+    // where a same-account config simply holds `sg-…`.
+    const crossAccount = ref.accountId !== undefined && ref.accountId !== subject.accountId;
+    const token = crossAccount ? `${ref.accountId}/${ref.groupId}` : ref.groupId;
+    const isSelf = !crossAccount && ref.groupId === groupId;
+    out.push(child([token], ref.groupId, isSelf ? [SGR_SELF_NOTE] : []));
+  }
+  // Neither a network source nor a group reference: still emitted, still
+  // flagged. `mapSgRules` (`collect/network.ts:85-87`) drops a `UserIdGroupPair`
+  // with no `GroupId`, which can empty a permission out entirely.
+  if (out.length === 0) out.push(child([], 'no_source'));
+  return out;
+}
+
+/**
+ * `SecurityGroup.ingress` / `.egress` → `aws_security_group_rule` resources.
+ *
+ * Ingress before egress, snapshot order within each, so re-running produces a
+ * stable diff. Malformed entries are skipped rather than thrown on: an expander
+ * that throws costs its parent its own block, and a snapshot written by an
+ * older scanner is not a reason to lose the group.
+ */
+function expandSecurityGroupRules(subject: ScannedSubject): ExpandedChild[] {
+  const out: ExpandedChild[] = [];
+  for (const direction of ['ingress', 'egress'] as const) {
+    const entries = subject.raw[direction];
+    if (!Array.isArray(entries)) continue;
+    for (const entry of entries) {
+      if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue;
+      out.push(
+        ...permissionRules(subject, subject.id, entry as Record<string, unknown>, direction),
+      );
+    }
+  }
+  return out;
+}
+
 export const RULES: ImportRule[] = [
   // --- VPC building blocks -------------------------------------------------
   nativeId('aws_vpc', ['vpc'], 'vpc'),
@@ -127,7 +394,18 @@ export const RULES: ImportRule[] = [
   },
 
   nativeId('aws_network_acl', ['nacl'], 'network_acl'),
-  nativeId('aws_security_group', ['sg'], 'security_group'),
+  /**
+   * The group imports by its own id — and *contains* its rules, which
+   * terraform models as separate resources. `expand` is what stops the panel
+   * offering a block that adopts the group and silently leaves its rules
+   * unmanaged. Declared here rather than in `rules/state.ts` because
+   * `scanned-network.ts` comes first in the registry's `SOURCES` and only the
+   * first declaration of a type is spread wholesale — see `ImportRule.expand`.
+   */
+  {
+    ...nativeId('aws_security_group', ['sg'], 'security_group'),
+    expand: expandSecurityGroupRules,
+  },
   nativeId('aws_network_interface', ['eni'], 'network_interface'),
   nativeId('aws_vpc_endpoint', ['vpce'], 'vpc_endpoint'),
   // The consumer-side endpoint is `vpce-…`; this is the provider-side service
