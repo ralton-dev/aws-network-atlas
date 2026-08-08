@@ -26,8 +26,20 @@ import { RULES as STATE } from './state.js';
  * exactly why it would have: the day it stopped being true, an ambiguous kind
  * would quietly fall back to `ImportRule.type`, which for such a kind is an
  * arbitrary member of the set rather than a claim about the resource.
+ *
+ * `expand` arrived with the same omission and it is the one that was already
+ * live: `aws_security_group` is declared in both `scanned-network.ts` (with the
+ * expander) and `state.ts`, and the expander survived only because the first
+ * declaration is spread wholesale and `SCANNED_NETWORK` happens to precede
+ * `STATE` in `SOURCES`. Reordering `SOURCES` — for any reason, by anyone — would
+ * have silently taken every security group rule out of the details panel and
+ * left an import block that adopts the group alone. That is ordering standing in
+ * for design; listing the field here is the design.
+ * `test/scanned-expand.test.ts` asserts every declared expander survives the
+ * merge, and now passes for a reason rather than by luck.
  */
 const MERGED_FIELDS = [
+  'expand',
   'fromScanned',
   'fromState',
   'notImportable',
