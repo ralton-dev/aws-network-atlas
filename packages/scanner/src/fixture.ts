@@ -1656,18 +1656,34 @@ function tfState(type: string, name: string, attributes: Record<string, unknown>
  *      `ipv6_cidr_blocks` and `prefix_list_ids` do not conflict.
  *   2. https from the default group           → NOT in state. Genuinely
  *      unmanaged, and the one an import block should be offered for.
- *   3. cluster gossip from the group itself   → in state, and NOT matchable.
- *      The configuration wrote `self = true`, so the state's import id ends in
- *      `self`; AWS reports the group's own id and the expander can only emit
- *      that. Managed, and provably unprovable — the documented limit, present
- *      here on purpose so it is met in a fixture rather than in someone's
- *      estate.
+ *   3. cluster gossip from the group itself   → in state, and NOT matchable
+ *      verbatim. The configuration wrote `self = true`, so the state's import
+ *      id ends in `self`; AWS reports the group's own id and the expander can
+ *      only emit that. Managed, and unprovable on a literal comparison — the
+ *      documented limit, present here on purpose so it is met in a fixture
+ *      rather than in someone's estate.
  *   4. all egress to 0.0.0.0/0                → in state, MATCHES.
  *
- * So a reader of the dev VPC sees four rules on `dev-app`, can prove two
- * managed, and must show the other two as unproven — one of which really is
- * unmanaged. Beside it in the same view sits `default`, a group in no stack at
- * all, whose two rules are unmanaged with nothing to check them against.
+ * So a reader of the dev VPC sees four rules on `dev-app`: two proven managed,
+ * **one `unmanaged`** — rule 2, the block actually worth pasting — and **one
+ * `unproven`**, rule 3. Getting to that split is the near-match rule's whole
+ * job, and it is why this group is worth its length. Rule 3's id differs from
+ * `app_gossip`'s in exactly one `_`-separated field, which the classifier
+ * refuses to read as a match but does use to *explain* the one state entry the
+ * scan could not account for — naming that address so the reader settles it by
+ * looking at one resource instead of auditing a stack.
+ *
+ * Explaining it is what makes rule 2's verdict possible. While any entry in
+ * this state is unaccounted for, nothing under this group may be called
+ * unmanaged, because the unaccounted entry might be that very rule written a
+ * way the scan cannot reproduce. Move one of `app_gossip`'s ports and two
+ * fields differ instead of one: the near-match stops firing, the entry stays
+ * unaccounted, and rule 2 — unchanged — is downgraded to `unproven` beside
+ * rule 3. `packages/viewer/test/tf-import.test.ts` holds that pair as a test
+ * and its control.
+ *
+ * Beside it in the same view sits `default`, a group in no stack at all, whose
+ * two rules are unmanaged with nothing to check them against.
  *
  * `description` is on every rule here for the same reason it is in
  * `test/tf-match-report.test.ts`: it is an attribute value, it is not part of
