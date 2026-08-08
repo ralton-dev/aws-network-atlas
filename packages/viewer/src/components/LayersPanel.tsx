@@ -230,7 +230,7 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
         ? 'The browser refused the clipboard — nothing was copied.'
         : [
             nested === 0
-              ? `One per unmanaged resource in this view${resources === blockCount ? '' : '.'}`
+              ? 'One per unmanaged resource in this view.'
               : `${blockCount} blocks: ${resources} unmanaged resource${resources === 1 ? '' : 's'} the diagram draws, and ${nested} nested resource${nested === 1 ? '' : 's'} such as security group rules, which Terraform manages separately and the diagram does not draw.`,
             partiallyManaged === 0
               ? ''

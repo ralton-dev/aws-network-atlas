@@ -428,11 +428,36 @@ is deliberate are under "Coverage — atlas kinds" in
 security group's rules live *inside* the group in the snapshot, and are never
 nodes on the graph — but Terraform models each as its own
 `aws_security_group_rule` with its own import id, so a block that adopts the
-group alone leaves every rule it contains unmanaged. Selecting an unmanaged
-security group therefore offers the group's block **and one per rule**,
-collapsible, with the address of each rule reading as a child of its group
+group alone leaves every rule it contains unmanaged. Selecting a security group
+therefore offers the group's block **and one per rule**, collapsible, with the
+address of each rule reading as a child of its group
 (`aws_security_group_rule.web_ingress_tcp_443_cidr` beside
 `aws_security_group.web`). Copy takes all of them.
+
+**A managed resource can still have unmanaged rules — and usually does.** The
+common shape is not an unmanaged group; it is a group adopted years ago whose
+rules were never imported. So the nested list appears on a *managed* resource
+too, beside its state address, and each nested resource is labelled with what
+can actually be proved about it:
+
+| | what it means | what you get |
+| --- | --- | --- |
+| **in state** | its import id is in an imported state, verbatim | nothing to do; no block offered |
+| **unmanaged** | derivable, absent from state, and the state accounts for itself | the block, plainly |
+| **can't tell** | it could not be checked | the block, **flagged**, with the reason |
+
+The third one is the one that matters. Nested resources are matched on the
+derived `importId`, and a state instance that has none — a sidecar written
+before the field existed — cannot be checked at all. Worse, a rule written
+`self = true` has a state import id ending `_self` while AWS reports the group's
+own id, so a managed rule can be genuinely unmatchable. Calling either
+"unmanaged" would put an `import` block for a resource already in someone's
+state on your clipboard, so neither is: they are offered *and* flagged, the
+panel names the state address it thinks is the match where it can find one, and
+the copied text carries a `# CHECK BEFORE APPLYING:` comment on every such block
+— a `.tf` file is read with no UI around it. A resource with nothing nested
+inside it is unaffected: a managed VPC or instance shows its binding and
+nothing else.
 
 The fan-out follows the provider's schema, not intuition: `cidr_blocks`,
 `ipv6_cidr_blocks` and `prefix_list_ids` all live on one resource, so an ingress
@@ -479,10 +504,19 @@ what those comments exist for), with colliding suggested addresses deduped `_2`,
 **N counts blocks, not nodes**, and it is deliberately the larger number: with
 nested resources expanded, adopting 11 unmanaged resources can take 17 blocks,
 and the number that matters when you paste is the number you are pasting. The
-note under the button reconciles it against the unmanaged count directly above —
-how many blocks, for how many resources, of which how many are nested — and says
-how many pasted commented out. Each parent is followed immediately by its own
+note under the button reconciles it against the counts directly above — how many
+blocks, for how many resources, of which how many are nested, how many came from
+a resource Terraform already manages, how many could not be checked, and how
+many pasted commented out. Each parent is followed immediately by its own
 children, so a rule never ends up pages away from its group.
+
+**The managed/unmanaged counts are node counts**, because a filter's number has
+to be what the filter leaves on the diagram — and the diagram draws no security
+group rules and no routes. On its own that number is true and dangerously
+incomplete: eight security groups standing in for fifteen rules can render
+"Terraform-managed 17 · Unmanaged 0" for an estate a quarter adopted. So the
+number it cannot show is its own row, **Unmanaged nested resources**, saying
+plainly that the diagram draws none of them.
 
 ## Configuration — `atlas.config.json`
 
