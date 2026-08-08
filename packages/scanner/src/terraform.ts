@@ -7,14 +7,18 @@
  *   - raw state v4, i.e. the *.tfstate file itself or `terraform state pull`
  *   - `terraform show -json` output (format_version + values.root_module)
  *
- * Only identifiers (address, type, id, arn) leave the state file. Raw state
- * attributes routinely contain secrets (DB passwords, private keys…) and are
- * deliberately never persisted.
+ * Only identifiers (address, type, id, arn, importId) leave the state file. Raw
+ * state attributes routinely contain secrets (DB passwords, private keys…) and
+ * are deliberately never persisted.
  *
- * The match report *reads* more than that — it asks each type's rule for the
- * documented import id, which is a function of the attributes — but that value
- * is held in memory for the length of one command and is projected away before
- * anything is written. `MatchableResource` is where the line sits.
+ * `importId` is the fifth of those and the newest. It is *an identifier* — the
+ * string `terraform import` takes — computed from the attributes by the type's
+ * rule, and it is the only key a resource nested inside another has on both
+ * sides. It was previously derived, used for the match report, and thrown away
+ * before writing; a reader of the sidecar therefore could not tell a managed
+ * security group rule from an unmanaged one. It now travels. Nothing else does:
+ * `sidecarResource` is a field-by-field projection and is the line, so a value
+ * that is not an identifier cannot reach a written file by accident.
  */
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -33,30 +37,8 @@ export function terraformDir(config: ResolvedConfig): string {
   return path.join(config.rootDir, config.outDir, 'terraform');
 }
 
-/**
- * A state resource plus the one derived key the sidecar must not carry.
- *
- * `TerraformResourceInstance` is the committed shape and decision 14 freezes
- * it, so `importId` lives here and only in memory: `tfImport` projects it away
- * before writing, and `test/tf-match-report.test.ts` fails if it ever appears
- * in `data/terraform/<stack>.json`.
- */
-export interface MatchableResource extends TerraformResourceInstance {
-  /**
-   * The **documented import id**, computed from the full state attributes by
-   * the type's own rule — present only when it differs from the state `id`.
-   *
-   * This is what makes a nested resource matchable at all. For
-   * `aws_security_group_rule` the state `id` is `sgrule-<hash>`, for
-   * `aws_route` it is `r-<rtb><hash>`: provider-synthesised strings that
-   * correspond to nothing AWS ever returns, so no scan can produce them. The
-   * import id *is* derivable from both sides, and both sides now derive it.
-   */
-  importId?: string;
-}
-
 interface ParsedState {
-  resources: MatchableResource[];
+  resources: TerraformResourceInstance[];
   terraformVersion?: string;
   serial?: number;
   lineage?: string;
@@ -103,7 +85,7 @@ function isManagedAws(mode: unknown, type: unknown): type is string {
 
 /** Raw state v4 — the *.tfstate format, also what `terraform state pull` emits. */
 function parseRawState(state: Record<string, unknown>): ParsedState {
-  const resources: MatchableResource[] = [];
+  const resources: TerraformResourceInstance[] = [];
   for (const res of (state['resources'] as Array<Record<string, unknown>> | undefined) ?? []) {
     if (!isManagedAws(res['mode'], res['type'])) continue;
     const type = res['type'] as string;
@@ -130,7 +112,7 @@ function parseRawState(state: Record<string, unknown>): ParsedState {
 
 /** `terraform show -json` — values.root_module with nested child_modules. */
 function parseShowJson(state: Record<string, unknown>): ParsedState {
-  const resources: MatchableResource[] = [];
+  const resources: TerraformResourceInstance[] = [];
   const walk = (mod: Record<string, unknown> | undefined): void => {
     if (!mod) return;
     for (const res of (mod['resources'] as Array<Record<string, unknown>> | undefined) ?? []) {
@@ -197,20 +179,30 @@ export interface TfImportResult {
   file: string;
   /** Exactly what was written — identifiers only (decisions 6 and 14). */
   stack: TerraformStackFile;
-  /**
-   * The same resources with their derived import ids still attached, for the
-   * match report. Never written anywhere.
-   */
-  resources: MatchableResource[];
+  /** As parsed, before the projection below — the match report's input. */
+  resources: TerraformResourceInstance[];
 }
 
 /**
- * Project a parsed resource down to the committed shape. The sidecar's
- * structure is frozen (decision 14) and `stableStringify` drops `undefined`, so
- * this reproduces the previous output byte for byte.
+ * Project a parsed resource down to the committed shape — **and this projection
+ * is the guarantee, not a formality.**
+ *
+ * Decision 6 says only identifiers leave the state file, and the way that is
+ * enforced is that this function names every field that may travel, one at a
+ * time. A parser that grew an extra key, a rule that returned an attribute map,
+ * a `Record<string, unknown>` cast anywhere upstream: none of them can reach
+ * `data/terraform/<stack>.json` without a line being added here, which is a line
+ * a reviewer sees. `test/tf-match-report.test.ts` asserts the written keys are
+ * exactly this list and that a secret-shaped attribute never appears in the
+ * bytes.
+ *
+ * `importId` joined the list in 2026-08 because it is an identifier and because
+ * without it a nested resource cannot be told from a missing one. Everything
+ * else about the file is unchanged: `stableStringify` drops `undefined`, so a
+ * resource whose import id is its `id` writes exactly the bytes it wrote before.
  */
-function sidecarResource(r: MatchableResource): TerraformResourceInstance {
-  return { address: r.address, type: r.type, id: r.id, arn: r.arn };
+function sidecarResource(r: TerraformResourceInstance): TerraformResourceInstance {
+  return { address: r.address, type: r.type, id: r.id, arn: r.arn, importId: r.importId };
 }
 
 export async function tfImport(
@@ -516,14 +508,14 @@ export interface StackMatchReport {
 
 export function matchReport(
   stack: string,
-  resources: readonly MatchableResource[],
+  resources: readonly TerraformResourceInstance[],
   snapshot: SnapshotKeyIndex,
 ): StackMatchReport {
   const { keys } = snapshot;
   // `importId` is tried last and only when it differs from `id`, so a type
   // whose state id already is the import id matches by exactly the route it
   // always did.
-  const matches = (r: MatchableResource): boolean =>
+  const matches = (r: TerraformResourceInstance): boolean =>
     Boolean(r.arn && keys.has(r.arn)) ||
     Boolean(r.id && keys.has(r.id)) ||
     Boolean(r.importId && keys.has(r.importId));

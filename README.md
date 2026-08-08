@@ -193,9 +193,10 @@ Both raw state (`terraform state pull` / the `.tfstate` file itself) and
 `terraform show -json` output are accepted. `--repo` is required — it's how the
 diagram answers "where is this managed from?".
 
-**Only identifiers leave the state file** — address, type, `id`, `arn`. State
-attribute values (which routinely contain DB passwords and the like) are never
-persisted; what's written to `data/terraform/<stack>.json` is committable.
+**Only identifiers leave the state file** — address, type, `id`, `arn`, and the
+derived `importId`. State attribute values (which routinely contain DB passwords
+and the like) are never persisted; what's written to `data/terraform/<stack>.json`
+is committable.
 
 On the diagram, every resource claimed by an imported stack gets the Terraform
 mark on its icon, and its details panel shows the resource address, stack, and a
@@ -226,8 +227,18 @@ security group rules both now do: the state side asks the type's rule, the
 scanned side reconstructs the same string from the group via
 `ImportRule.expand`. They agree because agreeing is what the rule table is
 for. Routes and NACL entries are nested identically and will match the day
-someone registers an expander for them. Note that this is a matching key
-only — the sidecar still holds nothing but `id` and `arn`.
+someone registers an expander for them.
+
+That derived import id is written to the sidecar as `importId`, alongside `id`
+and `arn`, whenever it differs from `id` — which is exactly the case where `id`
+is useless. It is an identifier, which is why it may travel: it is the string
+`terraform import` takes. It is *not* a channel for attribute values, and
+nothing that is not itself an import id follows it. **Absent means "cannot
+tell", not "unmanaged"** — most types' import id is their `id` and so is not
+repeated, and a sidecar imported before this field existed has none at all.
+Nothing needs regenerating; re-run `npm run tf-import` against the same state
+file when you want the nested resources matchable, which needs no AWS
+credentials.
 
 **A matching key is not an import id, and the AWS provider has no single
 convention for `id`.** `aws_lambda_function`'s `id` is the function *name*, not
@@ -510,7 +521,7 @@ listed in the snapshot (and shown as a note in the overview) so nothing disappea
 | Path | Owner | Notes |
 | --- | --- | --- |
 | `data/accounts/*.json` | scanner | Deterministic (sorted keys/arrays) → clean diffs per scan |
-| `data/terraform/*.json` | `tf-import` | Identifiers only (address/type/id/arn) — never state attribute values |
+| `data/terraform/*.json` | `tf-import` | Identifiers only (address/type/id/arn/importId) — never state attribute values |
 | `site/data/*.js` | scanner | Derived data bundle the viewer loads |
 | `site/index.html` | `npm run build` | The whole viewer, one file |
 | `annotations/*.yaml` | **you** | Your notes, links to Terraform, etc. |

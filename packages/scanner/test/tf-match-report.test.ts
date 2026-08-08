@@ -24,6 +24,7 @@ import {
   emptyGlobal,
   emptyRegionSnapshot,
   type AccountSnapshot,
+  type TerraformResourceInstance,
   type TerraformStackFile,
 } from '@atlas/schema';
 
@@ -34,13 +35,25 @@ import {
   parseTerraformState,
   snapshotKeyIndex,
   tfImport,
-  type MatchableResource,
   type StackMatchReport,
 } from '../src/terraform.js';
 
 const ACCOUNT = '111122223333';
 const REGION = 'eu-west-1';
 const SG = 'sg-0web0000000000000';
+
+/**
+ * Two attribute values planted in the state below, on resources that *are*
+ * written to the sidecar, to give decision 6 a value-level assertion and not
+ * only a key-level one.
+ *
+ * `aws_s3_object.content` is a real Terraform footgun — it is stored in state
+ * verbatim — and the rule description is the ordinary case: an attribute of a
+ * resource whose import id is composed from *other* attributes, so a projection
+ * that widened by one field would carry it.
+ */
+const SECRET = 'BEGIN RSA PRIVATE KEY — must never reach data/terraform';
+const RULE_DESCRIPTION = 'https from the build fleet';
 
 /**
  * One account, one region. Carries a security group whose rules are nested
@@ -184,6 +197,8 @@ function stateFile(): Record<string, unknown> {
         from_port: 8000,
         to_port: 8000,
         cidr_blocks: ['10.0.3.0/24'],
+        // Not part of any import id, and must not travel with the one that is.
+        description: RULE_DESCRIPTION,
       }),
       managed('aws_security_group_rule', 'web_egress', {
         id: 'sgrule-2039127001',
@@ -224,6 +239,8 @@ function stateFile(): Record<string, unknown> {
         id: 'atlas-live/README.md',
         bucket: 'atlas-live',
         key: 'README.md',
+        // `aws_s3_object` stores `content` in state verbatim.
+        content: SECRET,
       }),
 
       // Ignored by the parser and so absent from every count below.
@@ -238,7 +255,7 @@ function stateFile(): Record<string, unknown> {
   };
 }
 
-function resources(): MatchableResource[] {
+function resources(): TerraformResourceInstance[] {
   return parseTerraformState(stateFile(), 'awkward.tfstate').resources;
 }
 
@@ -344,31 +361,87 @@ test('the console report names stale resources and only counts the rest', () => 
   assert.ok(!text.includes('aws_route.default'), 'not-indexed resources are counted, not listed');
 });
 
+/** The complete set of keys decision 6 permits in a written sidecar resource. */
+const IDENTIFIER_KEYS = ['address', 'arn', 'id', 'importId', 'type'];
+
+/** Every attribute name the state file above uses, at any depth. */
+function stateAttributeKeys(): Set<string> {
+  const keys = new Set<string>();
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item);
+    } else if (value !== null && typeof value === 'object') {
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        keys.add(k);
+        walk(v);
+      }
+    }
+  };
+  for (const res of stateFile()['resources'] as Array<Record<string, unknown>>) {
+    for (const inst of (res['instances'] as Array<Record<string, unknown>>) ?? []) {
+      walk(inst['attributes']);
+    }
+  }
+  return keys;
+}
+
+/** Run the real command against the state above and read back what it wrote. */
+async function writeSidecar(
+  dir: string,
+): Promise<{ readonly stack: TerraformStackFile; readonly text: string }> {
+  const config = { rootDir: dir, outDir: 'data' } as ResolvedConfig;
+  const state = path.join(dir, 'awkward.tfstate');
+  await writeFile(state, JSON.stringify(stateFile()), 'utf8');
+  const [result] = await tfImport(config, { files: [state], repo: 'org/infra', cwd: dir });
+  assert.ok(result);
+  const text = await readFile(result.file, 'utf8');
+  return { stack: JSON.parse(text) as TerraformStackFile, text };
+}
+
+/**
+ * Decision 6, after `importId` was allowed to travel.
+ *
+ * The guarantee has not been weakened, it has been re-stated at the level it
+ * was always about: **no key that is not an identifier ever appears in a
+ * written sidecar.** `importId` is an identifier — it is the string
+ * `terraform import` takes — so it joins the four that were already there, and
+ * every other key in the state is still forbidden. Two things enforce that here
+ * and neither is a hand-kept list of banned names: the permitted set is closed
+ * (anything outside `IDENTIFIER_KEYS` fails), and the forbidden set is derived
+ * from the state file's own attribute names, so an attribute added to the
+ * fixture is checked without anyone remembering to check it.
+ */
 test('tf-import writes only identifiers, and the sidecar shape is unchanged', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'atlas-tf-'));
   try {
-    const config = { rootDir: dir, outDir: 'data' } as ResolvedConfig;
-    const state = path.join(dir, 'awkward.tfstate');
-    await writeFile(state, JSON.stringify(stateFile()), 'utf8');
+    const { stack: written, text } = await writeSidecar(dir);
 
-    const [result] = await tfImport(config, {
-      files: [state],
-      repo: 'org/infra',
-      cwd: dir,
-    });
-    assert.ok(result);
-    const written = JSON.parse(await readFile(result.file, 'utf8')) as TerraformStackFile;
-
-    // Decision 14: `data/terraform/<stack>.json` keeps its exact structure, and
-    // decision 6 bounds it to identifiers. A resource carrying anything else —
-    // a computed import id, an attribute — would fail here.
+    // Closed set: no key outside the identifiers, whatever it is called.
     for (const r of written.resources) {
       assert.deepEqual(
-        Object.keys(r).sort().filter((k) => !['address', 'arn', 'id', 'type'].includes(k)),
+        Object.keys(r).sort().filter((k) => !IDENTIFIER_KEYS.includes(k)),
         [],
         `${r.address} carries a key that is not an identifier`,
       );
     }
+
+    // And from the other direction: every attribute name the state uses, minus
+    // the ones that are identifiers, must be absent from every resource.
+    const forbidden = [...stateAttributeKeys()].filter((k) => !IDENTIFIER_KEYS.includes(k));
+    assert.ok(forbidden.length >= 10, `the state fixture stopped exercising this: ${forbidden}`);
+    for (const r of written.resources) {
+      for (const key of forbidden) {
+        assert.ok(!(key in r), `${r.address} carries the state attribute ${key}`);
+      }
+    }
+
+    // Value level, which is what decision 6 is finally about. An import id
+    // *composes* attribute values — a rule's ends in its CIDRs — but nothing
+    // that is not itself an import id may travel, and these two never can.
+    assert.ok(!text.includes(SECRET), 'an s3 object body reached the sidecar');
+    assert.ok(!text.includes(RULE_DESCRIPTION), 'a rule description reached the sidecar');
+
+    // Decision 14: the file's own structure is untouched.
     assert.deepEqual(Object.keys(written).sort(), [
       'importedAt',
       'lineage',
@@ -383,4 +456,81 @@ test('tf-import writes only identifiers, and the sidecar shape is unchanged', as
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+/**
+ * The inversion. `importId` used to be asserted *absent* from the written file;
+ * a viewer reading the sidecar therefore saw `id: "sgrule-<hash>"` for a
+ * security group rule — a provider-synthesised string corresponding to nothing
+ * AWS returns — and could not tell a managed rule from an unmanaged one. It now
+ * travels, and this pins both halves: the derived value reaches the file, and
+ * it is the same string the in-memory match report used.
+ */
+test('the derived import id reaches the sidecar, unchanged from the one that matched', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'atlas-tf-'));
+  try {
+    const { stack: written } = await writeSidecar(dir);
+    const byAddress = new Map(written.resources.map((r) => [r.address, r]));
+
+    // The composite that no `id` could ever carry.
+    assert.equal(
+      byAddress.get('aws_security_group_rule.web_ingress')?.importId,
+      `${SG}_ingress_tcp_8000_8000_10.0.3.0/24`,
+    );
+    assert.equal(byAddress.get('aws_security_group_rule.web_ingress')?.id, 'sgrule-1859128000');
+    assert.equal(
+      byAddress.get('aws_route.default')?.importId,
+      'rtb-0aaa0000000000000_0.0.0.0/0',
+    );
+
+    // Absent where the import id *is* the state id, which is most types. That
+    // is what keeps the file byte-identical for a stack of ordinary resources,
+    // and why a reader must read absent as "cannot tell", never "unmanaged".
+    for (const address of ['aws_vpc.main', 'aws_security_group.web', 'aws_s3_bucket.live']) {
+      assert.equal(byAddress.get(address)?.importId, undefined, address);
+    }
+    // No rule at all: nothing to derive from, so nothing is written.
+    assert.equal(byAddress.get('aws_s3_object.readme')?.importId, undefined);
+
+    // The written value is the matched value — one derivation, not two.
+    for (const parsed of resources()) {
+      assert.equal(byAddress.get(parsed.address)?.importId, parsed.importId, parsed.address);
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Backward compatibility, which is the whole reason the field is optional.
+ *
+ * A sidecar committed before this change simply has no `importId` anywhere. It
+ * must still parse, still match everything it always matched, and — the part
+ * that matters to a reader — must not be mistaken for a stack whose nested
+ * resources are absent. Absent is "cannot tell".
+ */
+test('a sidecar written before importId existed still parses and still matches', () => {
+  const oldFormat = JSON.parse(
+    JSON.stringify({
+      version: 1,
+      stack: 'awkward',
+      repo: 'org/infra',
+      importedAt: '2026-07-01T00:00:00.000Z',
+      resources: resources().map((r) => ({
+        address: r.address,
+        type: r.type,
+        id: r.id,
+        arn: r.arn,
+      })),
+    }),
+  ) as TerraformStackFile;
+
+  for (const r of oldFormat.resources) assert.equal(r.importId, undefined);
+
+  // Everything that matched on id/arn still does; only the two rules that
+  // needed the derived key are lost, exactly as before the fix.
+  const index = snapshotKeyIndex([snapshot()]);
+  const old = matchReport('awkward', oldFormat.resources, index);
+  assert.equal(old.matched, 4);
+  assert.equal(matchReport('awkward', resources(), index).matched, 6);
 });
