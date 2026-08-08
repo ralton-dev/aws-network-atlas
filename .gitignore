@@ -3,6 +3,11 @@ node_modules/
 
 # Build output (dist/viewer is committed intentionally — see README)
 packages/viewer/dist/
+# tf-import-blocks emits JavaScript + declarations that both consumers now load
+# instead of its TypeScript source. It is generated, never edited, and rebuilt
+# by the package's `prepare` script on every `npm install` — committing it would
+# add a copy that nothing in this repo ever verifies is current.
+packages/tf-import-blocks/dist/
 *.tsbuildinfo
 
 # OS / editor / session-local tooling

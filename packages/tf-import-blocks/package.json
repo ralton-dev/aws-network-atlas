@@ -5,9 +5,20 @@
   "type": "module",
   "description": "Terraform import-block generation from a state file or from a scanned resource, driven by a per-type import-id rule table",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
+  "files": [
+    "dist",
+    "src",
+    "test/fixtures"
+  ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build",
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {

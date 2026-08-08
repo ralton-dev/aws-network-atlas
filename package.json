@@ -20,7 +20,7 @@
     "tf-blocks": "npm run --workspace @atlas/scanner tf-blocks --",
     "fixture": "npm run --workspace @atlas/scanner fixture",
     "dev": "npm run --workspace @atlas/viewer dev",
-    "build": "npm run --workspace @atlas/viewer build",
+    "build": "npm run --workspaces --if-present build",
     "serve": "npm run --workspace @atlas/viewer serve",
     "typecheck": "npm run --workspaces --if-present typecheck",
     "test": "tsx --test \"packages/*/test/**/*.test.ts\"",
