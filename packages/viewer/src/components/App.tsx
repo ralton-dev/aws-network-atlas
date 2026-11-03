@@ -159,6 +159,8 @@ const EMPTY_GRAPH: AtlasGraph = { nodes: [], edges: [] };
  * side it is drawn from: the scanned ref and index for a removed resource,
  * the proposed ones for everything else, so an added resource's `proposed-`
  * id is flagged and its import block, console link and note hint withheld.
+ * A changed resource also carries its scanned ref as `scannedRef`, which its
+ * import block is built from: it adopts what exists, not what is planned.
  * An edge reads its "View …" target from the proposed index, or from the
  * scanned one when the edge itself is being removed.
  */
@@ -167,7 +169,7 @@ function detailsFor(
   index: AtlasIndex,
   proposed: AtlasIndex | undefined,
   lookup: ReturnType<typeof indexChangeSet> | undefined,
-): { selection: Selection; index: AtlasIndex; change?: ResourceChange } | undefined {
+): { selection: Selection; index: AtlasIndex; change?: ResourceChange; scannedRef?: ResourceRef } | undefined {
   if (selection === undefined) return undefined;
   if (proposed === undefined || lookup === undefined) return { selection, index };
   if (selection.type === 'edge') {
@@ -185,10 +187,15 @@ function detailsFor(
   }
   const change: ResourceChange | undefined =
     hit?.state === 'added' ? { added: true } : hit?.state === 'changed' ? hit.entry : undefined;
+  const scannedRef =
+    hit?.state === 'changed'
+      ? index.byKey.get(ref.id) ?? (ref.arn !== undefined ? index.byKey.get(ref.arn) : undefined)
+      : undefined;
   return {
     selection: { type: 'resource', ref: proposed.byKey.get(ref.id) ?? ref },
     index: proposed,
     ...(change !== undefined ? { change } : {}),
+    ...(scannedRef !== undefined ? { scannedRef } : {}),
   };
 }
 
@@ -716,6 +723,7 @@ export function App(): React.ReactElement {
             index={details.index}
             selection={details.selection}
             change={details.change}
+            scannedRef={details.scannedRef}
             onClose={() => setSelection(undefined)}
             onOpenVpc={(vpcId) => setRoute({ view: 'vpc', vpcId })}
             onFocus={(ref) => setRoute({ view: 'focus', key: ref.id })}

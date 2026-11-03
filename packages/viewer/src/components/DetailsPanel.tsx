@@ -467,9 +467,16 @@ export interface DetailsPanelProps {
    * add-a-note hint — since there is nothing to open, import or annotate yet.
    */
   change?: ResourceChange;
+  /**
+   * The scanned ref of a resource the active proposal changes, while `ref` is
+   * its proposed one. Import blocks are built from it: they adopt what exists,
+   * so a changed security group must offer its scanned rules, never the rules
+   * the proposal plans. Omit it otherwise; the import block then reads `ref`.
+   */
+  scannedRef?: ResourceRef;
 }
 
-export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, onSelectRef, onHide, change }: DetailsPanelProps): React.ReactElement {
+export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, onSelectRef, onHide, change, scannedRef }: DetailsPanelProps): React.ReactElement {
   if (selection.type === 'container') {
     const { label, errors } = selection;
     return (
@@ -669,7 +676,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
             read as fully managed — the ordinary shape of drift, and the one the
             defect was reported for.
           */}
-          <ImportBlock subject={ref} knowledge={index} />
+          <ImportBlock subject={scannedRef ?? ref} knowledge={index} />
         </section>
       )}
       {!planned && tfBindings.length === 0 && index.terraform.length > 0 && (
@@ -680,7 +687,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
             {index.terraform.length === 1 ? '' : 's'} imported) — created outside
             Terraform, or managed by a stack that hasn't been imported.
           </p>
-          <ImportBlock subject={ref} knowledge={index} />
+          <ImportBlock subject={scannedRef ?? ref} knowledge={index} />
         </section>
       )}
 
