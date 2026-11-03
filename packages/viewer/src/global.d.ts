@@ -1,3 +1,4 @@
+import type { Proposal } from '@atlas/proposal';
 import type { Snapshot, AnnotationMap, TerraformStackFile } from '@atlas/schema';
 
 declare global {
@@ -8,6 +9,8 @@ declare global {
     __ATLAS_ANNOTATIONS__?: AnnotationMap;
     /** Injected by site/data/terraform.js (written by atlas-scan tf-import). */
     __ATLAS_TERRAFORM__?: TerraformStackFile[];
+    /** Injected by site/data/proposals.js (written by bundle, fixture and `propose bundle`). */
+    __ATLAS_PROPOSALS__?: Proposal[];
   }
 }
 

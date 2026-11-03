@@ -219,10 +219,11 @@ function pushRegionRefs(all: ResourceRef[], account: AccountSnapshot, region: Re
   }
 }
 
-export function buildIndex(): AtlasIndex {
-  const snapshot = window.__ATLAS_DATA__ ?? EMPTY_SNAPSHOT;
-  const annotations = window.__ATLAS_ANNOTATIONS__ ?? {};
-  const terraform = window.__ATLAS_TERRAFORM__ ?? [];
+/** Each argument defaults to the global the bundle sets, so the app's argument-less call is unchanged
+ *  (decision 57; `model/proposal.ts` passes a proposed snapshot). Fills missing collections into `snapshot` in place. */
+export function buildIndex(snapshot: Snapshot = window.__ATLAS_DATA__ ?? EMPTY_SNAPSHOT,
+  annotations: AnnotationMap = window.__ATLAS_ANNOTATIONS__ ?? {},
+  terraform: TerraformStackFile[] = window.__ATLAS_TERRAFORM__ ?? []): AtlasIndex {
 
   // Normalize once at load: snapshots committed by older scanner versions
   // predate some collections, so fill every missing array from the empty
