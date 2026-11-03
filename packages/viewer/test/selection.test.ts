@@ -30,9 +30,13 @@
  * snapshot lists the hub's TGW too, so the placement loop's `other` pass would
  * otherwise put the hub's TGW under the spoke's region and draw no hub ghost.
  *
+ * Cases 6–12 add a richer hub (WP-2b): CloudFront origins, a private zone, a
+ * VPN, Direct Connect and the reverse trust and RAM links that point *into*
+ * the selection from a switched-off account.
+ *
  * Shapes it still avoids: an account with no cross-account link at all; links
- * that exist only through RAM shares, SSO assignments, VPC peering, Route 53
- * aliases or CloudFront origins; an account with no alias; and more than
+ * that exist only through SSO assignments, VPC peering or Route 53 aliases; RAM
+ * shares to OUs or the organization; an account with no alias; and more than
  * three accounts.
  */
 import assert from 'node:assert/strict';
@@ -292,4 +296,211 @@ test('5 · a hub TGW listed in the spoke\'s own snapshot still draws the hub as 
   for (const n of graph.nodes) {
     if (n.data.addAccountId !== undefined) assert.ok(omittedAccounts(shown).has(n.data.addAccountId));
   }
+});
+
+// ---------------------------------------------------------------------------
+// WP-2b · lookups that silently drew nothing under a filtered index.
+//
+// Every helper below was written under "the index I was handed is the whole
+// estate". With the hub switched off, each either drew nothing or drew the
+// hub's resource inside the selected account's own box. The shape: the hub
+// owns a VPC behind an ALB, an S3 bucket, an attached and a detached VPN
+// gateway, a second TGW, a role trusting prod and a RAM share into prod; prod
+// fronts the ALB and the bucket with CloudFront, associates a private zone
+// with the hub's VPC, runs a VPN to the hub's TGW, and has a DX gateway and
+// two VIFs landing on the hub's VPN gateways. A VGW owned by an account that
+// was never scanned is the control: it must keep reading `not scanned`.
+// ---------------------------------------------------------------------------
+
+const HUB_VPC = 'vpc-0hub000000000001';
+const HUB_ALB_DNS = 'hub-alb-123.eu-west-1.elb.amazonaws.com';
+const HUB_BUCKET = 'hub-assets';
+const HUB_VGW = 'vgw-0hub00000000001';
+const HUB_VGW_DETACHED = 'vgw-0hub00000000002';
+const HUB_VPN_TGW = 'tgw-0a1b2c3d4e5f00003';
+const NEVER = '999999999999';
+const NEVER_VGW = 'vgw-0f0f0f0f0f0f0009';
+
+function richEstate(): Snapshot {
+  const estate = miniatureEstate();
+  const [prod, hub] = estate.accounts;
+  const prodRegion = prod?.regions[0];
+  const hubRegion = hub?.regions[0];
+  assert.ok(prod && hub && prodRegion && hubRegion);
+
+  hubRegion.vpcs.push({ id: HUB_VPC, name: 'hub-vpc', tags: {}, cidrBlocks: ['10.9.0.0/16'], ipv6CidrBlocks: [], isDefault: false });
+  hubRegion.loadBalancers.push({
+    id: 'arn:aws:elasticloadbalancing:eu-west-1:222222222222:loadbalancer/app/hub-alb/1',
+    name: 'hub-alb', tags: {}, lbType: 'application', vpcId: HUB_VPC, subnetIds: [], availabilityZones: [],
+    securityGroupIds: [], dnsName: HUB_ALB_DNS, listeners: [],
+  });
+  hubRegion.vpnGateways.push({ id: HUB_VGW, name: 'hub-vgw', tags: {}, vpcIds: [HUB_VPC] });
+  hubRegion.vpnGateways.push({ id: HUB_VGW_DETACHED, name: 'hub-spare-vgw', tags: {}, vpcIds: [] });
+  hubRegion.transitGateways.push({ id: HUB_VPN_TGW, name: 'vpn-tgw', tags: {}, ownerId: HUB });
+  hubRegion.ramResourceShares.push({
+    id: 'arn:aws:ram:eu-west-1:222222222222:resource-share/core',
+    name: 'core-tgw-share', tags: {}, owningAccountId: HUB,
+    principals: [{ id: SPOKE_PROD, type: 'account' }, { id: NEVER, type: 'account' }],
+    resources: [{ arn: `arn:aws:ec2:eu-west-1:222222222222:transit-gateway/${TGW}`, type: 'ec2:TransitGateway' }],
+  });
+  hub.global.s3Buckets.push({ id: HUB_BUCKET, name: HUB_BUCKET, tags: {}, region: REGION });
+  hub.global.iamRoles.push({
+    id: 'network-audit', name: 'network-audit', arn: `arn:aws:iam::${HUB}:role/network-audit`, tags: {},
+    attachedManagedPolicyArns: [], inlinePolicyNames: [],
+    assumeRolePolicyDocument: JSON.stringify({
+      Version: '2012-10-17',
+      Statement: [{ Effect: 'Allow', Principal: { AWS: `arn:aws:iam::${SPOKE_PROD}:root` }, Action: 'sts:AssumeRole' }],
+    }),
+  });
+
+  prod.global.cloudFrontDistributions.push({
+    id: 'E0PROD', name: 'prod-cdn', tags: {}, aliases: [], domainName: 'd0prod.cloudfront.net',
+    origins: [HUB_ALB_DNS, `${HUB_BUCKET}.s3.eu-west-1.amazonaws.com`],
+  });
+  prod.global.hostedZones.push({
+    id: 'Z0PROD', zoneName: 'internal.acme.', tags: {}, privateZone: true,
+    vpcAssociations: [{ vpcId: HUB_VPC, region: REGION }],
+  });
+  prod.global.directConnectGateways.push({
+    id: 'dxgw-prod', name: 'prod-dxgw', tags: {},
+    associations: [
+      { associatedGatewayId: HUB_VGW, associatedGatewayType: 'virtualPrivateGateway', associatedGatewayOwnerAccount: HUB, associatedGatewayRegion: REGION },
+      { associatedGatewayId: HUB_VGW_DETACHED, associatedGatewayType: 'virtualPrivateGateway', associatedGatewayOwnerAccount: HUB, associatedGatewayRegion: REGION },
+      { associatedGatewayId: NEVER_VGW, associatedGatewayType: 'virtualPrivateGateway', associatedGatewayOwnerAccount: NEVER, associatedGatewayRegion: REGION },
+    ],
+  });
+  prodRegion.customerGateways.push({ id: 'cgw-0prod00000000001', name: 'office', tags: {}, ipAddress: '198.51.100.7' });
+  prodRegion.vpnConnections.push({
+    id: 'vpn-0prod00000000001', name: 'office-vpn', tags: {}, transitGatewayId: HUB_VPN_TGW,
+    customerGatewayId: 'cgw-0prod00000000001', tunnels: [],
+  });
+  prodRegion.dxVirtualInterfaces.push(
+    { id: 'dxvif-attached', tags: {}, connectionId: 'dxcon-prod', virtualGatewayId: HUB_VGW, routeFilterPrefixes: [], bgpPeers: [] },
+    { id: 'dxvif-detached', tags: {}, connectionId: 'dxcon-prod', virtualGatewayId: HUB_VGW_DETACHED, routeFilterPrefixes: [], bgpPeers: [] },
+  );
+  return estate;
+}
+
+/** The rich estate with only prod switched on: the hub is omitted, never-scanned stays unscanned. */
+function prodOnly(): { index: AtlasIndex; graph: AtlasGraph } {
+  const index = indexOf(richEstate());
+  return { index, graph: buildOverview(withAccounts(index, new Set([SPOKE_PROD]))) };
+}
+
+const node = (graph: AtlasGraph, id: string): AtlasNode | undefined => graph.nodes.find((n) => n.id === id);
+const edgeBetween = (graph: AtlasGraph, source: string, target: string): boolean =>
+  graph.edges.some((e) => e.source === source && e.target === target);
+
+test('6 · CloudFront origins in a switched-off account land in its ghost, not in the distribution\'s own lane', () => {
+  // Show-all is the reference: the ALB origin edge reaches the hub's VPC and
+  // the bucket sits in the hub's own Edge & global lane.
+  const full = buildOverview(indexOf(richEstate()));
+  assert.ok(edgeBetween(full, 'cf:E0PROD', `vpc:${HUB_VPC}`));
+  assert.equal(node(full, `s3:${HUB_BUCKET}`)?.parentId, `glb:${HUB}`);
+
+  const { graph } = prodOnly();
+  // (2) Was: no edge at all — lbByDns only held the selected accounts.
+  assert.ok(edgeBetween(graph, 'cf:E0PROD', `vpc:${HUB_VPC}`), 'expected the CloudFront → hub VPC origin edge');
+  const vpc = node(graph, `vpc:${HUB_VPC}`);
+  assert.equal(vpc?.parentId, `acct:${HUB}`);
+  assert.equal(vpc?.data.label, 'hub-vpc');
+  assert.equal(vpc?.data.subtitle, `${REGION} · not shown`);
+
+  // (3) Was: the bucket drawn in prod's own `glb:111…` lane — misattributed.
+  const bucket = node(graph, `s3:${HUB_BUCKET}`);
+  assert.equal(bucket?.parentId, `acct:${HUB}`);
+  assert.equal(bucket?.data.ghost, true);
+  assert.equal(bucket?.data.subtitle, `${REGION} · not shown`);
+  assert.ok(edgeBetween(graph, 'cf:E0PROD', `s3:${HUB_BUCKET}`));
+});
+
+test('7 · a private zone associated with a switched-off account\'s VPC ghosts that VPC under its real owner', () => {
+  const { graph } = prodOnly();
+  // Was: `ensureVpcNode` got the zone's account, so the hub's VPC was drawn
+  // inside prod's own box labelled `not scanned`.
+  const vpc = node(graph, `vpc:${HUB_VPC}`);
+  assert.equal(vpc?.parentId, `acct:${HUB}`);
+  assert.ok(edgeBetween(graph, `zone:${SPOKE_PROD}:Z0PROD`, `vpc:${HUB_VPC}`));
+});
+
+test('7a · the zone association alone puts the VPC under its owner', () => {
+  // Without the CloudFront origin, the zone association is the first to ghost
+  // the VPC, so its parent is decided by the zone path alone.
+  const estate = richEstate();
+  const prod = estate.accounts[0];
+  assert.ok(prod);
+  prod.global.cloudFrontDistributions = [];
+  const index = indexOf(estate);
+  const graph = buildOverview(withAccounts(index, new Set([SPOKE_PROD])));
+  const vpc = node(graph, `vpc:${HUB_VPC}`);
+  assert.equal(vpc?.parentId, `acct:${HUB}`);
+  assert.equal(vpc?.data.subtitle, `${REGION} · not shown`);
+});
+
+test('8 · a VPN to a switched-off account\'s TGW puts that TGW in the owner\'s click-to-add ghost', () => {
+  const { graph } = prodOnly();
+  const tgw = node(graph, `tgw:${HUB_VPN_TGW}`);
+  // Was: no owner passed, so the TGW floated at the top level with no box.
+  assert.equal(tgw?.parentId, `acct:${HUB}`);
+  assert.equal(tgw?.data.label, 'vpn-tgw');
+  assert.ok(edgeBetween(graph, `tgw:${HUB_VPN_TGW}`, 'cgw:cgw-0prod00000000001'));
+});
+
+test('9 · DX associations and VIFs to a switched-off account\'s VPN gateways are drawn, not dropped', () => {
+  const { graph } = prodOnly();
+  // (12) An attached VGW resolves to its VPC, exactly as in show-all.
+  assert.ok(edgeBetween(graph, 'dxgw:dxgw-prod', `vpc:${HUB_VPC}`), 'expected DX gateway → hub VPC');
+  // A detached one is a ghost VGW that knows it was scanned.
+  const spare = node(graph, `vgw:${HUB_VGW_DETACHED}`);
+  assert.equal(spare?.parentId, `acct:${HUB}`);
+  assert.equal(spare?.data.label, 'hub-spare-vgw');
+  assert.equal(spare?.data.subtitle, `VPN gateway · ${REGION} · not shown`);
+  assert.ok(edgeBetween(graph, 'dxgw:dxgw-prod', `vgw:${HUB_VGW_DETACHED}`));
+  // (13) Was: the VIF silently drew nothing.
+  assert.ok(edgeBetween(graph, 'dxconn:dxcon-prod', `vpc:${HUB_VPC}`), 'expected DX VIF → hub VPC');
+  assert.ok(edgeBetween(graph, 'dxconn:dxcon-prod', `vgw:${HUB_VGW_DETACHED}`), 'expected DX VIF → spare VGW ghost');
+  // The control: a VGW nobody scanned still says so, in a not-scanned ghost.
+  const never = node(graph, `vgw:${NEVER_VGW}`);
+  assert.equal(never?.parentId, `acct:${NEVER}`);
+  assert.equal(never?.data.subtitle, `VPN gateway · ${REGION} · not scanned`);
+  assert.equal(node(graph, `acct:${NEVER}`)?.data.addAccountId, undefined);
+});
+
+test('10 · a role in a switched-off account that trusts a drawn one is drawn into its ghost', () => {
+  // The base estate: prod's `deploy` role trusts dev. Select dev alone — the
+  // role is in a switched-off account, so only drawn roles being walked meant
+  // dev showed no link to prod at all.
+  const index = indexOf(miniatureEstate());
+  const graph = buildOverview(withAccounts(index, new Set([SPOKE_DEV])));
+  const ghost = node(graph, `acct:${SPOKE_PROD}`);
+  assert.equal(ghost?.data.addAccountId, SPOKE_PROD);
+  const edge = graph.edges.find((e) => e.source === `acct:${SPOKE_DEV}` && e.target === `acct:${SPOKE_PROD}`);
+  assert.ok(edge, 'expected dev → prod ghost assume-role edge');
+  assert.equal(edge.data?.edgeKind, 'trust');
+  assert.match(edge.data?.title ?? '', /deploy/);
+
+  // And the rich estate's hub role trusting prod, with prod selected.
+  const { graph: rich } = prodOnly();
+  assert.ok(edgeBetween(rich, `acct:${SPOKE_PROD}`, `acct:${HUB}`), 'expected prod → hub ghost assume-role edge');
+});
+
+test('11 · a RAM share owned by a switched-off account into a drawn one is drawn from its ghost', () => {
+  const { graph } = prodOnly();
+  const share = graph.edges.find((e) => e.data?.edgeKind === 'ram-share');
+  assert.ok(share, 'expected the hub → prod RAM share edge');
+  assert.equal(share.source, `acct:${HUB}`);
+  assert.equal(share.target, `acct:${SPOKE_PROD}`);
+  // The share's other principal is neither drawn nor switched off: no edge,
+  // and no ghost conjured for it by this pass.
+  assert.equal(graph.edges.filter((e) => e.data?.edgeKind === 'ram-share').length, 1);
+});
+
+test('12 · switched-off accounts with no link to the selection add no ghost', () => {
+  // Dev alone in the rich estate: the hub's trust and share name prod, not
+  // dev, so neither reverse pass may draw prod or the hub on their account.
+  const index = indexOf(richEstate());
+  const graph = buildOverview(withAccounts(index, new Set([SPOKE_DEV])));
+  assert.ok(!graph.edges.some((e) => e.data?.edgeKind === 'ram-share'));
+  assert.ok(!edgeBetween(graph, `acct:${SPOKE_PROD}`, `acct:${HUB}`));
+  assert.ok(!edgeBetween(graph, `acct:${SPOKE_DEV}`, `acct:${HUB}`));
 });

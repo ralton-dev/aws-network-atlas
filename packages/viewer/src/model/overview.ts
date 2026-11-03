@@ -1,6 +1,7 @@
 import type {
   AccountSnapshot,
   OrganizationAccount,
+  RamResourceShare,
   RegionSnapshot,
   TransitGatewayAttachment,
   VpcPeeringConnection,
@@ -106,6 +107,47 @@ function switchedOff(b: Builder, key: string, kind: string, ownerId: string | un
   const ref = b.index.byKey.get(key);
   if (!ref || ref.kind !== kind) return undefined;
   return b.omitted.has(ref.accountId) || (ownerId !== undefined && b.omitted.has(ownerId)) ? ref : undefined;
+}
+
+/**
+ * The account to parent a ghost under when the resource behind `key` is
+ * scanned but switched off: its owner (`ownerId` for a shared TGW, else the
+ * account whose snapshot listed it). `undefined` whenever nothing is switched
+ * off, so a caller can fall back to exactly what it passed before.
+ */
+function switchedOffOwner(b: Builder, key: string, kind: string): string | undefined {
+  const ref = switchedOff(b, key, kind, undefined);
+  return ref ? ((ref.raw['ownerId'] as string | undefined) ?? ref.accountId) : undefined;
+}
+
+/**
+ * A VPN gateway the overview cannot resolve to a drawn VPC: never scanned, or
+ * scanned in a switched-off account (then named, `not shown`, and parented
+ * under that account's click-to-add ghost).
+ */
+function ensureVgwGhost(b: Builder, vgwId: string, ownerAccount: string | undefined, region: string | undefined): string {
+  const id = `vgw:${vgwId}`;
+  if (!b.leaves.has(id)) {
+    const off = switchedOff(b, vgwId, 'vgw', ownerAccount);
+    const owner = ownerAccount ?? off?.accountId;
+    const where = region ?? off?.region;
+    b.leaves.set(id, {
+      id,
+      type: 'resource',
+      position: { x: 0, y: 0 },
+      parentId: owner ? ensureGhostAccount(b, owner) : undefined,
+      width: 150,
+      height: 96,
+      data: {
+        label: off?.name ?? vgwId,
+        subtitle: `VPN gateway${where ? ` · ${where}` : ''} · ${off ? 'not shown' : 'not scanned'}`,
+        kind: 'vgw',
+        refId: vgwId,
+        ghost: true,
+      },
+    });
+  }
+  return id;
 }
 
 function ensureVpcNode(
@@ -269,6 +311,7 @@ function addAccountGlobal(
   index: AtlasIndex,
   account: AccountSnapshot,
   lbByDns: Map<string, { vpcId?: string; name?: string; accountId: string; region: string }>,
+  s3Owner: Map<string, ResourceRef>,
 ): void {
   const acctId = `acct:${account.accountId}`;
   const g = account.global;
@@ -410,13 +453,19 @@ function addAccountGlobal(
         }
         const bucketName = s3OriginBucket(origin);
         if (bucketName) {
-          const owner = index.snapshot.accounts.find((a) =>
-            a.global.s3Buckets.some((bk) => bk.name === bucketName || bk.id === bucketName),
-          );
-          const bucketLane = owner
-            ? ensureLane(b, `glb:${owner.accountId}`, `acct:${owner.accountId}`, 'Edge & global', 'group-edge', 'external')
-            : lane;
-          const s3Node = leafNode(b, `s3:${bucketName}`, bucketLane, 's3', bucketName, 'S3 bucket', bucketName);
+          // Resolved across the whole estate: a bucket whose owner is switched
+          // off goes in that owner's ghost, never in this distribution's lane.
+          const owner = s3Owner.get(bucketName);
+          const off = owner && b.omitted.has(owner.accountId) ? owner : undefined;
+          const bucketLane = off
+            ? ensureGhostAccount(b, off.accountId)
+            : owner
+              ? ensureLane(b, `glb:${owner.accountId}`, `acct:${owner.accountId}`, 'Edge & global', 'group-edge', 'external')
+              : lane;
+          const s3Node = leafNode(b, `s3:${bucketName}`, bucketLane, 's3', bucketName,
+            off ? `${off.region ? `${off.region} · ` : ''}not shown` : 'S3 bucket', bucketName);
+          const s3Leaf = off ? b.leaves.get(s3Node) : undefined;
+          if (s3Leaf) s3Leaf.data.ghost = true;
           const key = `cforig:${dist.id}|${s3Node}`;
           b.edges.set(key, {
             id: `edge:${key}`,
@@ -434,7 +483,8 @@ function addAccountGlobal(
       const zoneNode = leafNode(b, `zone:${account.accountId}:${zone.id}`, lane, 'zone', zone.zoneName,
         `${zone.privateZone ? 'private' : 'public'} zone · ${zone.recordCount ?? '?'} records`, zone.id);
       for (const assoc of zone.vpcAssociations) {
-        const vpcNode = ensureVpcNode(b, assoc.vpcId, account.accountId, assoc.region);
+        const owner = switchedOffOwner(b, assoc.vpcId, 'vpc') ?? account.accountId;
+        const vpcNode = ensureVpcNode(b, assoc.vpcId, owner, assoc.region);
         if (!vpcNode) continue;
         const key = `zonedns:${zone.id}|${vpcNode}`;
         b.edges.set(key, {
@@ -1031,6 +1081,42 @@ function addTrustEdges(b: Builder, index: AtlasIndex): void {
       }
     }
   }
+
+  // The reverse: roles in a switched-off account that a drawn account can
+  // assume. Only drawn roles are walked above, so without this the link
+  // vanished (decision 36). One edge per (drawn account, ghost) pair; the
+  // roles fold into the title. Never runs for an unfiltered build.
+  if (b.omitted.size === 0) return;
+  const reverse = new Map<string, { from: string; principal: string; owner: string; roles: string[]; mfa: boolean; refId: string }>();
+  for (const ref of index.all) {
+    if (ref.kind !== 'iam-role' || !b.omitted.has(ref.accountId)) continue;
+    const doc = ref.raw['assumeRolePolicyDocument'] as string | undefined;
+    for (const principal of trustedAccountPrincipals(doc, ref.accountId)) {
+      const from = `acct:${principal.accountId}`;
+      const drawn = b.accounts.get(from);
+      if (!drawn || drawn.data.ghost) continue;
+      const key = `trust:${principal.accountId}|acct:${ref.accountId}`;
+      const hit = reverse.get(key) ?? { from, principal: principal.accountId, owner: ref.accountId, roles: [], mfa: true, refId: ref.arn ?? ref.id };
+      hit.roles.push(ref.name ?? ref.id);
+      hit.mfa &&= principal.mfa;
+      reverse.set(key, hit);
+    }
+  }
+  for (const [key, r] of reverse) {
+    b.edges.set(key, {
+      id: `edge:${key}`,
+      source: r.from,
+      target: ensureGhostAccount(b, r.owner),
+      type: 'annotated',
+      markerEnd: { type: MarkerType.ArrowClosed },
+      data: {
+        edgeKind: 'trust',
+        label: r.mfa ? 'assume-role · MFA' : 'assume-role',
+        title: `${index.accountLabel(r.principal)} can assume ${destsLabel(r.roles, 3)} in ${index.accountLabel(r.owner)}`,
+        refId: r.refId,
+      },
+    });
+  }
 }
 
 /**
@@ -1079,6 +1165,28 @@ function addRamShareEdges(b: Builder, index: AtlasIndex): void {
     return undefined;
   };
 
+  const shareEdge = (share: RamResourceShare, owner: string, src: string, target: string, principal: { id: string; type: string }): void => {
+    // "subnet", "subnet, transit-gateway +1" — from the shared types.
+    const typeSummary = destsLabel(
+      share.resources.map((r) => (r.type ?? r.arn.split(':')[2] ?? 'resource').split(':').pop() ?? 'resource'),
+      2,
+    );
+    const key = `ramshare:${share.id}|${principal.type}:${principal.id}`;
+    b.edges.set(key, {
+      id: `edge:${key}`,
+      source: src,
+      target: target,
+      type: 'annotated',
+      markerEnd: { type: MarkerType.ArrowClosed },
+      data: {
+        edgeKind: 'ram-share',
+        label: typeSummary ? `${share.name} · ${typeSummary}` : share.name,
+        title: `RAM share ${share.name}: ${index.accountLabel(owner)} → ${principal.id}${share.allowExternalPrincipals ? ' (external principals allowed)' : ''}`,
+        refId: share.arn ?? share.id,
+      },
+    });
+  };
+
   for (const account of index.snapshot.accounts) {
     for (const region of account.regions) {
       for (const share of region.ramResourceShares) {
@@ -1087,30 +1195,30 @@ function addRamShareEdges(b: Builder, index: AtlasIndex): void {
         const owner = share.owningAccountId ?? account.accountId;
         if (owner !== account.accountId) continue;
         const src = b.accounts.has(`acct:${owner}`) ? `acct:${owner}` : ensureGhostAccount(b, owner);
-        // "subnet", "subnet, transit-gateway +1" — from the shared types.
-        const typeSummary = destsLabel(
-          share.resources.map((r) => (r.type ?? r.arn.split(':')[2] ?? 'resource').split(':').pop() ?? 'resource'),
-          2,
-        );
         for (const principal of share.principals) {
           const target = resolvePrincipal(principal);
           if (!target || target === src) continue;
-          const key = `ramshare:${share.id}|${principal.type}:${principal.id}`;
-          b.edges.set(key, {
-            id: `edge:${key}`,
-            source: src,
-            target: target,
-            type: 'annotated',
-            markerEnd: { type: MarkerType.ArrowClosed },
-            data: {
-              edgeKind: 'ram-share',
-              label: typeSummary ? `${share.name} · ${typeSummary}` : share.name,
-              title: `RAM share ${share.name}: ${index.accountLabel(owner)} → ${principal.id}${share.allowExternalPrincipals ? ' (external principals allowed)' : ''}`,
-              refId: share.arn ?? share.id,
-            },
-          });
+          shareEdge(share, owner, src, target, principal);
         }
       }
+    }
+  }
+
+  // The reverse: shares owned by a switched-off account whose principals are
+  // drawn — a selected account's container, or a drawn OU / organization.
+  // Only drawn owners are walked above, so without this the share vanished
+  // (decision 36). Principals that are not drawn conjure no ghost here.
+  if (b.omitted.size === 0) return;
+  for (const ref of index.all) {
+    if (ref.kind !== 'ram-share' || !b.omitted.has(ref.accountId)) continue;
+    const share = ref.raw as unknown as RamResourceShare;
+    if ((share.owningAccountId ?? ref.accountId) !== ref.accountId) continue;
+    for (const principal of share.principals) {
+      const acct = b.accounts.get(`acct:${principal.id}`);
+      const target = principal.type === 'account'
+        ? (acct && !acct.data.ghost ? acct.id : undefined)
+        : resolvePrincipal(principal);
+      if (target) shareEdge(share, ref.accountId, ensureGhostAccount(b, ref.accountId), target, principal);
     }
   }
 }
@@ -1127,21 +1235,18 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
     extUsed: false,
   };
 
-  // Load balancers by DNS name — resolves CloudFront origins across accounts.
+  // Load balancers by DNS name and S3 bucket owners — resolve CloudFront
+  // origins across accounts. Built from `index.all`, which spans the whole
+  // estate even when the selection narrowed `snapshot.accounts`, so an origin
+  // in a switched-off account ghosts its owner instead of vanishing. Same
+  // order as the account loops, so an unfiltered build resolves identically.
   const lbByDns = new Map<string, { vpcId?: string; name?: string; accountId: string; region: string }>();
-  for (const account of index.snapshot.accounts) {
-    for (const region of account.regions) {
-      for (const lb of region.loadBalancers) {
-        if (lb.dnsName) {
-          lbByDns.set(lb.dnsName, {
-            vpcId: lb.vpcId,
-            name: lb.name,
-            accountId: account.accountId,
-            region: region.region,
-          });
-        }
-      }
-    }
+  const s3Owner = new Map<string, ResourceRef>();
+  for (const ref of index.all) {
+    const dnsName = ref.kind === 'lb' ? (ref.raw['dnsName'] as string | undefined) : undefined;
+    if (dnsName) lbByDns.set(dnsName, { vpcId: ref.vpcId, name: ref.name, accountId: ref.accountId, region: ref.region });
+    if (ref.kind !== 's3') continue;
+    for (const key of [ref.name, ref.id]) if (key && !s3Owner.has(key)) s3Owner.set(key, ref);
   }
 
   // --- scanned accounts, regions, VPCs, TGWs -------------------------------
@@ -1223,7 +1328,7 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
       addRegionServices(b, index, account, region);
     }
 
-    addAccountGlobal(b, index, account, lbByDns);
+    addAccountGlobal(b, index, account, lbByDns, s3Owner);
     addOrganization(b, account);
 
     if (account.emptyRegions.length > 0) {
@@ -1441,7 +1546,9 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
       for (const vpn of region.vpnConnections) {
         if (b.edges.has(`vpn:${vpn.id}`)) continue;
         let src: string | undefined;
-        if (vpn.transitGatewayId) src = ensureTgwNode(b, vpn.transitGatewayId);
+        if (vpn.transitGatewayId) {
+          src = ensureTgwNode(b, vpn.transitGatewayId, switchedOffOwner(b, vpn.transitGatewayId, 'tgw'));
+        }
         else if (vpn.vpnGatewayId) {
           const vpcId = vgwVpc.get(vpn.vpnGatewayId);
           src = ensureVpcNode(b, vpcId, account.accountId, region.region);
@@ -1490,20 +1597,12 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
 
   // --- Direct Connect gateways ---------------------------------------------
   // VGW ids are globally unique; a DX gateway in account A can associate with
-  // a VGW owned by account B, so the lookup map must span every scanned account.
+  // a VGW owned by account B, so the lookup map must span every scanned account
+  // — `index.all`, not the selection, so a switched-off owner's VPC ghosts.
   const vgwVpcAll = new Map<string, { vpcId: string; accountId: string; region: string }>();
-  for (const account of index.snapshot.accounts) {
-    for (const region of account.regions) {
-      for (const vgw of region.vpnGateways) {
-        if (vgw.vpcIds[0]) {
-          vgwVpcAll.set(vgw.id, {
-            vpcId: vgw.vpcIds[0],
-            accountId: account.accountId,
-            region: region.region,
-          });
-        }
-      }
-    }
+  for (const ref of index.all) {
+    const vpcId = ref.kind === 'vgw' ? (ref.raw['vpcIds'] as string[] | undefined)?.[0] : undefined;
+    if (vpcId) vgwVpcAll.set(ref.id, { vpcId, accountId: ref.accountId, region: ref.region });
   }
   for (const account of index.snapshot.accounts) {
     for (const dxgw of account.global.directConnectGateways) {
@@ -1528,28 +1627,8 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
           if (resolved) {
             tgt = ensureVpcNode(b, resolved.vpcId, resolved.accountId, resolved.region);
           } else {
-            // Unscanned owner account: show a ghost VGW so the link stays visible.
-            const ghostId = `vgw:${assoc.associatedGatewayId}`;
-            if (!b.leaves.has(ghostId)) {
-              b.leaves.set(ghostId, {
-                id: ghostId,
-                type: 'resource',
-                position: { x: 0, y: 0 },
-                parentId: assoc.associatedGatewayOwnerAccount
-                  ? ensureGhostAccount(b, assoc.associatedGatewayOwnerAccount)
-                  : undefined,
-                width: 150,
-                height: 96,
-                data: {
-                  label: assoc.associatedGatewayId,
-                  subtitle: `VPN gateway${assoc.associatedGatewayRegion ? ` · ${assoc.associatedGatewayRegion}` : ''} · not scanned`,
-                  kind: 'vgw',
-                  refId: assoc.associatedGatewayId,
-                  ghost: true,
-                },
-              });
-            }
-            tgt = ghostId;
+            // Unscanned or switched-off owner: a ghost VGW keeps the link visible.
+            tgt = ensureVgwGhost(b, assoc.associatedGatewayId, assoc.associatedGatewayOwnerAccount, assoc.associatedGatewayRegion);
           }
         }
         if (!tgt) continue;
@@ -1616,6 +1695,9 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
         } else if (vif.virtualGatewayId) {
           const resolved = vgwVpcAll.get(vif.virtualGatewayId);
           if (resolved) tgt = ensureVpcNode(b, resolved.vpcId, resolved.accountId, resolved.region);
+          else if (switchedOff(b, vif.virtualGatewayId, 'vgw', undefined)) {
+            tgt = ensureVgwGhost(b, vif.virtualGatewayId, undefined, undefined);
+          }
         }
         if (!tgt) continue;
         const key = `dxvif:${vif.id}`;
