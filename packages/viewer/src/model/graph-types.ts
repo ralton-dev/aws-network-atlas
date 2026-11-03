@@ -13,6 +13,28 @@ export type ContainerStyle =
   | 'org'
   | 'ghost';
 
+/**
+ * How a node or edge differs between the scanned estate and an active proposal
+ * (PROPOSAL-OVERLAY.md, decision 49). Stamped only by `diffGraphs`
+ * (`model/diff.ts`), which unions the graph built from the current index with
+ * the graph built from the proposed one:
+ *
+ * - `added` — only in the proposed graph: a `proposed-` resource, an account
+ *   or region the proposal creates, or an edge or note that exists only
+ *   because of one. Hidden in the *current* mode.
+ * - `removed` — only in the current graph. Hidden in the *proposed* mode.
+ * - `changed` — in both, and its `refId` is in the proposal's `ChangeSet`, or
+ *   its `label`, `subtitle` or `parentId` differ (for an edge: `label`,
+ *   `source` or `target`). The data drawn is the *proposed* graph's.
+ *
+ * **Absent means unchanged** — the field is not present at all, never
+ * `undefined`. A graph that never passed through `diffGraphs` (no proposal
+ * active) carries no `changeState` anywhere and must render exactly as it did
+ * before proposals existed. A renderer (WP-4) styles from this field only;
+ * it must not infer state from a `proposed-` id.
+ */
+export type ChangeState = 'added' | 'removed' | 'changed';
+
 // NOTE: these must stay `type` aliases (not interfaces) — React Flow v12's
 // Node<T> generic requires an implicit index signature.
 export type AtlasNodeData = {
@@ -48,6 +70,8 @@ export type AtlasNodeData = {
    * unmanaged. Drives the managed/unmanaged filter in the Layers panel.
    */
   tfManaged?: boolean;
+  /** Set only while a proposal is active; absent = unchanged. See `ChangeState`. */
+  changeState?: ChangeState;
 };
 
 export type AtlasNode = Node<AtlasNodeData>;
@@ -105,6 +129,8 @@ export type AtlasEdgeData = {
   /** Underlying resource (pcx-…, tgw-attach-…, vpn-…) for details lookup. */
   refId?: string;
   title?: string;
+  /** Set only while a proposal is active; absent = unchanged. See `ChangeState`. */
+  changeState?: ChangeState;
 };
 
 export type AtlasEdge = Edge<AtlasEdgeData>;
