@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@atlas/proposal": "*",
     "@atlas/schema": "*",
     "@xyflow/react": "^12.11.1",
     "elkjs": "^0.11.1",

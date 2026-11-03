@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@atlas/proposal": "*",
     "@atlas/schema": "*",
     "@aws-sdk/client-accessanalyzer": "^3.1081.0",
     "@aws-sdk/client-acm": "^3.1079.0",
