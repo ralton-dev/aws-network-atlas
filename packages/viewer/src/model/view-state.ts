@@ -82,6 +82,42 @@ export function saveHiddenState(viewKey: string, state: HiddenState): void {
   }
 }
 
+// --- account selection ------------------------------------------------------
+
+/**
+ * Which scanned accounts the overview draws (ACCOUNT-PICKER.md, decision 37).
+ * Global, not per view: it is the overview's input, and the overview URL
+ * (`#/?accounts=…`) carries it too — the URL wins over this on load.
+ */
+const ACCOUNTS_KEY = 'atlas:accounts';
+
+/**
+ * The remembered selection, or `undefined` when none was stored (or storage
+ * is unavailable or holds something unreadable) so the caller falls back to
+ * the default. A stored empty array is a real answer — the reader chose
+ * *show none* — and comes back as an empty set.
+ */
+export function loadAccountSelection(): Set<string> | undefined {
+  try {
+    const raw = window.localStorage.getItem(ACCOUNTS_KEY);
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw);
+      if (isStringArray(parsed)) return new Set(parsed);
+    }
+  } catch {
+    /* storage unavailable — fall through to the default */
+  }
+  return undefined;
+}
+
+export function saveAccountSelection(ids: ReadonlySet<string>): void {
+  try {
+    window.localStorage.setItem(ACCOUNTS_KEY, JSON.stringify([...ids].sort()));
+  } catch {
+    /* storage unavailable — session-only */
+  }
+}
+
 // --- interaction mode --------------------------------------------------------
 
 /**

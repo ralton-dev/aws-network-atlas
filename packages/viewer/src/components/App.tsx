@@ -1,16 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { buildIndex, type ResourceRef } from '../data.js';
+import { buildIndex, type AtlasIndex, type ResourceRef } from '../data.js';
 import { buildFocus } from '../model/focus.js';
 import { buildOverview } from '../model/overview.js';
 import { buildVpcDetail } from '../model/vpc-detail.js';
+import {
+  defaultSelection,
+  formatAccountsParam,
+  parseAccountsParam,
+  withAccounts,
+} from '../model/selection.js';
 import { applyTerraformBadges } from '../model/terraform.js';
 import { layoutGraph } from '../model/layout.js';
 import type { AtlasEdge, AtlasGraph, AtlasNode, EdgeKind } from '../model/graph-types.js';
 import {
   emptyHiddenState,
   hiddenCount,
+  loadAccountSelection,
   loadHiddenState,
   loadInteractionMode,
+  saveAccountSelection,
   saveHiddenState,
   saveInteractionMode,
   type HiddenState,
@@ -28,6 +36,11 @@ type Route =
   | { view: 'vpc'; vpcId: string }
   | { view: 'focus'; key: string };
 
+/**
+ * Anything that is not `#/vpc/…` or `#/focus/…` is the overview, whatever
+ * query it carries; the overview's `?accounts=` param is read separately
+ * (`parseAccountsParam`), because the selection is App state of its own.
+ */
 function parseHash(): Route {
   const vpc = /^#\/vpc\/([^/?]+)/.exec(window.location.hash);
   if (vpc?.[1]) return { view: 'vpc', vpcId: vpc[1] };
@@ -36,22 +49,96 @@ function parseHash(): Route {
   return { view: 'overview' };
 }
 
-function routeHash(route: Route): string {
+/**
+ * The hash for a view, and that view's identity: the URL, the `FlowView` key,
+ * and the storage key of its saved positions and hidden state. The overview's
+ * includes the selection (decisions 37 and 39) — `#/` when nothing is
+ * selected, `#/?accounts=<id>,<id>` otherwise — so positions dragged for one
+ * selection are never applied to another. VPC and focus routes never carry it.
+ *
+ * One exception, for decision 35: a single-account estate showing its one
+ * account keeps plain `#/`, the hash and view key it had before the picker
+ * existed, so the positions and hidden state already saved under it still
+ * apply and the estate does not move at all. (`#/` parses as "no opinion",
+ * which there falls through to the stored selection or the default — all.)
+ */
+function routeHash(route: Route, accounts: ReadonlySet<string>, scannedCount: number): string {
   if (route.view === 'vpc') return `#/vpc/${route.vpcId}`;
   if (route.view === 'focus') return `#/focus/${encodeURIComponent(route.key)}`;
-  return '#/';
+  if (scannedCount === 1 && accounts.size === 1) return '#/';
+  return `#/${formatAccountsParam(accounts)}`;
 }
+
+/** Route identity without the selection — what the route dedupe compares. */
+function routeKey(route: Route): string {
+  return routeHash(route, NO_ACCOUNTS, 0);
+}
+
+const NO_ACCOUNTS: ReadonlySet<string> = new Set();
+
+function sameSet(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
+  return a.size === b.size && [...a].every((id) => b.has(id));
+}
+
+/**
+ * Keep only scanned account ids; `undefined` when a non-empty input loses
+ * every id (a link or a remembered selection from another estate), so the
+ * caller falls through to the next source. An empty input stays empty: a
+ * stored *show none* is a choice, not an absence.
+ */
+function scannedOnly(index: AtlasIndex, ids: Set<string> | undefined): Set<string> | undefined {
+  if (ids === undefined) return undefined;
+  const kept = new Set(
+    index.snapshot.accounts.map((a) => a.accountId).filter((id) => ids.has(id)),
+  );
+  return kept.size === 0 && ids.size > 0 ? undefined : kept;
+}
+
+/** Decision 37: the URL wins over `localStorage`, which wins over the default. */
+function initialAccounts(index: AtlasIndex): Set<string> {
+  return (
+    scannedOnly(index, parseAccountsParam(window.location.hash)) ??
+    scannedOnly(index, loadAccountSelection()) ??
+    defaultSelection(index)
+  );
+}
+
+const EMPTY_GRAPH: AtlasGraph = { nodes: [], edges: [] };
 
 export function App(): React.ReactElement {
   const index = useMemo(buildIndex, []);
   const [route, setRouteState] = useState<Route>(parseHash);
-  const [graph, setGraph] = useState<AtlasGraph>({ nodes: [], edges: [] });
-  const [loading, setLoading] = useState(true);
+  const [accounts, setAccounts] = useState<ReadonlySet<string>>(() => initialAccounts(index));
+  // The laid-out graph and the view it was laid out for. "Loading" is derived:
+  // the canvas waits whenever the graph on hand belongs to another view, so a
+  // stale graph is never mounted under a new view's key.
+  const [built, setBuilt] = useState<{ graphKey: string; graph: AtlasGraph }>({
+    graphKey: '',
+    graph: EMPTY_GRAPH,
+  });
   const [selection, setSelection] = useState<Selection | undefined>();
-  const [showInventory, setShowInventory] = useState(false);
+  // Nothing selected means the reader's first move is in Inventory (decision 35).
+  const [showInventory, setShowInventory] = useState(() => accounts.size === 0);
   const [showLayers, setShowLayers] = useState(false);
-  const [hidden, setHidden] = useState<HiddenState>(() => loadHiddenState(routeHash(parseHash())));
+  const viewKey = routeHash(route, accounts, index.snapshot.accounts.length);
+  // What the graph on hand was built from: the view plus, on the overview, the
+  // selection spelt out in full. Equal to `viewKey` except in the one case
+  // `routeHash` canonicalises (a single-account estate, where "all" and
+  // "none" both have the URL `#/`). Also the `FlowView` key, so a different
+  // selection always remounts onto its own layout.
+  const graphKey =
+    route.view === 'overview' ? `#/${formatAccountsParam(accounts)}` : viewKey;
+  const [hidden, setHidden] = useState<HiddenState>(() => loadHiddenState(viewKey));
   const [mode, setMode] = useState<InteractionMode>(loadInteractionMode);
+  // Decision 38: an empty selection on the overview builds nothing at all.
+  const emptyOverview = route.view === 'overview' && accounts.size === 0;
+  const graph = built.graphKey === graphKey ? built.graph : EMPTY_GRAPH;
+  const loading = !emptyOverview && built.graphKey !== graphKey;
+
+  // Decision 40: one derived index per selection. `withAccounts` returns a new
+  // object on every filtering call, so without this the overview would rebuild
+  // (and re-run ELK) on every render. Show-all returns `index` itself.
+  const shown = useMemo(() => withAccounts(index, accounts), [index, accounts]);
 
   const toggleMode = useCallback(() => {
     const next: InteractionMode = mode === 'pan' ? 'arrange' : 'pan';
@@ -59,57 +146,106 @@ export function App(): React.ReactElement {
     saveInteractionMode(next);
   }, [mode]);
 
-  const setRoute = useCallback((next: Route) => {
-    // Hash-based navigation — the History API doesn't work on file://.
-    if (routeHash(next) !== window.location.hash) window.location.hash = routeHash(next);
-    // Dedupe by VALUE so the hashchange echo (or re-selecting the current
-    // view) doesn't produce a new route object and re-run the ELK layout.
-    setRouteState((prev) => (routeHash(prev) === routeHash(next) ? prev : next));
-  }, []);
+  const setRoute = useCallback(
+    (next: Route) => {
+      // Hash-based navigation — the History API doesn't work on file://.
+      // Returning to the overview re-applies the current selection (decision 37).
+      const hash = routeHash(next, accounts, index.snapshot.accounts.length);
+      if (hash !== window.location.hash) window.location.hash = hash;
+      // Dedupe by VALUE so the hashchange echo (or re-selecting the current
+      // view) doesn't produce a new route object and re-run the ELK layout.
+      setRouteState((prev) => (routeKey(prev) === routeKey(next) ? prev : next));
+    },
+    [index, accounts],
+  );
+
+  // Every selection change goes through here: remember it, and keep the
+  // overview URL in step. Dedupe by value, like the route, so re-applying the
+  // same selection never yields a new set (and so never a new derived index).
+  const applyAccounts = useCallback(
+    (next: ReadonlySet<string>) => {
+      setAccounts((prev) => (sameSet(prev, next) ? prev : next));
+      saveAccountSelection(next);
+      if (route.view === 'overview') {
+        const hash = routeHash(route, next, index.snapshot.accounts.length);
+        // replace, not push: switching an account on is not a navigation.
+        if (hash !== window.location.hash) window.location.replace(hash);
+      }
+    },
+    [index, route],
+  );
 
   useEffect(() => {
-    const onHashChange = (): void =>
-      setRouteState((prev) => {
-        const next = parseHash();
-        return routeHash(prev) === routeHash(next) ? prev : next;
-      });
+    const onHashChange = (): void => {
+      const next = parseHash();
+      setRouteState((prev) => (routeKey(prev) === routeKey(next) ? prev : next));
+      if (next.view !== 'overview') return;
+      // A pasted or back-navigated `?accounts=` wins; plain `#/` means "no
+      // opinion" and keeps the current selection (the sync effect below then
+      // writes it back into the URL). The echo of our own rewrite parses to
+      // the same set and is deduped by value — it does not rebuild.
+      const fromUrl = scannedOnly(index, parseAccountsParam(window.location.hash));
+      if (fromUrl === undefined) return;
+      setAccounts((prev) => (sameSet(prev, fromUrl) ? prev : fromUrl));
+      saveAccountSelection(fromUrl);
+    };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, []);
+  }, [index]);
+
+  // The overview URL always spells the selection: on a cold load that took it
+  // from localStorage or the default, and after a hashchange to bare `#/`.
+  useEffect(() => {
+    // A bare URL with no hash is already the plain overview; leave it bare.
+    if (route.view === 'overview' && viewKey !== (window.location.hash || '#/')) {
+      window.location.replace(viewKey);
+    }
+  }, [route, viewKey]);
+
+  // Only the overview depends on the selection; the VPC and focus views get
+  // the full index and must not rebuild when an account is switched.
+  const overviewIndex = route.view === 'overview' ? shown : undefined;
 
   useEffect(() => {
+    // Decision 38: nothing selected, nothing to build — no buildOverview, no
+    // ELK. The canvas renders the empty state straight away.
+    if (route.view === 'overview' && accounts.size === 0) {
+      setBuilt({ graphKey, graph: EMPTY_GRAPH });
+      return;
+    }
     let cancelled = false;
-    setLoading(true);
-    const built = applyTerraformBadges(
+    const graphToLay = applyTerraformBadges(
       route.view === 'vpc'
         ? buildVpcDetail(index, route.vpcId)
         : route.view === 'focus'
           ? buildFocus(index, route.key)
-          : buildOverview(index),
+          : buildOverview(overviewIndex ?? shown),
       index,
     );
-    void layoutGraph(built).then((laidOut) => {
+    void layoutGraph(graphToLay).then((laidOut) => {
       if (cancelled) return;
-      setGraph(laidOut);
-      setLoading(false);
+      setBuilt({ graphKey, graph: laidOut });
     });
     return () => {
       cancelled = true;
     };
-  }, [index, route]);
+    // Deliberately not on `accounts`/`graphKey`/`shown`: on the overview they
+    // change exactly when `overviewIndex` does, and elsewhere they must not
+    // trigger a rebuild at all.
+  }, [index, route, overviewIndex]);
 
   // Hidden state is scoped per view; reload it when the view changes.
   useEffect(() => {
-    setHidden(loadHiddenState(routeHash(route)));
-  }, [route]);
+    setHidden(loadHiddenState(viewKey));
+  }, [viewKey]);
 
   // All mutations go through here so the per-view persistence stays in sync.
   const applyHidden = useCallback(
     (next: HiddenState) => {
       setHidden(next);
-      saveHiddenState(routeHash(route), next);
+      saveHiddenState(viewKey, next);
     },
-    [route],
+    [viewKey],
   );
 
   const onNodeHide = useCallback(
@@ -175,6 +311,14 @@ export function App(): React.ReactElement {
 
   const onNodeClick = useCallback(
     (node: AtlasNode) => {
+      // A ghost box for a scanned account the selection leaves out: clicking
+      // it adds the account (decision 36). Checked against the full index —
+      // `shown` would, by construction, never contain it.
+      const add = node.data.addAccountId;
+      if (add !== undefined && index.snapshot.accounts.some((a) => a.accountId === add)) {
+        applyAccounts(new Set(accounts).add(add));
+        return;
+      }
       const ref = node.data.refId ? index.byKey.get(node.data.refId) : undefined;
       if (ref) setSelection({ type: 'resource', ref });
       // Account/region containers carry no resource ref, but a partial scan
@@ -183,8 +327,24 @@ export function App(): React.ReactElement {
         setSelection({ type: 'container', id: node.id, label: node.data.label, errors: node.data.errors });
       }
     },
-    [index],
+    [index, accounts, applyAccounts],
   );
+
+  const toggleAccount = useCallback(
+    (accountId: string) => {
+      const next = new Set(accounts);
+      if (!next.delete(accountId)) next.add(accountId);
+      applyAccounts(next);
+    },
+    [accounts, applyAccounts],
+  );
+
+  const selectAllAccounts = useCallback(
+    () => applyAccounts(new Set(index.snapshot.accounts.map((a) => a.accountId))),
+    [index, applyAccounts],
+  );
+
+  const selectNoAccounts = useCallback(() => applyAccounts(new Set()), [applyAccounts]);
 
   const onNodeDoubleClick = useCallback(
     (node: AtlasNode) => {
@@ -285,17 +445,38 @@ export function App(): React.ReactElement {
         </span>
       </header>
       <main className="content">
-        {showInventory && <InventoryPanel index={index} onSelect={selectRef} />}
+        {showInventory && (
+          <InventoryPanel
+            index={index}
+            onSelect={selectRef}
+            selectedAccounts={accounts}
+            onToggleAccount={toggleAccount}
+            onSelectAllAccounts={selectAllAccounts}
+            onSelectNoAccounts={selectNoAccounts}
+          />
+        )}
         <div className="canvas">
-          {loading ? (
+          {emptyOverview ? (
+            <div className="canvas-empty">
+              <p className="canvas-empty-title">
+                Add at least one account from Inventory to get started.
+              </p>
+              {!showInventory && (
+                <button className="canvas-empty-action" onClick={() => setShowInventory(true)}>
+                  Open inventory
+                </button>
+              )}
+            </div>
+          ) : loading ? (
             <div className="loading">Laying out diagram…</div>
           ) : (
             <FlowView
               // Remount on view change: re-seeds node state from the fresh ELK
               // layout (useState initializer) and re-applies fitView.
-              key={routeHash(route)}
+              // The overview's key includes the selection (decision 39).
+              key={graphKey}
               graph={graph}
-              viewKey={routeHash(route)}
+              viewKey={viewKey}
               selectedId={
                 selection?.type === 'resource'
                   ? selection.ref.id
