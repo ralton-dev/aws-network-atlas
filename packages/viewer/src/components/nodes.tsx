@@ -1,6 +1,6 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { iconFor } from '../icons.js';
-import type { AtlasNode } from '../model/graph-types.js';
+import type { AtlasNode, ChangeState } from '../model/graph-types.js';
 
 function EdgeHandles(): React.ReactElement {
   return (
@@ -29,6 +29,24 @@ export function TerraformMark({ size = 14 }: { size?: number }): React.ReactElem
   );
 }
 
+/**
+ * The class a proposal's change state adds to a node (`is-added` /
+ * `is-removed` / `is-changed`), with its leading space, or `''` when the node
+ * carries no `changeState`. Appended to the existing class string rather than
+ * joined into it, so a graph that never passed through `diffGraphs` renders
+ * the exact class attribute it did before proposals existed.
+ */
+function changeClass(state: ChangeState | undefined): string {
+  return state === undefined ? '' : ` is-${state}`;
+}
+
+/** The word a container's header shows for its change state, beside the subtitle. */
+const CHANGE_WORD: Record<ChangeState, string> = {
+  added: 'proposed',
+  removed: 'to remove',
+  changed: 'changed',
+};
+
 export function ResourceNode({ data, selected }: NodeProps<AtlasNode>): React.ReactElement {
   const Icon = iconFor(data.kind);
   return (
@@ -39,7 +57,7 @@ export function ResourceNode({ data, selected }: NodeProps<AtlasNode>): React.Re
         data.ghost ? 'is-ghost' : '',
         data.drillVpcId ? 'is-drillable' : '',
         data.emphasis ? 'is-emphasized' : '',
-      ].join(' ')}
+      ].join(' ') + changeClass(data.changeState)}
       title={data.drillVpcId ? 'Double-click to open VPC diagram' : undefined}
     >
       <EdgeHandles />
@@ -65,12 +83,22 @@ export function ResourceNode({ data, selected }: NodeProps<AtlasNode>): React.Re
 export function ContainerNode({ data, selected }: NodeProps<AtlasNode>): React.ReactElement {
   const Icon = iconFor(data.kind);
   return (
-    <div className={`container-node style-${data.containerStyle ?? 'region'} ${selected ? 'is-selected' : ''}`}>
+    <div
+      className={
+        `container-node style-${data.containerStyle ?? 'region'} ${selected ? 'is-selected' : ''}` +
+        changeClass(data.changeState)
+      }
+    >
       <EdgeHandles />
       <div className="container-header">
         {Icon && <Icon width={22} height={22} />}
         <span className="container-label">{data.label}</span>
         {data.subtitle && <span className="container-subtitle">{data.subtitle}</span>}
+        {data.changeState && (
+          <span className={`container-change change-${data.changeState}`}>
+            {CHANGE_WORD[data.changeState]}
+          </span>
+        )}
         {data.badges && data.badges.length > 0 && (
           <div className="container-badges">
             {data.badges.map((badge) => (
@@ -84,8 +112,10 @@ export function ContainerNode({ data, selected }: NodeProps<AtlasNode>): React.R
 }
 
 export function NoteNode({ data }: NodeProps<AtlasNode>): React.ReactElement {
+  // A `+N more` note is stamped like any node (decision 58: a cap can shift
+  // between the two graphs), so it takes the same class.
   return (
-    <div className="note-node">
+    <div className={'note-node' + changeClass(data.changeState)}>
       <EdgeHandles />
       <div className="resource-label">{data.label}</div>
       {data.subtitle && <div className="resource-subtitle">{data.subtitle}</div>}

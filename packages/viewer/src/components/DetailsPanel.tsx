@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { ScanError } from '@atlas/schema';
+import type { ChangedResource } from '@atlas/proposal';
 import type { AtlasIndex, ResourceRef } from '../data.js';
 import type { AtlasEdgeData } from '../model/graph-types.js';
 import { AwsLogo, iconFor } from '../icons.js';
@@ -20,6 +21,52 @@ export type Selection =
   | { type: 'container'; id: string; label: string; errors: ScanError[] };
 
 const HIDDEN_KEYS = new Set(['id', 'arn', 'name', 'tags', 'raw']);
+
+/**
+ * How the selected resource differs under the active proposal: an entry of
+ * the proposal's `ChangeSet.changed` (matched to the selection by the caller),
+ * or a marker that it exists only on one side. Absent means unchanged, or no
+ * proposal active — the panel then renders exactly as it did before.
+ */
+export type ResourceChange = ChangedResource | { added: true } | { removed: true };
+
+function changeStateOf(change: ResourceChange): 'added' | 'removed' | 'changed' {
+  if ('added' in change) return 'added';
+  if ('removed' in change) return 'removed';
+  return 'changed';
+}
+
+/** One field of a changed resource: the old value struck through, the new beside it. */
+function FieldDiff({ change, field }: { change: ChangedResource; field: string }): React.ReactElement {
+  return (
+    <div className="field-diff">
+      <del className="field-diff-before">
+        {field in change.before ? <PropertyValue value={change.before[field]} /> : <em>absent</em>}
+      </del>
+      <span className="field-diff-arrow" aria-hidden="true">→</span>
+      <ins className="field-diff-after">
+        {field in change.after ? <PropertyValue value={change.after[field]} /> : <em>removed</em>}
+      </ins>
+    </div>
+  );
+}
+
+/** The line that heads the Properties block while a proposal is active. */
+function ChangeHeading({ change }: { change: ResourceChange }): React.ReactElement {
+  const state = changeStateOf(change);
+  return (
+    <p className={`change-heading is-${state}`}>
+      <span className="change-heading-state">
+        {state === 'added' ? 'Proposed' : state === 'removed' ? 'To remove' : 'Changed'}
+      </span>
+      {'fields' in change
+        ? ` — ${change.fields.length} field${change.fields.length === 1 ? ' differs' : 's differ'}; each shows before → after.`
+        : state === 'added'
+          ? ' — this resource does not exist yet; the proposal creates it.'
+          : ' — the proposal deletes this resource.'}
+    </p>
+  );
+}
 
 const PANEL_WIDTH_KEY = 'atlas.details-width';
 const DEFAULT_PANEL_WIDTH = 460;
@@ -408,9 +455,21 @@ export interface DetailsPanelProps {
   onSelectRef(ref: ResourceRef): void;
   /** Hide this resource's node on the diagram (declutter). */
   onHide?(ref: ResourceRef): void;
+  /**
+   * The selected resource's change under the active proposal; read only for
+   * a `resource` selection. Pass it only while a proposal is active, and pass
+   * the ref from the side the resource is drawn from (the proposed index for
+   * added and changed, the current index for removed): unchanged fields are
+   * read from `ref.raw`, changed ones from `change.before` / `change.after`.
+   *
+   * For `{ added: true }` the panel withholds what only a real resource can
+   * use — the AWS console link, the Terraform import block and the
+   * add-a-note hint — since there is nothing to open, import or annotate yet.
+   */
+  change?: ResourceChange;
 }
 
-export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, onSelectRef, onHide }: DetailsPanelProps): React.ReactElement {
+export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, onSelectRef, onHide, change }: DetailsPanelProps): React.ReactElement {
   if (selection.type === 'container') {
     const { label, errors } = selection;
     return (
@@ -484,13 +543,20 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
 
   const { ref } = selection;
   const Icon = iconFor(ref.kind);
-  const consoleHref = consoleUrl(ref);
+  // A proposed resource does not exist: nothing to open, import or annotate.
+  const planned = change !== undefined && 'added' in change;
+  const consoleHref = planned ? undefined : consoleUrl(ref);
   const annotation = index.annotationFor(ref);
   const tfBindings = index.terraformFor(ref);
   const tags = (ref.raw['tags'] ?? {}) as Record<string, string>;
   const properties = Object.entries(ref.raw).filter(
     ([k, v]) => !HIDDEN_KEYS.has(k) && v !== undefined,
   );
+  const changed = change !== undefined && 'fields' in change ? change : undefined;
+  const changedFields = new Set(changed?.fields);
+  // Changed fields the table would not otherwise list: removed by the
+  // proposal (absent from `ref.raw`) or normally hidden (`name`, `tags`).
+  const extraFields = changed?.fields.filter((f) => !properties.some(([k]) => k === f)) ?? [];
 
   return (
     <PanelShell>
@@ -569,7 +635,15 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
         </section>
       )}
 
-      {tfBindings.length > 0 && (
+      {planned && index.terraform.length > 0 && (
+        <section className="terraform">
+          <h3 className="tf-heading"><TerraformMark size={15} /> Terraform</h3>
+          <p className="muted">
+            Planned by the active proposal, so there is nothing in AWS to import yet.
+          </p>
+        </section>
+      )}
+      {!planned && tfBindings.length > 0 && (
         <section className="terraform">
           <h3 className="tf-heading"><TerraformMark size={15} /> Terraform</h3>
           {tfBindings.length > 1 && (
@@ -598,7 +672,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
           <ImportBlock subject={ref} knowledge={index} />
         </section>
       )}
-      {tfBindings.length === 0 && index.terraform.length > 0 && (
+      {!planned && tfBindings.length === 0 && index.terraform.length > 0 && (
         <section className="terraform">
           <h3 className="tf-heading"><TerraformMark size={15} /> Terraform</h3>
           <p className="muted">
@@ -618,17 +692,32 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
         </tbody>
       </table>
 
-      {properties.length > 0 && (
+      {(properties.length > 0 || change !== undefined) && (
         <>
           <h3>Properties</h3>
+          {change !== undefined && <ChangeHeading change={change} />}
           <table className="kv-table">
             <tbody>
-              {properties.map(([k, v]) => (
-                <tr key={k}>
-                  <th>{k}</th>
-                  <td><PropertyValue value={v} /></td>
-                </tr>
-              ))}
+              {properties.map(([k, v]) =>
+                changed && changedFields.has(k) ? (
+                  <tr key={k} className="is-changed-field">
+                    <th>{k}</th>
+                    <td><FieldDiff change={changed} field={k} /></td>
+                  </tr>
+                ) : (
+                  <tr key={k}>
+                    <th>{k}</th>
+                    <td><PropertyValue value={v} /></td>
+                  </tr>
+                ),
+              )}
+              {changed &&
+                extraFields.map((k) => (
+                  <tr key={k} className="is-changed-field">
+                    <th>{k}</th>
+                    <td><FieldDiff change={changed} field={k} /></td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </>
@@ -647,7 +736,7 @@ export function DetailsPanel({ index, selection, onClose, onOpenVpc, onFocus, on
         </>
       )}
 
-      {!annotation && (
+      {!annotation && !planned && (
         <section className="annotation-hint">
           <h3>Add a note</h3>
           <p className="muted">Create a committable annotation for this resource:</p>

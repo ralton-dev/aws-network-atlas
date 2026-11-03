@@ -542,3 +542,139 @@ html, body, #root { margin: 0; height: 100%; }
 
 /* React Flow overrides */
 .react-flow__attribution { font-size: 9px; opacity: 0.6; }
+
+/* ---------- proposal overlay (PROPOSAL-OVERLAY.md, WP-4) ----------
+   Three states, three colours, used identically on nodes, containers, notes,
+   edges, edge labels, the legend and the details panel: green dashed is
+   proposed (does not exist yet), red dashed is to remove, amber is changed.
+   Every rule here is scoped by the element's own class and sits after the
+   ghost rules on purpose: a proposed VPC inside a ghost account box is the
+   ordinary new-spoke case, so a state must win over `.is-ghost` and
+   `.style-ghost` (equal or higher specificity, later in the file) and lift
+   their dimming — a planned change drawn at 65% opacity reads as "not
+   important", which is the opposite of the point. */
+:root {
+  --change-added: #1d8102;
+  --change-added-bg: #f2fbef;
+  --change-removed: #d91515;
+  --change-removed-bg: #fff1f1;
+  --change-changed: #d98f00;
+  --change-changed-bg: #fff8e8;
+}
+
+.resource-node.is-added {
+  border: 2px dashed var(--change-added); background: var(--change-added-bg); opacity: 1;
+  box-shadow: 0 0 0 3px rgba(29, 129, 2, 0.14);
+}
+.resource-node.is-removed {
+  border: 2px dashed var(--change-removed); background: var(--change-removed-bg); opacity: 1;
+  box-shadow: 0 0 0 3px rgba(217, 21, 21, 0.12);
+}
+.resource-node.is-removed .resource-label { text-decoration: line-through; }
+.resource-node.is-changed {
+  border: 2px solid var(--change-changed); background: var(--change-changed-bg); opacity: 1;
+  box-shadow: 0 0 0 3px rgba(217, 143, 0, 0.16);
+}
+/* Selection stays visible on top of a state. */
+.resource-node.is-selected.is-added,
+.resource-node.is-selected.is-removed,
+.resource-node.is-selected.is-changed { box-shadow: 0 0 0 3px rgba(9, 114, 211, 0.45); }
+
+.container-node.is-added {
+  border: 2px dashed var(--change-added); background: rgba(29, 129, 2, 0.05); opacity: 1;
+}
+.container-node.is-removed {
+  border: 2px dashed var(--change-removed); background: rgba(217, 21, 21, 0.045); opacity: 1;
+}
+.container-node.is-changed {
+  border: 2px solid var(--change-changed); background: rgba(217, 143, 0, 0.05); opacity: 1;
+}
+/* The header's state word, where a ghost reads `not shown · click to add`. */
+.container-change {
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+  border-radius: 8px; padding: 1px 7px; white-space: nowrap; border: 1px solid;
+}
+.container-change.change-added { color: var(--change-added); background: var(--change-added-bg); border-color: var(--change-added); }
+.container-change.change-removed { color: var(--change-removed); background: var(--change-removed-bg); border-color: var(--change-removed); }
+.container-change.change-changed { color: #7a4a00; background: var(--change-changed-bg); border-color: var(--change-changed); }
+
+.note-node.is-added { border-color: var(--change-added); background: var(--change-added-bg); }
+.note-node.is-removed { border-color: var(--change-removed); background: var(--change-removed-bg); }
+.note-node.is-changed { border-color: var(--change-changed); border-style: solid; background: var(--change-changed-bg); }
+
+/* The stroke itself is set inline from `data.changeState` (AnnotatedEdge);
+   the label follows it here, over the kind's own label colour. */
+.edge-label.is-added { border-color: var(--change-added); color: var(--change-added); background: var(--change-added-bg); border-style: dashed; }
+.edge-label.is-removed { border-color: var(--change-removed); color: var(--change-removed); background: var(--change-removed-bg); border-style: dashed; text-decoration: line-through; }
+.edge-label.is-changed { border-color: var(--change-changed); color: #7a4a00; background: var(--change-changed-bg); }
+
+/* The proposal strip under the toolbar. */
+.proposal-bar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 6px 16px; background: #f7f9fb; border-bottom: 1px solid var(--line);
+  font-size: 12.5px; color: var(--ink); flex-shrink: 0; z-index: 19;
+}
+.proposal-bar.is-active { background: #fffdf5; box-shadow: inset 3px 0 0 var(--change-changed); }
+.proposal-pick { display: flex; align-items: center; gap: 6px; }
+.proposal-pick-label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--muted); font-weight: 600;
+}
+.proposal-bar select {
+  font: inherit; font-size: 12.5px; padding: 3px 8px; border-radius: 5px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  max-width: 260px; cursor: pointer;
+}
+.proposal-bar select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.proposal-title {
+  font-weight: 600; min-width: 0; max-width: 480px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.proposal-stale {
+  font-size: 11px; font-weight: 600; color: #7a4a00; white-space: nowrap;
+  background: #fff7e6; border: 1px solid #f0d9a8; border-left: 3px solid #d98f00;
+  border-radius: 5px; padding: 2px 8px;
+}
+.proposal-toggle {
+  display: inline-flex; border: 1px solid var(--line); border-radius: 6px;
+  overflow: hidden; background: var(--panel);
+}
+.proposal-toggle button {
+  background: none; border: none; border-right: 1px solid var(--line);
+  padding: 4px 11px; font-size: 12px; color: var(--muted); cursor: pointer;
+}
+.proposal-toggle button:last-child { border-right: none; }
+.proposal-toggle button:hover { background: #f0f3f5; color: var(--ink); }
+.proposal-toggle button.is-active { background: #e2eefc; color: var(--accent); font-weight: 600; }
+.proposal-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.proposal-legend { display: flex; align-items: center; gap: 12px; margin-left: auto; color: var(--muted); font-size: 11.5px; }
+.proposal-legend-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+/* A stroke sample, drawn the way the edge and the node border are. */
+.proposal-swatch { display: inline-block; width: 22px; height: 0; border-top: 2px solid; }
+.proposal-swatch.is-added { border-top-style: dashed; border-color: var(--change-added); }
+.proposal-swatch.is-removed { border-top-style: dashed; border-color: var(--change-removed); }
+.proposal-swatch.is-changed { border-color: var(--change-changed); }
+
+/* Details panel: the state line heading Properties, and before → after. */
+.change-heading {
+  margin: 0 0 6px; font-size: 12px; line-height: 1.45; color: #37424f;
+  border-radius: 5px; padding: 6px 8px; border: 1px solid; border-left-width: 3px;
+}
+.change-heading-state { font-weight: 700; }
+.change-heading.is-added { background: var(--change-added-bg); border-color: var(--change-added); }
+.change-heading.is-added .change-heading-state { color: var(--change-added); }
+.change-heading.is-removed { background: var(--change-removed-bg); border-color: var(--change-removed); }
+.change-heading.is-removed .change-heading-state { color: var(--change-removed); }
+.change-heading.is-changed { background: var(--change-changed-bg); border-color: var(--change-changed); }
+.change-heading.is-changed .change-heading-state { color: #7a4a00; }
+.kv-table tr.is-changed-field th { color: #7a4a00; font-weight: 600; }
+.field-diff { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; }
+.field-diff-before {
+  text-decoration: line-through; color: #9b1c1c; background: var(--change-removed-bg);
+  border-radius: 3px; padding: 0 4px;
+}
+.field-diff-after {
+  text-decoration: none; color: #1a5e0a; background: var(--change-added-bg);
+  border-radius: 3px; padding: 0 4px;
+}
+.field-diff-arrow { color: var(--muted); }
