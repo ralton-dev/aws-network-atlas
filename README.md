@@ -34,6 +34,9 @@ account with the eye beside its name, or press *show all* for the whole estate.
 (A one-account estate skips this step and opens straight onto its diagram.)
 Link straight to all three with
 `site/index.html#/?accounts=111111111111,222222222222,333333333333`.
+To see a planned change drawn over it, open
+`site/index.html#/?accounts=111111111111&proposal=new-spoke` — a new spoke account joined
+to the core Transit Gateway (see [Planning a change](#planning-a-change-proposals)).
 
 The demo is a fabricated 3-account org (prod / shared-services / dev) with a
 Transit Gateway hub-and-spoke, cross-account VPC peering, Site-to-Site VPN,
@@ -175,6 +178,144 @@ scanned* box.
 
 The viewer is a single committed file (`site/index.html`). Re-scanning only rewrites
 `site/data/*.js` — the viewer itself never needs rebuilding to pick up new data.
+
+## Planning a change (proposals)
+
+The diagram can also show a change **before it is made**. A **proposal** is one YAML file,
+`proposals/<id>.yaml` (the id is the file name), that lists operations against the scanned
+estate: `add` a resource, `change` fields of one, `remove` one. The viewer applies those
+operations to the scan to get a *proposed* estate, builds the diagram from both, and draws
+the union with every difference marked **proposed** (added), **to remove**, or
+**changed**. Nothing is drawn by hand, and the scanned data is never edited.
+
+You are not expected to write the YAML yourself: an agent writes it, from a plain-language
+request and a summary of the estate, and a validator tells it when it is wrong (see
+[Using the skill](#using-the-skill)). The shape it writes:
+
+```yaml
+version: 1
+title: Add a data-platform spoke joined to the core TGW   # shown in the viewer
+description: |                       # markdown, optional
+  Why this change…
+base:
+  generatedAt: "2026-07-06T09:20:00.000Z"   # the scan it was designed against
+accounts:                            # accounts the proposal creates (optional)
+  - accountId: "555555555555"        # always quoted
+    alias: acme-data
+    regions: [eu-west-1]
+changes:                             # applied in order
+  - op: add
+    account: "555555555555"
+    region: eu-west-1                # or `global` for account-global collections
+    collection: vpcs                 # the snapshot's own field name
+    resource:
+      id: proposed-vpc-data          # every id a proposal creates starts `proposed-`
+      name: data-vpc
+      cidrBlocks: ["10.3.0.0/16"]
+      tags: {}
+  - op: change
+    key: sg-0a1b2c3d4e5f00001        # an existing id or ARN
+    set:                             # shallow merge; an array is replaced whole
+      ingress: [...]
+  - op: remove
+    key: pcx-0prod0dev00000001
+```
+
+`collection` is the field name in
+[`packages/schema/src/snapshot.ts`](packages/schema/src/snapshot.ts), so a resource's fields
+are that type's fields and there is no second vocabulary. The contract itself — every field,
+and what each op does — is
+[`packages/proposal/src/types.ts`](packages/proposal/src/types.ts) (`@atlas/proposal`); that
+file is the source of truth, this section is a summary of it. A proposal whose
+`base.generatedAt` differs from the loaded scan's is **stale**: still drawn, but flagged,
+since yesterday's design is usually still the design.
+
+### Commands
+
+```bash
+npm run describe                              # the estate as markdown, from site/data/data.js
+npm run describe -- --account 111111111111    # one account, by id or alias
+npm run describe -- --json                    # the same summary, structured
+npm run propose -- validate proposals/<id>.yaml [more.yaml…] [--strict]
+npm run propose -- bundle                     # writes site/data/proposals.js, and nothing else
+```
+
+`describe` is what an agent reads before designing: per account its regions, VPCs with
+CIDRs and subnets, Transit Gateways and their attachments, peerings, load balancers, hosted
+zones and the organization tree, every id real and every list capped at 8 with `+N more`,
+then a table of how many resources each collection holds. On the three-account demo it is
+under 6 KB.
+
+`propose validate` checks each file against `site/data/data.js` and prints one line per
+issue, then a total:
+
+```
+proposals/bad.yaml: error not-proposed-id changes[0].resource.id: a created id must start with `proposed-`; got `vpc-0bad`
+1 error(s), 0 warning(s) in 1 proposal
+```
+
+*Errors* exit 1 — among them a malformed file, an unknown collection, a created id that does not start
+`proposed-` or already exists, a `change` or `remove` key that resolves to nothing, and a
+reference field (`…Id`, `…Ids`, `…Arn`, `arn`) holding an id that resolves in neither the
+scan nor the proposal. *Warnings* exit 0: a stale base, a reference the scanner cannot check
+or that points into an unscanned account, and five networking design rules — CIDR overlap
+between VPCs joined by a peering or a shared TGW, a subnet outside its VPC's CIDR, a TGW
+attachment whose VPC or subnets are in another region or account than it says, an SG rule
+referencing a group in another VPC, and a route whose target the VPC cannot use. The rules
+warn only about what the proposal touched, never about problems already in the scan.
+`--strict` makes every warning an error. Passing the validator means the YAML is
+well-formed and its references resolve; it does not mean traffic can flow.
+
+`propose bundle` reads every `proposals/*.yaml` (a file that does not parse is reported and
+skipped) into `site/data/proposals.js`. `npm run bundle` and `npm run fixture` write it too,
+but they also rewrite `data.js` — in a checkout with no `data/` directory, such as the demo,
+`npm run bundle` rebuilds it from **zero accounts**. There, `propose bundle` is the command.
+
+### In the viewer
+
+Open a proposal by adding `proposal=<id>` to the URL. It works on every route — the
+overview (`#/?accounts=111111111111&proposal=new-spoke`), a VPC
+(`#/vpc/<vpc-id>?proposal=new-spoke`) and a focus view (`#/focus/<key>?proposal=new-spoke`) —
+and it is carried as you drill in and back out. It is **not** remembered: a proposal is
+something you open on purpose, so a reload without it, or a fresh tab, shows the estate as
+scanned. A URL naming a proposal that is not loaded shows the scan, logs a console warning
+and drops the parameter.
+
+When `site/data/proposals.js` holds any proposal, a **Proposal** bar sits under the
+toolbar: a select (`none` first) to switch proposals, the active proposal's title, a
+*Current* / *Proposed* / *Both* toggle, and the legend. *Both*, the default, draws
+everything; *Current* hides what the proposal adds and *Proposed* hides what it removes.
+The union is laid out once, so the toggle never moves a node. In the legend, **proposed** is
+green and dashed, **to remove** red and dashed (a removed resource's label is struck
+through), and **changed** amber; an account or region box the proposal creates says
+*proposed* in its header. A stale proposal gets a **stale · base \<date\>** badge in the bar.
+
+Accounts a proposal creates are always drawn while it is active, whatever the selection,
+and the Inventory lists them with the scanned ones. Click a marked resource and the details
+panel heads its properties with the state: *Proposed* (it does not exist yet, so there is
+no console link and no Terraform import block to copy), *To remove*, or *Changed* with each
+changed field as before → after; a changed resource's import blocks come from the resource
+as scanned, not as proposed. Search finds proposed resources while a proposal is active.
+Positions you drag are kept per proposal, as they are per account selection.
+
+### Using the skill
+
+[`atlas-propose/SKILL.md`](atlas-propose/SKILL.md) is a skill, in the format Claude Code and
+Codex both read, that runs the whole loop: `describe` the estate, turn the request into
+operations in the snapshot's vocabulary, write `proposals/<name>.yaml`, validate until it
+exits 0, `propose bundle`, and tell you which URL to open. It never scans, never runs
+`npm run bundle`, never edits `site/data/data.js`, and never invents an id for something that
+exists. Either point your agent at it from a session in this repo —
+
+> Follow `atlas-propose/SKILL.md`: add a spoke account `acme-data` (555555555555) with a VPC
+> 10.3.0.0/16 in eu-west-1, attached to the core TGW.
+
+— or copy the `atlas-propose/` directory into your tool's skills folder (for Claude Code,
+`.claude/skills/` in your checkout or `~/.claude/skills/`) so it is picked up whenever you
+ask to propose or plan a change. Copy it rather than symlink it; the repo ships the
+directory and nothing that wires it into a tool. The skill runs its commands from the repo
+root either way. [`proposals/new-spoke.yaml`](proposals/new-spoke.yaml) is what it wrote for
+that request against the demo estate, on its first run.
 
 ## Annotations (committable notes)
 
@@ -572,10 +713,13 @@ listed in the snapshot (and shown as a note in the overview) so nothing disappea
 | Command | What it does |
 | --- | --- |
 | `npm run scan` | Verify AWS CLI + credentials, scan accounts (read-only), write snapshots, rebuild `site/data/` |
-| `npm run bundle` | Rebuild `site/data/` from committed snapshots + annotations + Terraform stacks only |
+| `npm run bundle` | Rebuild `site/data/` from committed snapshots + annotations + Terraform stacks + proposals only |
 | `npm run tf-import` | Import Terraform state file(s) → `data/terraform/<stack>.json`, rebuild `site/data/` |
 | `npm run tf-blocks` | Generate Terraform `import` blocks from state file(s) → stdout, or `--out <file>`; writes nothing into this repo |
 | `npm run fixture` | Regenerate the synthetic demo estate (no AWS needed) into `site/data/` |
+| `npm run describe` | Print the scanned estate from `site/data/data.js` as markdown (`--account <id>`, `--json`) — what an agent reads before writing a proposal |
+| `npm run propose -- validate <file>…` | Check `proposals/*.yaml` against the scanned estate; exit 1 on any error (`--strict`: on any warning too) |
+| `npm run propose -- bundle` | Write `site/data/proposals.js` from `proposals/*.yaml`, and nothing else — safe where `bundle` would rebuild `data.js` |
 | `npm run dev` | Viewer dev server with hot reload (uses the same `site/data/`) |
 | `npm run build` | Rebuild the committed single-file viewer `site/index.html` |
 | `npm run serve` | Serve the built viewer over http (fallback if you'd rather not use `file://`) |
@@ -589,8 +733,10 @@ listed in the snapshot (and shown as a note in the overview) so nothing disappea
 | `data/accounts/*.json` | scanner | Deterministic (sorted keys/arrays) → clean diffs per scan |
 | `data/terraform/*.json` | `tf-import` | Identifiers only (address/type/id/arn/importId) — never state attribute values |
 | `site/data/*.js` | scanner | Derived data bundle the viewer loads |
+| `site/data/proposals.js` | scanner (`propose bundle`, `bundle`, `fixture`) | Every proposal in `proposals/`, for the viewer's Proposal bar |
 | `site/index.html` | `npm run build` | The whole viewer, one file |
 | `annotations/*.yaml` | **you** | Your notes, links to Terraform, etc. |
+| `proposals/*.yaml` | **you** or your agent | Planned changes, drawn over the scan; the file name is the id |
 | `atlas.config.json` | **you** | Accounts/regions to scan |
 
 ## Read-only guarantee
@@ -646,7 +792,7 @@ aws iam attach-role-policy --role-name <your-scanning-role> \
 
 ## Architecture
 
-npm workspaces monorepo — three workspaces, plus one dependency this project
+npm workspaces monorepo — four workspaces, plus one dependency this project
 publishes and consumes from npm:
 
 - **`packages/schema`** — the TypeScript data model shared by scanner and viewer
@@ -656,6 +802,11 @@ publishes and consumes from npm:
   a Resource Groups Tagging sweep, and a **Cloud Control API** sweep for untagged resources.
   Adaptive retry, paginated, per-region concurrency; every step is error-isolated and
   output is deterministically sorted for clean diffs.
+- **`packages/proposal`** (`@atlas/proposal`) — the proposal contract and the pure code
+  behind it: apply a proposal to a snapshot, diff two snapshots into a change set, and
+  validate a proposal (with the networking design rules in `src/rules/`). No AWS SDK; used
+  by the scanner's `propose` and `describe` and by the viewer. Only its
+  `@atlas/proposal/read` entry parses YAML, and the viewer never imports it.
 - **[`tf-import-blocks`](https://www.npmjs.com/package/tf-import-blocks)** — *not a
   workspace: an ordinary npm dependency of both the scanner and the viewer.* The
   per-type `(terraform type, import id)` rule table behind `npm run tf-blocks` and

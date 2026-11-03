@@ -7,16 +7,24 @@ relearn it expensively.
 ## The gate
 
 ```
-npm install && npm run typecheck   # must be green across ALL workspaces
-npm test                            # once a test script exists
+npm install && npm run typecheck   # must be green across ALL four workspaces
+npm test                            # 125 tests in 16 files after PROPOSAL-OVERLAY.md
 ```
 
 **Run the gate yourself.** Agents report honestly and are occasionally wrong
 about the wider repo.
 
-- **There is no CI in this repo.** No `.github/` at all. There is no run to
-  watch, no conclusion to read. The local gate is the only gate — which means
-  a bad push is not caught by anything downstream. Verify before pushing.
+- **No CI runs this repo's code.** There is one workflow,
+  `.github/workflows/dependency-audit.yml`, and it is a dependency audit only:
+  on Node 24 it runs `npm audit --json` against the committed lock — it
+  installs nothing and runs no lifecycle scripts, typecheck or test — and fails
+  when the report counts any high or critical vulnerability (or the audit feed
+  itself fails), keeping the JSON report as an artifact for 30 days. It runs
+  daily at 05:37 UTC, on manual dispatch, and on a pull request or a push to
+  `main` that touches a `package.json`, a lockfile or the workflow itself. So a
+  push that moves `package-lock.json` does produce a run worth watching, but
+  nothing downstream ever compiles or tests a change: the local gate is the only
+  gate for code. Verify before pushing.
 - `npm run typecheck` runs `tsc -p tsconfig.json` per workspace via
   `--workspaces --if-present`.
 - A wall of `TS2307: Cannot find module '@aws-sdk/client-*'` means a **stale
@@ -56,16 +64,44 @@ Bodies here are paragraphs, not bullet lists.
 
 ## Repo shape
 
-**Three** npm workspaces under `packages/*` — there is no fourth:
+**Four** npm workspaces under `packages/*` (the fourth arrived with
+`PROPOSAL-OVERLAY.md`, 2026-11):
 
 | package | name | notes |
 | --- | --- | --- |
 | `packages/schema` | `@atlas/schema` | snapshot types; the cleanest template for a new package's `package.json` / `tsconfig.json` |
+| `packages/proposal` | `@atlas/proposal` | the proposal contract (`src/types.ts`), `applyProposal`, `diffSnapshots`, `validateProposal` and the networking design rules (`src/rules/`, one registry); pure TypeScript, no AWS SDK. Two entries: the main one is safe for the browser, `./read` is Node-only and the **only** module that imports `yaml` |
 | `packages/scanner` | `@atlas/scanner` | AWS collectors + CLI (`src/cli.ts`); ~80 AWS SDK deps |
 | `packages/viewer` | `@atlas/viewer` | React + Vite; consumes `@atlas/schema` as a workspace dep and `tf-import-blocks` from npm — two different precedents, pick the one that matches |
 
 `tsx` is a scanner devDependency that npm hoists to root `node_modules/.bin`,
 so root scripts can use it without a new dependency.
+
+### The proposal overlay is a post-pass
+
+Since `PROPOSAL-OVERLAY.md` the viewer can draw a planned change. It does not
+draw it with new builder code: `App.tsx` calls the ordinary overview, VPC or
+focus builder twice, once over the scanned index and once over the proposed one
+(`model/proposal.ts`), and `model/diff.ts`'s `diffGraphs` unions the two graphs
+**by node and edge id** and stamps `changeState` on what differs (decision 49).
+The builders never learn a proposal exists. The consequence is the rule to keep:
+**any new builder output must have a deterministic id derived from the
+resource** (`vpc:<id>`, `edge:<key>` — never a counter, an index into an array
+or anything that depends on what else was built). An id that differs between
+two builds of the same resource makes the overlay draw it twice, once *added*
+and once *removed*, and an id that collides hides a real change; neither fails
+a test unless someone writes one. A builder that draws a placeholder for an
+unknown key (`buildFocus` does) puts the same id on both sides and reads as
+*changed*; `App.tsx` already special-cases the focus centre for this.
+
+Each side is badged for Terraform from its own index *before* the diff, and the
+no-proposal path is literally the old single build, which is how the "nothing
+moves without a proposal" proofs stay byte-identical.
+
+**`ChangeSet` and `ResourceRef` spell a global resource's region differently.**
+`@atlas/proposal` uses `'global'` (the YAML's word, decision 44); the viewer's
+`ResourceRef.region` is `''`. Never compare the two directly: look a change up
+by id or arn through `indexChangeSet`, which needs no region at all.
 
 ### The overview is built from the selected accounts
 
@@ -132,7 +168,20 @@ someone else's `terraform plan`, or worse succeeds against the wrong resource.
   in that case. From an **interactive** session this has not been a problem.
 - Prefer the shared checkout when you can: a git worktree here has no
   `node_modules`, and `npm install` against the scanner's dependency tree is
-  slow enough to dominate a small package's runtime.
+  slow enough to dominate a small package's runtime. When a package does need
+  its own worktree — in `PROPOSAL-OVERLAY.md` one served a browser from a dev
+  build while another package needed a different `site/data/proposals.js` in
+  the main checkout — `cp -c -R node_modules <worktree>/` (an APFS clone, near
+  instant) gives it a working install. It works because npm's workspace links
+  in `node_modules/@atlas/*` are **relative** symlinks, so in the copy they
+  resolve to the worktree's own `packages/`, not the main checkout's.
+- **Several agents in one checkout commit with a pathspec**: `git add <paths>`
+  then `git commit -m "…" -- <paths>`. A bare `git commit` takes everything
+  staged, including another agent's files staged a second earlier; the pathspec
+  form commits only the named paths whatever else is in the index. Four agents
+  shared the checkout in wave 2 of `PROPOSAL-OVERLAY.md` this way with no
+  swept file. (One agent's first attempt staged nothing because zsh does not
+  word-split an unquoted `$P`; spell the paths out.)
 - Agents get killed by silence, almost always during a long final
   verification. Put in every brief: emit output between steps, don't run the
   full suite more than twice in a row, **commit before the long final pass**.
@@ -171,6 +220,19 @@ a container that must keep its internal edges has to be marked for ELK, as
 rewrites `package-lock.json` with `"peer": true` markers — that is noise from
 the npm version, not a plan change; do not stage it with a package's work.
 
+## Never run `npm run bundle` here
+
+This checkout has **no `data/` directory** — the demo estate exists only as the
+committed `site/data/*.js`. `npm run bundle` rebuilds `site/data/` from
+`data/accounts/*.json`, finds none (`readAccountSnapshots` returns `[]` for a
+missing directory), and overwrites `data.js` with an estate of zero accounts,
+without an error. The safe commands are `npm run fixture`, which regenerates the
+whole demo (all four files, byte-identical apart from `proposals.js`
+following `proposals/`), and `npm run propose -- bundle`, which writes
+`site/data/proposals.js` and nothing else. Brief every agent with this, and treat
+a `site/data/data.js` line in `git status` that nobody meant as a stop. The
+`atlas-propose` skill forbids `bundle`, `scan`, `fixture` and `build` outright.
+
 ## Committed build artifacts
 
 `site/index.html` is a **committed build output** bundling the viewer *and*, from
@@ -186,7 +248,17 @@ The minified diff is unreadable, so do not eyeball it. Grep the bundle for a
 string that only exists after the change, and grep for a string from a
 tree-shaken module as a control that the rebuild did not quietly pull in more
 than expected. A logic-only change with no new strings is not grep-provable —
-say so rather than claiming a probe you do not have.
+say so rather than claiming a probe you do not have. Since the proposal overlay
+there is a standing third control: `grep -c YAMLParseError site/index.html`
+must be 0, proving the `yaml` package behind `@atlas/proposal/read` stayed out
+of the viewer. Do not grep for the bare string `yaml` — it is already in the
+bundle for unrelated reasons.
+
+To look at the built file over http, run `npx vite preview --open false --port
+<n>` from `packages/viewer`. The root `npm run serve` script has no trailing
+`--`, so `npm run serve -- --port 4199` hands vite `4199` as its root directory
+and every page 404s; and `vite.config.ts` sets `preview.open`, so without
+`--open false` it opens a browser on the user's desktop.
 
 ## The frozen files, and when the freeze expired
 

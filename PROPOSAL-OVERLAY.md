@@ -624,3 +624,177 @@ fire on a real account; or any kind outside networking (an IAM role trusted by a
 proposed account, an S3 bucket in one). WP-5 builds the removed-peering and
 changed-CIDR cases by hand; WP-1b builds the TGW-mediated overlap. Everything else is
 where the live defect will be found by a person, and WP-7's follow-ups must list it.
+
+## Outcome
+
+Complete on 2026-11-03. Pin assertion 5 passes as a plain test (WP-6, `a687864`), which is
+this plan's definition of done, and the committed `site/index.html` now draws the demo
+proposal. Nothing is pushed.
+
+### Commits
+
+| commit | package | subject |
+| --- | --- | --- |
+| `35ebcbe` | plan | Plan: A proposal overlay that draws a planned change over the scanned estate |
+| `4ea0b85` | WP-1 | Proposal: Add @atlas/proposal, which applies, diffs and validates a delta |
+| `18fb7ef` | WP-1 | Viewer: Stamp a proposal's changes on the union of two built graphs |
+| `3bf2164` | WP-3 | Viewer: Index a proposed snapshot beside the scanned one |
+| `532c457` | WP-1b | Proposal: Warn about overlaps, stray subnets and attachments, routes and SGs |
+| `4687b9e` | WP-2 | Scanner: Add propose validate, propose bundle and describe |
+| `6652683` | WP-4 | Viewer: Draw a proposal's added, removed and changed states |
+| `d5c994f` | WP-5 | Viewer: Wire a proposal through the overview, VPC and focus views |
+| `a687864` | WP-6 | Skill: Add atlas-propose and the new-spoke demo it wrote |
+| `c48b986` | WP-5b | Viewer: Keep planned resources out of Terraform and import scanned rules |
+| `c131314` | WP-7 | Viewer: Rebuild the committed bundle for the proposal overlay |
+| the commit carrying this section | WP-7 | Docs: Describe proposals and the atlas-propose skill, and record the outcome |
+
+WP-5b was built in its own worktree (`wp/5b`, `279c90f` on `d5c994f`) and landed on `main`
+after WP-6, as `c48b986`.
+
+### Figures
+
+| measure | figure |
+| --- | --- |
+| `npm test` | **40 → 125** tests, 0 fail, 0 todo; **5 → 16** files |
+| `npm run typecheck` | green across **four** workspaces (proposal, scanner, schema, viewer) |
+| `applyProposal`, 200 ops (100 add, 100 change) on the 85 KB fixture (WP-1) | median **0.76 ms** over 7 runs (min 0.69, max 1.54) against a 50 ms budget; `validateProposal` 3.67 ms; apply + `diffSnapshots` 1.95 ms |
+| `describe`, fixture, 3 accounts (WP-2) | **5,812 B** total: acme-prod 1,831, acme-shared 1,249, acme-dev 578, header 222, counts 1,928. `--account`: 3,601 / 2,210 / 1,274. `--json` 27,007 (pretty-printed, not budgeted). First draft 7,165 B, over the 6 KB budget until the counts table became two rows |
+| `site/index.html` | 2,340,743 B at `9d1f7e2` (unchanged through WP-1, which nothing imported yet) → **2,359,990 B** at `c131314` |
+| esbuild probe (WP-1) | `@atlas/proposal` main entry 16,039 B with no `YAMLParseError`; `./read` 105,305 B with it |
+
+The rebuild's three greps, at `c131314`: `grep -c __ATLAS_PROPOSALS__ site/index.html` →
+**1** (0 before); the control `grep -c from-state` → **0**; `grep -c YAMLParseError` →
+**0**, so `yaml` did not reach the viewer. (`grep -c` counts lines and the bundle is one
+line, so 1 is the most it can print.) `git status --short site/` after the build showed
+only `M site/index.html`. Served by `vite preview` and opened from `file://` at
+`#/?accounts=111111111111&proposal=new-spoke`, it draws acme-data, its region and data-vpc
+marked added, with the bar and legend, and no console errors.
+
+### The skill defects WP-6 found by running it
+
+A fresh agent with no context followed `atlas-propose/SKILL.md` alone and wrote
+`proposals/new-spoke.yaml`, clean on the first validate. Every place it had to guess was a
+defect, fixed in the skill:
+
+1. **Return path.** "443 from prod" needs a route back from prod; nothing said so, and a
+   proposal without it still validated 0/0. The skill now says to design the whole path,
+   and that the validator does not check whether traffic can flow.
+2. **TGW route table.** Nothing said whether to set `associationRouteTableId` or change the
+   TGW route table's associations, propagations and routes. Now it does.
+3. **Route target.** Whether a `tgw` route's `targetId` is the TGW or the attachment id was
+   unclear. It is the `tgw-` id.
+4. **YAML type traps.** A numeric `transitGatewayOwnerId`, `protocol: -1` as a number and
+   `fromPort: "443"` as a string all validated 0/0. The skill now spells out what to quote;
+   the validator still does not type-check fields (follow-up below).
+5. **Nested types.** `grep -A 14` truncated long types, and nested types (`Route`,
+   `SecurityGroupRule`, `TransitGatewayRoute`…) were not mentioned. It now prints whole
+   types with `sed` and says to follow every type a field names.
+6. **`isMain`.** A new VPC's first route table is `isMain: true`.
+7. **Organization and RAM membership.** The core TGW is shared by RAM to an OU the new
+   account is not in. Out of scope unless asked; say what is needed in `description`.
+8. **The `git status` expectation was too literal** (`?? proposals/`, and files dirty
+   beforehand).
+9. **No `git status` baseline.** It is now the first command.
+10. **"prod" is ambiguous** (a eu-west-1 VPC and a us-east-1 DR VPC on another TGW). Prefer
+    the same region and TGW, otherwise ask, and state the choice.
+
+Three more came from writing it: `describe --json` holds no more ids than the markdown (the
+skill ships a read-only query instead), the committed viewer could not show proposals until
+this package, and `fixture` must be forbidden like `bundle`.
+
+### The unplanned package, WP-5b
+
+WP-5's hunt for "a `refId` that resolves in `byKey` is real" found two sites that were
+wrong and sat in files WP-5 did not own. A **changed** resource's import block was built
+from the *proposed* ref, so a changed security group offered `import` blocks for rules that
+do not exist (`sg-0prodalb000000001_ingress_tcp_8443_…`, screenshotted); and
+`applyTerraformBadges` gave `proposed-` nodes `tfManaged = false`, so planned resources
+counted as *Unmanaged* in the Layers panel. Both are the not-fine case "The regression to
+fear" asked to be named, so a seam package fixed them rather than leaving them as
+follow-ups: `model/terraform.ts` skips `isProposedId` nodes, `DetailsPanel` takes a
+`scannedRef` that `App.tsx`'s `detailsFor` fills for a changed resource, and
+`terraform-badges.test.ts` (the 125th test) pins the first. It deleted `LayersPanel`'s
+`changeState === 'added'` skip as superseded (a planned id now has no `tfManaged`) and too
+broad (a *scanned* resource can be `added` to a focus graph through a planned route). With
+no proposal the details panel's `outerHTML` is byte-identical before and after.
+
+### What the plan said that turned out wrong
+
+- **WP-1.** `ChangeSet.changed` cannot carry a viewer `kind` (that vocabulary lives in
+  `viewer/src/data.ts`); entries carry account, region and collection instead, and
+  `removedAccounts` was added. Diffing by id alone is wrong, because a shared resource has
+  one id in several accounts' snapshots. Decision 47's "unresolvable reference is an error"
+  needed a third bucket, an `unknown-reference` warning, for ids of kinds the scanner does
+  not collect. The YAML must not carry its own `id:`.
+- **WP-1b.** `validate.test.ts` asserted an empty rule registry, contradicting the package's
+  goal. An SG reference across a same-region peering is legal in AWS and is exempt.
+- **WP-2.** A counts table with a row per collection broke the 6 KB budget by itself.
+  `describe` had to print more than decision 54 lists (subnets with CIDRs and AZs, each
+  TGW's default route table) for an agent to design with.
+- **WP-3.** An `AtlasIndex` holds fresh closures, so "deep-equal" is only possible on a
+  plain-data projection. `App.tsx`'s focus-route regex captured the query string.
+- **WP-4.** "The six classes" are three. The `outerHTML` method the brief cited is not in
+  `ACCOUNT-PICKER.md`.
+- **WP-5.** Terraform badges go on each side before the diff, not on the union. The
+  decision-38 empty state must count the effective selection under a proposal. A focus view
+  on an added centre must skip the scanned build, whose placeholder would read *changed*.
+- **WP-5b.** The overview does not draw security groups; the check ran in the VPC view.
+- **WP-6.** `npm run fixture` rewrites `data.js`, so it cannot be how `proposals.js` is
+  regenerated; `propose bundle` is. `site/index.html` predated proposals, so step 5's URL did
+  not work until WP-7.
+- **WP-7.** The `.github/` correction was right: the one workflow audits the lock and runs
+  no repo code. The root `npm run serve -- <flags>` passes nothing through (no trailing
+  `--`); `--port 4199` became vite's root directory.
+
+### Follow-ups
+
+Shapes the fixtures avoid, from all eight hand-backs:
+
+- **Proposal shapes never built:** a proposal that removes an account; a proposed resource
+  inside a switched-off (ghost) account, which changes the ghost box's layout path; a new
+  account reachable only through a TGW in an unselected account; a display cap firing on
+  real data (decision 58 is modelled only by a hand-built graph); a change to an SG rule
+  drawn as an edge label (the demo's route-table change does relabel prod's TGW edge, but
+  no test pins a label); a proposal that adds and removes the same connection; any kind
+  outside networking (an IAM role trusted by a proposed account, an S3 bucket in one).
+- **Never exercised for real:** a stale base in the viewer (the badge was screenshotted only
+  with injected props); two proposals in the committed checkout (WP-5 switched between two
+  in a throwaway pass); `propose validate` with one good and one unparsable file through
+  the CLI; a `proposals/` holding a subdirectory or a `*.yaml` symlink.
+- **Apply and diff:** two proposals applied in sequence; `set` to `null`; a resource moving
+  between collections; a duplicate id inside one scanned collection; YAML anchors and
+  multi-document files; upper-case ids; applying to a `withAccounts` derivative (documented
+  as wrong, unpinned); shared copies and `generic` resources in the data-index miniature.
+- **Validator:** it does not type-check fields (WP-6 defect 4: a number where the schema
+  says string passes); references left dangling by a `remove` are flagged only where
+  `route-target` happens to look; references inside JSON-string fields (IAM policy
+  documents) are not walked; `…Arns` (plural) is not a reference field.
+- **Design rules:** IPv6 CIDRs; TGW route-table segmentation (an isolated pair on one TGW
+  still warns); RAM-shared subnets or VPCs seen from a participant; prefix-list routes and
+  the `carrier`, `localGateway`, `coreNetwork` and `other` target types; cross-region
+  peering in `cidr-overlap`; `sg-rule-vpc` against a group in an unscanned account; the
+  cost of `cidr-overlap`, which is n² per TGW.
+- **Scale:** every timing is on the 181-resource fixture, not ~48k; **`describe` at 19
+  accounts is unproven** (5,812 B for three does not show nineteen fit), and its caps never
+  fire on the fixture.
+- **`describe` content:** route tables and routes, IGW and NAT ids, SG ids and rules,
+  endpoints, TGW route tables beyond the default, RAM shares, and which accounts are only
+  referenced are all missing (the skill's query covers them); the counts table counts each
+  account's copy of a shared resource; IPv6-only subnets, multi-CIDR VPCs, more than 8
+  attachments, an org tree over 32 nodes, two organizations and hosted zones with more than
+  8 associations are untested.
+- **Viewer:** a **removed** resource's details panel still offers import blocks and a
+  console link (truthful, pointless); choosing `none` while on `#/vpc/proposed-…` leaves a
+  **blank canvas** with no message; **focus on a removed centre** keeps the placeholder, so
+  neighbours that did not change read amber; in the VPC view a removed peering that routes
+  still point at reads *changed*, not red; removed resources cannot be found by search while
+  a proposal is active; the mode is not reset when switching proposals; the new account's
+  header wraps ("acme-\ndata").
+- **Code:** the `bundle.ts` ↔ `propose.ts` import cycle (harmless today; move
+  `jsonScriptPayload` to its own module); `parseProposal`'s YAML syntax errors end with a
+  dangling colon; the root `serve` script cannot take flags.
+- **Out of scope by decision 56, and the natural next plan:** phase 3, generating Terraform
+  from a proposal. `tf-import-blocks`' `ruleForKind` already maps kinds to types, and the
+  `proposed-` prefix is how it would tell a planned resource from one to import. The new
+  account's organization and RAM membership, which the demo notes in its description, would
+  belong there too.
