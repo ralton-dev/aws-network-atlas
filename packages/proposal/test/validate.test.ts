@@ -210,8 +210,11 @@ test('accounts: one that is already scanned, or listed twice, is an error', () =
   assert.deepEqual(codes(issues), ['error:account-exists@accounts[0].accountId', 'error:duplicate-id@accounts[2].accountId']);
 });
 
-test('design rules: the registry starts empty; a rule sees the applied snapshot and the change set, and only warns', () => {
-  assert.deepEqual(designRules, []);
+test('design rules: the registry holds the five networking rules; a rule sees the applied snapshot and the change set, and only warns', () => {
+  assert.deepEqual(
+    designRules.map((r) => r.code),
+    ['cidr-overlap', 'subnet-in-vpc', 'attachment-locality', 'sg-rule-vpc', 'route-target'],
+  );
   const seen: string[] = [];
   const rule: DesignRule = {
     code: 'test-rule',

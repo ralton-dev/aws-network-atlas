@@ -20,6 +20,11 @@
 import type { Snapshot } from '@atlas/schema';
 
 import type { ChangeSet, Issue, Proposal } from '../types.js';
+import { attachmentLocality } from './attachment-locality.js';
+import { cidrOverlap } from './cidr-overlap.js';
+import { routeTarget } from './route-target.js';
+import { sgRuleVpc } from './sg-rule-vpc.js';
+import { subnetInVpc } from './subnet-in-vpc.js';
 
 export interface DesignRuleContext {
   /** The scanned snapshot, untouched. */
@@ -45,5 +50,5 @@ export interface DesignRule {
   check(context: DesignRuleContext): Issue[];
 }
 
-/** The registered rules, run in this order. Empty until WP-1b. */
-export const designRules: DesignRule[] = [];
+/** The registered rules, run in this order. */
+export const designRules: DesignRule[] = [cidrOverlap, subnetInVpc, attachmentLocality, sgRuleVpc, routeTarget];
