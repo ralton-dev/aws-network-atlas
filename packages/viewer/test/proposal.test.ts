@@ -281,10 +281,11 @@ test('4d · a resource in the ChangeSet is changed even when nothing it draws di
   assert.deepEqual(stamped(union), ['vpc:vpc-0hub00000000001=changed']);
 });
 
-// WP-6 flips this to a plain `test` once `proposals/new-spoke.yaml` exists.
-// Observed against 35ebcbe (WP-1): ENOENT: no such file or directory, open
-// '<repo>/proposals/new-spoke.yaml'.
-test('5 · the committed demo proposal validates, applies and draws a new account and attachment', { todo: true }, () => {
+// A `todo` until WP-6, which flipped it to a plain `test` when it committed
+// `proposals/new-spoke.yaml`. Observed before that file existed (35ebcbe, and
+// again at d5c994f with the flip in place): ENOENT: no such file or
+// directory, open '<repo>/proposals/new-spoke.yaml'.
+test('5 · the committed demo proposal validates, applies and draws a new account and attachment', () => {
   const root = path.resolve(import.meta.dirname, '../../..');
   const proposalFile = path.join(root, 'proposals', 'new-spoke.yaml');
   const proposal = parseProposal(readFileSync(proposalFile, 'utf8'), 'new-spoke');

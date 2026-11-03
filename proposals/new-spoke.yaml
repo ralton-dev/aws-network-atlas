@@ -1,0 +1,171 @@
+version: 1
+title: Add the acme-data spoke (10.3.0.0/16) on the core TGW, with 443 from prod
+description: |
+  New spoke account **acme-data** (555555555555) with one VPC, `10.3.0.0/16` in
+  eu-west-1, attached to the core TGW (`tgw-0a1b2c3d4e5f00001`, owned by
+  acme-shared). One private subnet, `10.3.10.0/24` in eu-west-1a, holds the
+  attachment ENI and the workloads. Its route table sends prod (`10.0.0.0/16`),
+  shared services (`10.1.0.0/16`) and on-prem (`172.16.0.0/12`) to the TGW.
+
+  The `data-https` security group allows TCP 443 from prod-vpc's CIDR. It is a
+  CIDR rule, not an SG reference, because prod reaches this VPC across the TGW.
+
+  Return path: the three prod app route tables gain `10.3.0.0/16 → core TGW`,
+  and the core TGW route table gains the new attachment's association,
+  propagation and the propagated `10.3.0.0/16` route.
+
+  Not modelled: the new account's place in the organization (the TGW is shared by
+  RAM to the Workloads OU, so the account must join that OU or be added to the
+  share as a principal).
+base:
+  generatedAt: "2026-07-06T09:20:00.000Z"
+accounts:
+  - accountId: "555555555555"
+    alias: acme-data
+    regions: [eu-west-1]
+changes:
+  - op: add
+    account: "555555555555"
+    region: eu-west-1
+    collection: vpcs
+    resource:
+      id: proposed-vpc-data
+      name: data-vpc
+      tags: {}
+      cidrBlocks: ["10.3.0.0/16"]
+      ipv6CidrBlocks: []
+      isDefault: false
+
+  - op: add
+    account: "555555555555"
+    region: eu-west-1
+    collection: subnets
+    resource:
+      id: proposed-subnet-data-a
+      name: data-private-a
+      tags: {}
+      vpcId: proposed-vpc-data
+      cidrBlock: 10.3.10.0/24
+      ipv6CidrBlocks: []
+      availabilityZone: eu-west-1a
+      mapPublicIpOnLaunch: false
+      routeTableId: proposed-rtb-data-private
+      isPublic: false
+
+  - op: add
+    account: "555555555555"
+    region: eu-west-1
+    collection: routeTables
+    resource:
+      id: proposed-rtb-data-private
+      name: data-private
+      tags: {}
+      vpcId: proposed-vpc-data
+      isMain: true
+      subnetAssociations: [proposed-subnet-data-a]
+      gatewayAssociations: []
+      routes:
+        - { destinationCidr: 10.3.0.0/16, targetType: local, targetId: local, state: active }
+        - { destinationCidr: 10.0.0.0/16, targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, state: active }
+        - { destinationCidr: 10.1.0.0/16, targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, state: active }
+        - { destinationCidr: 172.16.0.0/12, targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, state: active }
+
+  - op: add
+    account: "555555555555"
+    region: eu-west-1
+    collection: transitGatewayAttachments
+    resource:
+      id: proposed-tgw-attach-data
+      name: data-vpc-attach
+      tags: {}
+      transitGatewayId: tgw-0a1b2c3d4e5f00001
+      transitGatewayOwnerId: "222222222222"
+      resourceOwnerId: "555555555555"
+      resourceType: vpc
+      resourceId: proposed-vpc-data
+      state: available
+      associationRouteTableId: tgw-rtb-0aaaa0000000001
+      subnetIds: [proposed-subnet-data-a]
+
+  - op: add
+    account: "555555555555"
+    region: eu-west-1
+    collection: securityGroups
+    resource:
+      id: proposed-sg-data-https
+      name: data-https
+      tags: {}
+      vpcId: proposed-vpc-data
+      description: HTTPS from prod
+      ingress:
+        - protocol: tcp
+          fromPort: 443
+          toPort: 443
+          cidrs: [10.0.0.0/16]
+          ipv6Cidrs: []
+          prefixListIds: []
+          securityGroupRefs: []
+          description: https from prod-vpc over the core TGW
+      egress:
+        - protocol: "-1"
+          cidrs: [0.0.0.0/0]
+          ipv6Cidrs: []
+          prefixListIds: []
+          securityGroupRefs: []
+
+  # Return path from prod's app tiers to the new spoke.
+  - op: change
+    key: rtb-0prodapp00000001
+    set:
+      routes:
+        - { targetType: local, targetId: local, destinationCidr: 10.0.0.0/16, state: active }
+        - { targetType: nat, targetId: nat-0prod00000000001, destinationCidr: 0.0.0.0/0, state: active }
+        - { targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, destinationCidr: 10.1.0.0/16, state: active }
+        - { targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, destinationCidr: 172.16.0.0/12, state: active }
+        - { targetType: pcx, targetId: pcx-0proddev000000001, destinationCidr: 10.2.0.0/16, state: active }
+        - { targetType: pcx, targetId: pcx-0prodlegacy0000001, destinationCidr: 10.99.0.0/16, state: active }
+        - { targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, destinationCidr: 10.3.0.0/16, state: active }
+  - op: change
+    key: rtb-0prodapp00000101
+    set:
+      routes:
+        - { targetType: local, targetId: local, destinationCidr: 10.0.0.0/16, state: active }
+        - { targetType: nat, targetId: nat-0prod00000000101, destinationCidr: 0.0.0.0/0, state: active }
+        - { targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, destinationCidr: 10.1.0.0/16, state: active }
+        - { targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, destinationCidr: 172.16.0.0/12, state: active }
+        - { targetType: pcx, targetId: pcx-0proddev000000001, destinationCidr: 10.2.0.0/16, state: active }
+        - { targetType: pcx, targetId: pcx-0prodlegacy0000001, destinationCidr: 10.99.0.0/16, state: active }
+        - { targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, destinationCidr: 10.3.0.0/16, state: active }
+  - op: change
+    key: rtb-0prodapp00000201
+    set:
+      routes:
+        - { targetType: local, targetId: local, destinationCidr: 10.0.0.0/16, state: active }
+        - { targetType: nat, targetId: nat-0prod00000000201, destinationCidr: 0.0.0.0/0, state: active }
+        - { targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, destinationCidr: 10.1.0.0/16, state: active }
+        - { targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, destinationCidr: 172.16.0.0/12, state: active }
+        - { targetType: pcx, targetId: pcx-0proddev000000001, destinationCidr: 10.2.0.0/16, state: active }
+        - { targetType: pcx, targetId: pcx-0prodlegacy0000001, destinationCidr: 10.99.0.0/16, state: active }
+        - { targetType: tgw, targetId: tgw-0a1b2c3d4e5f00001, destinationCidr: 10.3.0.0/16, state: active }
+
+  # Core TGW route table: associate and propagate the new attachment.
+  - op: change
+    key: tgw-rtb-0aaaa0000000001
+    set:
+      routes:
+        - { destinationCidr: 10.0.0.0/16, attachmentIds: [tgw-attach-0prod0000000001], resourceIds: [vpc-0prod00000000000a1], resourceType: vpc, routeType: propagated, state: active }
+        - { destinationCidr: 10.1.0.0/16, attachmentIds: [tgw-attach-0shr00000000001], resourceIds: [vpc-0shared00000000a1], resourceType: vpc, routeType: propagated, state: active }
+        - { destinationCidr: 10.2.0.0/16, attachmentIds: [tgw-attach-0dev00000000001], resourceIds: [vpc-0dev000000000000a1], resourceType: vpc, routeType: propagated, state: active }
+        - { destinationCidr: 10.10.0.0/16, attachmentIds: [tgw-attach-0peer0000000001], resourceIds: [tgw-0a1b2c3d4e5f00002], resourceType: tgw-peering, routeType: static, state: active }
+        - { destinationCidr: 172.16.0.0/12, attachmentIds: [tgw-attach-0vpn00000000001], resourceIds: [vpn-0onprem00000001], resourceType: vpn, routeType: static, state: active }
+        - { destinationCidr: 10.3.0.0/16, attachmentIds: [proposed-tgw-attach-data], resourceIds: [proposed-vpc-data], resourceType: vpc, routeType: propagated, state: active }
+      associations:
+        - { attachmentId: tgw-attach-0prod0000000001, resourceId: vpc-0prod00000000000a1, resourceType: vpc }
+        - { attachmentId: tgw-attach-0dev00000000001, resourceId: vpc-0dev000000000000a1, resourceType: vpc }
+        - { attachmentId: tgw-attach-0shr00000000001, resourceId: vpc-0shared00000000a1, resourceType: vpc }
+        - { attachmentId: proposed-tgw-attach-data, resourceId: proposed-vpc-data, resourceType: vpc }
+      propagations:
+        - { attachmentId: tgw-attach-0prod0000000001, resourceId: vpc-0prod00000000000a1, resourceType: vpc, state: enabled }
+        - { attachmentId: tgw-attach-0dev00000000001, resourceId: vpc-0dev000000000000a1, resourceType: vpc, state: enabled }
+        - { attachmentId: tgw-attach-0shr00000000001, resourceId: vpc-0shared00000000a1, resourceType: vpc, state: enabled }
+        - { attachmentId: proposed-tgw-attach-data, resourceId: proposed-vpc-data, resourceType: vpc, state: enabled }
