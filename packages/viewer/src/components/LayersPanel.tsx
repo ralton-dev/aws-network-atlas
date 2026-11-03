@@ -180,6 +180,8 @@ export function LayersPanel(props: LayersPanelProps): React.ReactElement {
     const refs: ResourceRef[] = [];
     for (const n of graph.nodes) {
       if (n.data.tfManaged === undefined || n.data.refId === undefined) continue;
+      // A resource the active proposal adds does not exist yet: nothing to import.
+      if (n.data.changeState === 'added') continue;
       const ref = index.byKey.get(n.data.refId);
       if (ref === undefined || seen.has(ref)) continue;
       seen.add(ref);

@@ -8,7 +8,7 @@ import {
   ReactFlow,
   type NodeChange,
 } from '@xyflow/react';
-import type { AtlasEdge, AtlasEdgeData, AtlasGraph, AtlasNode } from '../model/graph-types.js';
+import type { AtlasEdge, AtlasEdgeData, AtlasGraph, AtlasNode, ChangeState } from '../model/graph-types.js';
 import {
   clearPositions,
   loadPositions,
@@ -33,6 +33,13 @@ export interface FlowViewProps {
   selectedId?: string;
   selectedEdgeId?: string;
   hidden: HiddenState;
+  /**
+   * Change states the active proposal's mode hides (decision 50): *current*
+   * hides `added`, *proposed* hides `removed`. View state, never stored —
+   * unlike `hidden` — and applied through the same hidden path, so toggling
+   * it never relayouts. Absent or empty with no proposal active.
+   */
+  hideStates?: ReadonlySet<ChangeState>;
   /**
    * 'pan' locks nodes so a drag anywhere pans the canvas; 'arrange' makes
    * nodes draggable (empty-canvas drags still pan). Clicks, double-click
@@ -101,6 +108,7 @@ export function FlowView(props: FlowViewProps): React.ReactElement {
   // Nodes are ordered parents-before-children, so one pass suffices to
   // propagate hiddenness down the container hierarchy (hiding a container
   // hides everything inside it).
+  const { hideStates } = props;
   const { renderNodes, hiddenIds } = useMemo(() => {
     const { nodeIds, nodeKinds, tfFilter } = props.hidden;
     const hiddenIdsAcc = new Set<string>();
@@ -114,6 +122,7 @@ export function FlowView(props: FlowViewProps): React.ReactElement {
         (tfFilter !== undefined &&
           n.data.tfManaged !== undefined &&
           n.data.tfManaged !== (tfFilter === 'managed')) ||
+        (n.data.changeState !== undefined && hideStates?.has(n.data.changeState) === true) ||
         (n.parentId !== undefined && hiddenIdsAcc.has(n.parentId));
       if (isHidden) hiddenIdsAcc.add(n.id);
       return {
@@ -126,7 +135,7 @@ export function FlowView(props: FlowViewProps): React.ReactElement {
       };
     });
     return { renderNodes: rendered, hiddenIds: hiddenIdsAcc };
-  }, [nodes, props.selectedId, props.hidden]);
+  }, [nodes, props.selectedId, props.hidden, hideStates]);
 
   // An edge is hidden when either endpoint is hidden or its kind is toggled off.
   const renderEdges = useMemo(
@@ -136,10 +145,11 @@ export function FlowView(props: FlowViewProps): React.ReactElement {
         hidden:
           hiddenIds.has(e.source) ||
           hiddenIds.has(e.target) ||
-          props.hidden.edgeKinds.has(e.data?.edgeKind ?? 'route'),
+          props.hidden.edgeKinds.has(e.data?.edgeKind ?? 'route') ||
+          (e.data?.changeState !== undefined && hideStates?.has(e.data.changeState) === true),
         selected: props.selectedEdgeId !== undefined && e.id === props.selectedEdgeId,
       })),
-    [props.graph.edges, props.selectedEdgeId, props.hidden.edgeKinds, hiddenIds],
+    [props.graph.edges, props.selectedEdgeId, props.hidden.edgeKinds, hiddenIds, hideStates],
   );
 
   const { onEdgeClick, onNodeHide } = props;
