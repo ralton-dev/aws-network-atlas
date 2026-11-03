@@ -3,6 +3,7 @@ import type {
   OrganizationAccount,
   RamResourceShare,
   RegionSnapshot,
+  SsoPermissionSet,
   TransitGatewayAttachment,
   VpcPeeringConnection,
 } from '@atlas/schema';
@@ -967,7 +968,46 @@ function addDnsAliasEdges(b: Builder, index: AtlasIndex): void {
       }
     }
   }
-  if (byDns.size === 0) return;
+
+  // The same targets in switched-off accounts, from `index.all` (which spans
+  // the estate), so an alias into one ghosts its target in the owner's
+  // click-to-add box instead of vanishing (decision 36). Empty for an
+  // unfiltered build; a target nobody scanned is in neither map and stays
+  // panel-only, as before.
+  const offDns = new Map<string, { ref: ResourceRef; nodeId: string; label: string }>();
+  if (b.omitted.size > 0) {
+    for (const ref of index.all) {
+      if (!b.omitted.has(ref.accountId)) continue;
+      const raw = ref.raw;
+      const hit =
+        ref.kind === 'cloudfront' ? { dns: raw['domainName'], nodeId: `cf:${ref.id}`, label: ref.name ?? ref.id }
+        : ref.kind === 'global-accelerator' ? { dns: raw['dnsName'], nodeId: `ga:${ref.id}`, label: ref.name ?? ref.id }
+        : ref.kind === 'apigw' ? {
+            dns: (raw['apiEndpoint'] as string | undefined)?.replace(/^https?:\/\//, ''),
+            nodeId: `apigw:${ref.id}`, label: ref.name ?? ref.id,
+          }
+        : ref.kind === 'apigw-domain' ? { dns: raw['domainName'], nodeId: `apigwdom:${ref.id}`, label: (raw['domainName'] as string | undefined) ?? ref.id }
+        : undefined;
+      if (!hit || typeof hit.dns !== 'string') continue;
+      const key = normalize(hit.dns);
+      if (key && !byDns.has(key) && !offDns.has(key)) offDns.set(key, { ref, nodeId: hit.nodeId, label: hit.label });
+    }
+  }
+  if (byDns.size === 0 && offDns.size === 0) return;
+
+  /** Ghost a switched-off target as a leaf in its owner's click-to-add box. */
+  const offTarget = (key: string): string | undefined => {
+    const off = offDns.get(key);
+    if (!off) return undefined;
+    const { ref, nodeId, label } = off;
+    if (!b.leaves.has(nodeId)) {
+      leafNode(b, nodeId, ensureGhostAccount(b, ref.accountId), ref.kind, label,
+        `${ref.region || 'global'} · not shown`, ref.arn ?? ref.id);
+      const leaf = b.leaves.get(nodeId);
+      if (leaf) leaf.data.ghost = true;
+    }
+    return nodeId;
+  };
 
   for (const account of index.snapshot.accounts) {
     for (const zone of account.global.hostedZones) {
@@ -976,7 +1016,7 @@ function addDnsAliasEdges(b: Builder, index: AtlasIndex): void {
       for (const record of zone.records ?? []) {
         if (!record.aliasTarget) continue;
         const target = normalize(record.aliasTarget).replace(/^dualstack\./, '');
-        const targetNode = byDns.get(target);
+        const targetNode = byDns.get(target) ?? offTarget(target);
         if (!targetNode) continue;
         const key = `zonealias:${zoneNode}|${targetNode}`;
         if (b.edges.has(key)) continue;
@@ -999,6 +1039,47 @@ function addDnsAliasEdges(b: Builder, index: AtlasIndex): void {
 }
 
 /**
+ * The reverse of addSsoAssignmentEdges: permission sets in a switched-off
+ * account assigned into a drawn one. Those sets, and usually the org tree
+ * their edges land on, are the switched-off account's, so without this the
+ * grant vanished (decision 36). One edge per (ghost, drawn account) pair, the
+ * sets folded into the title. Never runs for an unfiltered build.
+ */
+function addReverseSsoAssignmentEdges(b: Builder, index: AtlasIndex): void {
+  if (b.omitted.size === 0) return;
+  const reverse = new Map<string, { owner: string; accountId: string; sets: string[]; principals: string[]; refId: string }>();
+  for (const ref of index.all) {
+    if (ref.kind !== 'sso-permission-set' || !b.omitted.has(ref.accountId)) continue;
+    const ps = ref.raw as unknown as SsoPermissionSet;
+    for (const a of ps.assignments ?? []) {
+      const drawn = b.accounts.get(`acct:${a.accountId}`);
+      if (!drawn || drawn.data.ghost) continue;
+      const key = `ssoassign:acct:${ref.accountId}|${a.accountId}`;
+      const hit = reverse.get(key) ?? { owner: ref.accountId, accountId: a.accountId, sets: [], principals: [], refId: ps.arn ?? ps.id };
+      if (!hit.sets.includes(ps.name)) hit.sets.push(ps.name);
+      const principal = a.principalName ?? a.principalType?.toLowerCase();
+      if (principal && !hit.principals.includes(principal)) hit.principals.push(principal);
+      reverse.set(key, hit);
+    }
+  }
+  for (const [key, r] of reverse) {
+    b.edges.set(key, {
+      id: `edge:${key}`,
+      source: ensureGhostAccount(b, r.owner),
+      target: `acct:${r.accountId}`,
+      type: 'annotated',
+      markerEnd: { type: MarkerType.ArrowClosed },
+      data: {
+        edgeKind: 'sso-assign',
+        label: destsLabel(r.principals, 2) || 'assigned',
+        title: `${index.accountLabel(r.owner)} assigns ${destsLabel(r.sets, 3)} in ${index.accountLabel(r.accountId)}`,
+        refId: r.refId,
+      },
+    });
+  }
+}
+
+/**
  * Identity Center permission-set assignments → the org member accounts they
  * grant access into. Runs after every account's nodes exist (permission sets
  * are drawn in addAccountGlobal, org-account leaves in addOrganization), so
@@ -1007,6 +1088,8 @@ function addDnsAliasEdges(b: Builder, index: AtlasIndex): void {
  * than dangling.
  */
 function addSsoAssignmentEdges(b: Builder, index: AtlasIndex): void {
+  addReverseSsoAssignmentEdges(b, index);
+
   // accountId → its drawn org-account leaf (namespaced by the org-carrying account).
   const orgAcctNode = new Map<string, string>();
   for (const account of index.snapshot.accounts) {

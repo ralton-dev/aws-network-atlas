@@ -34,10 +34,13 @@
  * VPN, Direct Connect and the reverse trust and RAM links that point *into*
  * the selection from a switched-off account.
  *
+ * Cases 13–14 (WP-2c) add Route 53 aliases from prod to the hub's edge
+ * resources and the hub's Identity Center assigning permission sets into prod.
+ *
  * Shapes it still avoids: an account with no cross-account link at all; links
- * that exist only through SSO assignments, VPC peering or Route 53 aliases; RAM
- * shares to OUs or the organization; an account with no alias; and more than
- * three accounts.
+ * that exist only through VPC peering; an SSO admin account that is not the
+ * org's management account; RAM shares to OUs or the organization; an account
+ * with no alias; and more than three accounts.
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -320,6 +323,13 @@ const HUB_VGW_DETACHED = 'vgw-0hub00000000002';
 const HUB_VPN_TGW = 'tgw-0a1b2c3d4e5f00003';
 const NEVER = '999999999999';
 const NEVER_VGW = 'vgw-0f0f0f0f0f0f0009';
+// WP-2c: edge resources in the hub that prod's public zone aliases, and the
+// hub's Identity Center assigning permission sets into prod.
+const HUB_CF = 'E0HUB';
+const HUB_GA = 'arn:aws:globalaccelerator::222222222222:accelerator/0hub';
+const HUB_API = 'hubapi0001';
+const HUB_API_DOMAIN = 'portal.acme.example';
+const PROD_PUBLIC_ZONE = 'Z0PUBLIC';
 
 function richEstate(): Snapshot {
   const estate = miniatureEstate();
@@ -351,6 +361,61 @@ function richEstate(): Snapshot {
       Version: '2012-10-17',
       Statement: [{ Effect: 'Allow', Principal: { AWS: `arn:aws:iam::${SPOKE_PROD}:root` }, Action: 'sts:AssumeRole' }],
     }),
+  });
+
+  hub.global.cloudFrontDistributions.push({
+    id: HUB_CF, name: 'hub-cdn', tags: {}, aliases: [], domainName: 'd0hub.cloudfront.net', origins: [],
+  });
+  hub.global.globalAccelerators.push({
+    id: HUB_GA, arn: HUB_GA, name: 'hub-ga', tags: {}, dnsName: 'a0hub.awsglobalaccelerator.com',
+    ipAddresses: [], listeners: [],
+  });
+  hubRegion.apiGateways.push({
+    id: HUB_API, name: 'hub-api', tags: {}, protocolType: 'HTTP', endpointType: 'REGIONAL',
+    apiEndpoint: `https://${HUB_API}.execute-api.eu-west-1.amazonaws.com`, stages: [], vpcEndpointIds: [],
+    routes: [], authorizers: [],
+  });
+  hubRegion.apiGatewayDomainNames.push({
+    id: HUB_API_DOMAIN, tags: {}, domainName: HUB_API_DOMAIN, endpointTypes: ['REGIONAL'], certificateArns: [],
+    mappings: [{ apiId: HUB_API, stage: '$default' }],
+  });
+  // The hub is the management and Identity Center account: its org lists all
+  // three, and two permission sets are assigned into prod (one also into an
+  // account that was never scanned). Nothing is assigned into dev.
+  hub.global.organizations.push({
+    id: 'o-acme', featureSet: 'ALL', masterAccountId: HUB,
+    roots: [{ id: 'r-acme', name: 'Root', policyTypes: [] }], trustedServices: [], delegatedAdministrators: [],
+  });
+  for (const [id, name] of [[SPOKE_PROD, 'acme-prod'], [HUB, 'acme-shared'], [SPOKE_DEV, 'acme-dev']] as const) {
+    hub.global.organizationAccounts.push({ id, name, tags: {}, parentId: 'r-acme' });
+  }
+  hub.global.ssoPermissionSets.push(
+    {
+      id: 'arn:aws:sso:::permissionSet/ssoins-0hub/ps-admin', name: 'AdminAccess', managedPolicyArns: [],
+      customerManagedPolicies: [],
+      assignments: [
+        { accountId: SPOKE_PROD, principalType: 'GROUP', principalName: 'platform-admins' },
+        { accountId: NEVER, principalType: 'GROUP', principalName: 'platform-admins' },
+      ],
+    },
+    {
+      id: 'arn:aws:sso:::permissionSet/ssoins-0hub/ps-readonly', name: 'ReadOnly', managedPolicyArns: [],
+      customerManagedPolicies: [],
+      assignments: [{ accountId: SPOKE_PROD, principalType: 'GROUP', principalName: 'auditors' }],
+    },
+  );
+
+  // Prod's public zone aliases each of the hub's edge resources, plus a
+  // distribution nobody scanned — the control, which must stay panel-only.
+  prod.global.hostedZones.push({
+    id: PROD_PUBLIC_ZONE, zoneName: 'acme.example.', tags: {}, privateZone: false, vpcAssociations: [],
+    records: [
+      { name: 'www.acme.example.', type: 'A', values: [], aliasTarget: 'd0hub.cloudfront.net.' },
+      { name: 'ga.acme.example.', type: 'A', values: [], aliasTarget: 'dualstack.a0hub.awsglobalaccelerator.com.' },
+      { name: 'api.acme.example.', type: 'A', values: [], aliasTarget: `${HUB_API}.execute-api.eu-west-1.amazonaws.com.` },
+      { name: 'portal.acme.example.', type: 'A', values: [], aliasTarget: `${HUB_API_DOMAIN}.` },
+      { name: 'old.acme.example.', type: 'A', values: [], aliasTarget: 'd0never.cloudfront.net.' },
+    ],
   });
 
   prod.global.cloudFrontDistributions.push({
@@ -503,4 +568,63 @@ test('12 · switched-off accounts with no link to the selection add no ghost', (
   assert.ok(!graph.edges.some((e) => e.data?.edgeKind === 'ram-share'));
   assert.ok(!edgeBetween(graph, `acct:${SPOKE_PROD}`, `acct:${HUB}`));
   assert.ok(!edgeBetween(graph, `acct:${SPOKE_DEV}`, `acct:${HUB}`));
+  // WP-2c: the hub's SSO assignments name prod, and the aliases are prod's.
+  assert.ok(!graph.edges.some((e) => e.data?.edgeKind === 'sso-assign'));
+  assert.ok(!graph.edges.some((e) => e.id.startsWith('edge:zonealias:')));
+});
+
+// ---------------------------------------------------------------------------
+// WP-2c · the last two lookups that dropped a link into a switched-off account.
+// ---------------------------------------------------------------------------
+
+test('13 · a DNS alias to a switched-off account\'s edge resource ghosts the target in its owner\'s box', () => {
+  const zone = `zone:${SPOKE_PROD}:${PROD_PUBLIC_ZONE}`;
+  const targets: Array<[string, string, string]> = [
+    [`cf:${HUB_CF}`, 'hub-cdn', 'global · not shown'],
+    [`ga:${HUB_GA}`, 'hub-ga', 'global · not shown'],
+    [`apigw:${HUB_API}`, 'hub-api', `${REGION} · not shown`],
+    [`apigwdom:${HUB_API_DOMAIN}`, HUB_API_DOMAIN, `${REGION} · not shown`],
+  ];
+
+  // Show-all is the reference: every alias but the never-scanned one resolves.
+  const full = buildOverview(indexOf(richEstate()));
+  for (const [id] of targets) assert.ok(edgeBetween(full, zone, id), `show-all: expected ${zone} → ${id}`);
+  assert.equal(full.edges.filter((e) => e.source === zone && e.id.startsWith('edge:zonealias:')).length, 4);
+
+  // Was: byDns held only the selected accounts' nodes, so with the hub off
+  // every alias from prod's zone drew nothing.
+  const { graph } = prodOnly();
+  for (const [id, label, subtitle] of targets) {
+    assert.ok(edgeBetween(graph, zone, id), `expected ${zone} → ${id}`);
+    const target = node(graph, id);
+    assert.equal(target?.parentId, `acct:${HUB}`, `${id} parent`);
+    assert.equal(target?.data.ghost, true, `${id} ghost`);
+    assert.equal(target?.data.label, label);
+    assert.equal(target?.data.subtitle, subtitle);
+  }
+  assert.equal(node(graph, `acct:${HUB}`)?.data.addAccountId, HUB);
+  // The control: an alias to something nobody scanned stays panel-only.
+  assert.equal(graph.edges.filter((e) => e.source === zone && e.id.startsWith('edge:zonealias:')).length, 4);
+});
+
+test('14 · a switched-off SSO account\'s assignments into a drawn account are drawn from its ghost', () => {
+  // Show-all is the reference: each permission set → prod's org-account leaf.
+  const full = buildOverview(indexOf(richEstate()));
+  const forward = full.edges.filter((e) => e.data?.edgeKind === 'sso-assign');
+  assert.ok(forward.length >= 2);
+  assert.ok(forward.every((e) => e.target === `orgacct:${HUB}:${SPOKE_PROD}`));
+
+  // Was: the permission sets and the org tree are both the hub's, so with the
+  // hub off nothing at all said that prod's access is granted from there.
+  const { index, graph } = prodOnly();
+  const reverse = graph.edges.filter((e) => e.data?.edgeKind === 'sso-assign');
+  assert.equal(reverse.length, 1, 'one edge per (switched-off account, drawn account) pair');
+  const [edge] = reverse;
+  assert.ok(edge);
+  assert.equal(edge.source, `acct:${HUB}`);
+  assert.equal(edge.target, `acct:${SPOKE_PROD}`);
+  assert.equal(node(graph, `acct:${HUB}`)?.data.addAccountId, HUB);
+  assert.match(edge.data?.title ?? '', /AdminAccess/);
+  assert.match(edge.data?.title ?? '', /ReadOnly/);
+  assert.match(edge.data?.title ?? '', new RegExp(index.accountLabel(SPOKE_PROD).replace(/[()]/g, '\\$&')));
 });
