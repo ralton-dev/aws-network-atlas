@@ -34,6 +34,12 @@ export type AtlasNodeData = {
   drillVpcId?: string;
   /** Ghost = referenced by an edge but not scanned. */
   ghost?: boolean;
+  /**
+   * Set on a ghost account container that stands for a scanned account the
+   * current selection leaves out; clicking it adds the account. Absent on
+   * genuinely unscanned accounts.
+   */
+  addAccountId?: string;
   /** Visually emphasized (the center resource of a focus view). */
   emphasis?: boolean;
   /**

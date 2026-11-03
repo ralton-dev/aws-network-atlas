@@ -6,7 +6,7 @@ import type {
   VpcPeeringConnection,
 } from '@atlas/schema';
 import { MarkerType } from '@xyflow/react';
-import type { AtlasIndex } from '../data.js';
+import type { AtlasIndex, ResourceRef } from '../data.js';
 import {
   destsLabel,
   type AtlasEdge,
@@ -17,6 +17,7 @@ import {
 } from './graph-types.js';
 import { s3OriginBucket, trustedAccountPrincipals, worldOpenIngress } from './relations.js';
 import { subnetRoutes } from './routes.js';
+import { omittedAccounts } from './selection.js';
 
 const EXT_CONTAINER = 'ext:onprem';
 
@@ -29,6 +30,18 @@ const CAP_ORG_POLICIES = 20;
 const CAP_ORG_POLICY_TARGETS = 30;
 
 interface Builder {
+  /**
+   * The index being built — possibly a `withAccounts` derivation whose
+   * `snapshot.accounts` is only the selected accounts. Its lookups
+   * (`accountLabel`, `byKey`) still span the whole estate.
+   */
+  index: AtlasIndex;
+  /**
+   * Scanned accounts the selection switched off (`omittedAccounts(index)`),
+   * looked up once per build. Empty for an unfiltered index, so nothing that
+   * branches on it can move the show-all or single-account overview.
+   */
+  omitted: ReadonlySet<string>;
   accounts: Map<string, AtlasNode>;
   /** Second-level containers: region boxes plus per-account lanes. */
   regions: Map<string, AtlasNode>;
@@ -37,8 +50,31 @@ interface Builder {
   extUsed: boolean;
 }
 
+/**
+ * The container for an account that is referenced but not drawn. Two kinds of
+ * absence (ACCOUNT-PICKER.md, decision 36): a scanned account the selection
+ * leaves out is named by `accountLabel`, reads `not shown · click to add` and
+ * carries `addAccountId`; an account that was never scanned keeps `Account
+ * <id>` / `not scanned`.
+ */
 function ensureGhostAccount(b: Builder, accountId: string): string {
   const id = `acct:${accountId}`;
+  if (!b.accounts.has(id) && b.omitted.has(accountId)) {
+    b.accounts.set(id, {
+      id,
+      type: 'container',
+      position: { x: 0, y: 0 },
+      data: {
+        label: b.index.accountLabel(accountId),
+        subtitle: 'not shown · click to add',
+        kind: 'group-account',
+        isContainer: true,
+        containerStyle: 'ghost',
+        ghost: true,
+        addAccountId: accountId,
+      },
+    });
+  }
   if (!b.accounts.has(id)) {
     b.accounts.set(id, {
       id,
@@ -57,6 +93,21 @@ function ensureGhostAccount(b: Builder, accountId: string): string {
   return id;
 }
 
+/**
+ * The scanned copy of a resource the overview draws only as a ghost because
+ * the selection switched its account off — `undefined` when it was never
+ * scanned, or when nothing is switched off (an unfiltered build never takes
+ * this path). `ownerId` is the account the caller would parent it under; the
+ * snapshot that lists the resource may be a different, also-omitted one (a
+ * spoke's copy of a hub's shared TGW).
+ */
+function switchedOff(b: Builder, key: string, kind: string, ownerId: string | undefined): ResourceRef | undefined {
+  if (b.omitted.size === 0) return undefined;
+  const ref = b.index.byKey.get(key);
+  if (!ref || ref.kind !== kind) return undefined;
+  return b.omitted.has(ref.accountId) || (ownerId !== undefined && b.omitted.has(ownerId)) ? ref : undefined;
+}
+
 function ensureVpcNode(
   b: Builder,
   vpcId: string | undefined,
@@ -67,6 +118,8 @@ function ensureVpcNode(
   const id = `vpc:${vpcId}`;
   if (!b.leaves.has(id)) {
     const parent = accountId ? ensureGhostAccount(b, accountId) : undefined;
+    const off = switchedOff(b, vpcId, 'vpc', accountId);
+    const where = region ?? off?.region;
     b.leaves.set(id, {
       id,
       type: 'resource',
@@ -74,7 +127,14 @@ function ensureVpcNode(
       parentId: parent,
       width: 210,
       height: 92,
-      data: {
+      data: off ? {
+        label: off.name ?? vpcId,
+        subtitle: where ? `${where} · not shown` : 'not shown',
+        kind: 'vpc',
+        refId: vpcId,
+        drillVpcId: undefined,
+        ghost: true,
+      } : {
         label: vpcId,
         subtitle: region ? `${region} · not scanned` : 'not scanned',
         kind: 'vpc',
@@ -92,6 +152,7 @@ function ensureTgwNode(b: Builder, tgwId: string | undefined, accountId?: string
   const id = `tgw:${tgwId}`;
   if (!b.leaves.has(id)) {
     const parent = accountId ? ensureGhostAccount(b, accountId) : undefined;
+    const off = switchedOff(b, tgwId, 'tgw', accountId);
     b.leaves.set(id, {
       id,
       type: 'resource',
@@ -99,7 +160,9 @@ function ensureTgwNode(b: Builder, tgwId: string | undefined, accountId?: string
       parentId: parent,
       width: 150,
       height: 96,
-      data: { label: tgwId, subtitle: 'not scanned', kind: 'tgw', refId: tgwId, ghost: true },
+      data: off
+        ? { label: off.name ?? tgwId, subtitle: off.region ? `${off.region} · not shown` : 'not shown', kind: 'tgw', refId: tgwId, ghost: true }
+        : { label: tgwId, subtitle: 'not scanned', kind: 'tgw', refId: tgwId, ghost: true },
     });
   }
   return id;
@@ -1055,6 +1118,8 @@ function addRamShareEdges(b: Builder, index: AtlasIndex): void {
 /** Build the global multi-account overview graph. */
 export function buildOverview(index: AtlasIndex): AtlasGraph {
   const b: Builder = {
+    index,
+    omitted: omittedAccounts(index),
     accounts: new Map(),
     regions: new Map(),
     leaves: new Map(),
@@ -1192,7 +1257,10 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
   // --- Route 53 ALIAS records → CloudFront/GA/API GW nodes -------------------
   addDnsAliasEdges(b, index);
 
-  // TGWs: prefer placing under the owner account's region.
+  // TGWs: prefer placing under the owner account's region. A spoke's
+  // snapshot lists a hub's shared TGW too; when the selection switched the
+  // owner off, the TGW goes under the owner's ghost (decision 36) rather than
+  // the spoke's region, or the hub would vanish from a spoke-only overview.
   for (const pass of ['owner', 'other'] as const) {
     for (const account of index.snapshot.accounts) {
       for (const region of account.regions) {
@@ -1201,6 +1269,10 @@ export function buildOverview(index: AtlasIndex): AtlasGraph {
           if ((pass === 'owner') !== isOwner) continue;
           const id = `tgw:${tgw.id}`;
           if (b.leaves.has(id)) continue;
+          if (tgw.ownerId && b.omitted.has(tgw.ownerId)) {
+            ensureTgwNode(b, tgw.id, tgw.ownerId);
+            continue;
+          }
           b.leaves.set(id, {
             id,
             type: 'resource',

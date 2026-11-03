@@ -26,12 +26,14 @@
  *     VPC to it;
  *   - a role in `111…` trusts `333…`.
  *
+ * Case 5 adds the shape real AWS produces for a shared TGW: the spoke's own
+ * snapshot lists the hub's TGW too, so the placement loop's `other` pass would
+ * otherwise put the hub's TGW under the spoke's region and draw no hub ghost.
+ *
  * Shapes it still avoids: an account with no cross-account link at all; links
  * that exist only through RAM shares, SSO assignments, VPC peering, Route 53
- * aliases or CloudFront origins; an account with no alias; a spoke whose own
- * snapshot also lists the hub's shared TGW (real AWS does — the hub's TGW then
- * lands under the spoke's region via the placement loop's `other` pass, and no
- * hub ghost is drawn by the attachment edge); and more than three accounts.
+ * aliases or CloudFront origins; an account with no alias; and more than
+ * three accounts.
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -122,23 +124,10 @@ function indexOf(snapshot: Snapshot): AtlasIndex {
 const accountContainers = (graph: AtlasGraph): AtlasNode[] =>
   graph.nodes.filter((n) => n.data.kind === 'group-account');
 
-test('1 · a one-spoke selection draws that spoke, and the hub and the other spoke as addable ghosts', {
-  // Observed against 545df70 + WP-1, before WP-2 teaches `ensureGhostAccount`
-  // about `omittedAccounts`:
-  //   acct:111111111111  label "acme-prod", subtitle "111111111111", not a
-  //                      ghost (the one drawn account — already correct)
-  //   acct:333333333333  ghost=true  label "Account 333333333333"
-  //                      subtitle "not scanned"  addAccountId absent
-  //   acct:222222222222  ghost=true  label "Account 222222222222"
-  //                      subtitle "not scanned"  addAccountId absent
-  //   tgw:tgw-0a1b2c3d4e5f00001  ghost=true, parent acct:222222222222,
-  //                      label the bare id, subtitle "not scanned"
-  // i.e. both ghosts already fire (333 via the trust edge, 222 via the TGW
-  // attachment), but read as unscanned and cannot be clicked to add. The
-  // assertion first fails on the hub's label. WP-2 flips this to a plain
-  // `test`.
-  todo: true,
-}, () => {
+// Before WP-2 both ghosts already fired (333 via the trust edge, 222 via the
+// TGW attachment) but read `Account <id>` / `not scanned`, carried no
+// `addAccountId`, and the hub's TGW was labelled with its bare id.
+test('1 · a one-spoke selection draws that spoke, and the hub and the other spoke as addable ghosts', () => {
   const index = indexOf(miniatureEstate());
   const graph = buildOverview(withAccounts(index, new Set([SPOKE_PROD])));
   const containers = accountContainers(graph);
@@ -151,8 +140,17 @@ test('1 · a one-spoke selection draws that spoke, and the hub and the other spo
     assert.ok(ghost, `expected a ghost container for ${id}`);
     assert.equal(ghost.data.ghost, true);
     assert.equal(ghost.data.label, index.accountLabel(id));
-    assert.equal((ghost.data as { addAccountId?: string }).addAccountId, id);
+    assert.equal(ghost.data.addAccountId, id);
+    assert.equal(ghost.data.subtitle, 'not shown · click to add');
   }
+
+  // The hub's TGW is a scanned resource whose account is merely off: it is
+  // named from the scan, not `not scanned`, and sits in the hub's ghost.
+  const tgw = graph.nodes.find((n) => n.id === `tgw:${TGW}`);
+  assert.equal(tgw?.parentId, `acct:${HUB}`);
+  assert.equal(tgw?.data.label, 'core-tgw');
+  assert.equal(tgw?.data.subtitle, `${REGION} · not shown`);
+  assert.equal(tgw?.data.ghost, true);
 });
 
 test('2 · selecting every account builds exactly the unfiltered overview', () => {
@@ -245,4 +243,53 @@ test('4 · the overview hash carries the selection, sorted, and round-trips', ()
   // Tolerant: whitespace, duplicates, encoded commas, junk ids dropped.
   const messy = parseAccountsParam('#/?accounts= 333333333333 ,junk,111111111111%2C333333333333,1234567890123');
   assert.deepEqual(messy && [...messy], [SPOKE_PROD, SPOKE_DEV]);
+});
+
+test('5 · a hub TGW listed in the spoke\'s own snapshot still draws the hub as an addable ghost', () => {
+  const estate = miniatureEstate();
+  const [prod] = estate.accounts;
+  const prodRegion = prod?.regions[0];
+  assert.ok(prodRegion);
+  // Real AWS lists a TGW shared into an account in that account's
+  // DescribeTransitGateways, owner id and all. Plus one owned by an account
+  // that was never scanned, which must keep reading as such.
+  prodRegion.transitGateways.push({ id: TGW, name: 'core-tgw', tags: {}, ownerId: HUB });
+  const NEVER = '999999999999';
+  const FOREIGN = 'tgw-0f0f0f0f0f0f00009';
+  prodRegion.transitGateways.push({ id: FOREIGN, name: 'partner-tgw', tags: {}, ownerId: NEVER });
+  const index = indexOf(estate);
+
+  // Show-all: the owner pass places the hub's TGW in the hub's region, and the
+  // never-scanned owner's TGW stays in the spoke's region — as before WP-2.
+  const full = buildOverview(index);
+  assert.equal(full.nodes.find((n) => n.id === `tgw:${TGW}`)?.parentId, `region:${HUB}:${REGION}`);
+  assert.equal(full.nodes.find((n) => n.id === `tgw:${FOREIGN}`)?.parentId, `region:${SPOKE_PROD}:${REGION}`);
+
+  // Spoke only: without WP-2 the `other` pass put the hub's TGW under prod's
+  // region and no `acct:222…` ghost was drawn at all. Now it goes under the
+  // hub's ghost, which can be clicked to add the hub.
+  const shown = withAccounts(index, new Set([SPOKE_PROD]));
+  const graph = buildOverview(shown);
+  const hub = graph.nodes.find((n) => n.id === `acct:${HUB}`);
+  assert.ok(hub, 'expected a ghost container for the hub');
+  assert.equal(hub.data.ghost, true);
+  assert.equal(hub.data.label, index.accountLabel(HUB));
+  assert.equal(hub.data.addAccountId, HUB);
+
+  const tgw = graph.nodes.find((n) => n.id === `tgw:${TGW}`);
+  assert.equal(tgw?.parentId, `acct:${HUB}`);
+  assert.equal(tgw?.data.label, 'core-tgw');
+  assert.equal(tgw?.data.ghost, true);
+  assert.ok(
+    graph.edges.some((e) => e.source === 'vpc:vpc-0prod0000000001' && e.target === `tgw:${TGW}`),
+    'expected the spoke VPC → hub TGW attachment edge',
+  );
+
+  // The unscanned owner is not "switched off": its TGW is placed exactly as in
+  // the unfiltered build, and no ghost claims it can be added.
+  assert.equal(graph.nodes.find((n) => n.id === `tgw:${FOREIGN}`)?.parentId, `region:${SPOKE_PROD}:${REGION}`);
+  assert.equal(graph.nodes.find((n) => n.id === `acct:${NEVER}`), undefined);
+  for (const n of graph.nodes) {
+    if (n.data.addAccountId !== undefined) assert.ok(omittedAccounts(shown).has(n.data.addAccountId));
+  }
 });
