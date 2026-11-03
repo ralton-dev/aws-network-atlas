@@ -454,6 +454,40 @@ html, body, #root { margin: 0; height: 100%; }
   font-size: 12px; padding: 2px 0; text-align: left; word-break: break-all;
 }
 .inventory-item:hover { text-decoration: underline; }
+/* Account picker: which accounts the overview draws (decision 41). */
+.inventory-selection {
+  display: flex; align-items: center; gap: 6px;
+  margin: -4px 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  font-size: 12px; color: var(--muted);
+}
+.inventory-selection-count { margin-right: auto; }
+.inventory-selection button {
+  background: none; border: 1px solid var(--line); border-radius: 4px;
+  color: var(--accent); cursor: pointer; font-size: 11.5px; padding: 2px 8px;
+}
+.inventory-selection button:hover:not(:disabled) { background: #f0f6ff; border-color: #b5d3f2; }
+.inventory-selection button:disabled { color: var(--muted); cursor: default; opacity: 0.6; }
+.inventory-eye {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 22px; height: 22px; padding: 0; border: 1px solid transparent; border-radius: 4px;
+  background: none; color: #a3adb8; cursor: pointer;
+}
+.inventory-eye:hover { color: var(--ink); background: #e4e9ee; }
+.inventory-eye:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.inventory-eye[aria-pressed="true"] { color: var(--accent); background: #e2eefc; border-color: #b5d3f2; }
+
+/* Overview with no accounts selected (WP-3): same tone as .loading. */
+.canvas-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; height: 100%; padding: 24px; text-align: center;
+  background: var(--canvas); color: var(--muted); font-size: 14px;
+}
+.canvas-empty-title { margin: 0; font-size: 14px; font-weight: 500; color: var(--muted); }
+.canvas-empty-action {
+  background: #f0f6ff; color: var(--accent); border: 1px solid #b5d3f2; border-radius: 6px;
+  padding: 7px 14px; cursor: pointer; font-size: 12.5px;
+}
+.canvas-empty-action:hover { background: #e2eefc; }
 
 /* ---------- layers panel ---------- */
 .layers-panel {
