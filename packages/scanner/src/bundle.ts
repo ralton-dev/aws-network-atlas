@@ -12,6 +12,7 @@ import {
 import type { ResolvedConfig } from './config.js';
 import { stableStringify } from './stable-json.js';
 import { readTerraformStacks } from './terraform.js';
+import { readProposals, writeProposalsJs } from './propose.js';
 
 /**
  * Escape a JSON string for embedding in single quotes inside a classic JS
@@ -94,10 +95,11 @@ async function readAnnotations(config: ResolvedConfig): Promise<AnnotationMap> {
  */
 export async function bundle(
   config: ResolvedConfig,
-): Promise<{ accounts: number; annotations: number; terraformStacks: number }> {
+): Promise<{ accounts: number; annotations: number; terraformStacks: number; proposals: number }> {
   const accounts = await readAccountSnapshots(config);
   const annotations = await readAnnotations(config);
   const terraform = await readTerraformStacks(config);
+  const proposals = await readProposals(path.join(config.rootDir, 'proposals'));
 
   const snapshot: Snapshot = {
     version: SNAPSHOT_VERSION,
@@ -118,9 +120,11 @@ export async function bundle(
     jsonScriptPayload('__ATLAS_TERRAFORM__', terraform),
     'utf8',
   );
+  await writeProposalsJs(proposals, dir);
   return {
     accounts: accounts.length,
     annotations: Object.keys(annotations).length,
     terraformStacks: terraform.length,
+    proposals: proposals.length,
   };
 }

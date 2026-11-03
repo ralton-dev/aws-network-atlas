@@ -31,6 +31,7 @@ import {
   type TerraformStackFile,
 } from '@atlas/schema';
 import { jsonScriptPayload } from './bundle.js';
+import { readProposals, REPO_ROOT, writeProposalsJs } from './propose.js';
 import { parseTerraformState } from './terraform.js';
 
 /** Build an account-global container, defaulting the many empty arrays. */
@@ -1816,8 +1817,13 @@ await mkdir(outDir, { recursive: true });
 await writeFile(path.join(outDir, 'data.js'), jsonScriptPayload('__ATLAS_DATA__', snapshot), 'utf8');
 await writeFile(path.join(outDir, 'annotations.js'), jsonScriptPayload('__ATLAS_ANNOTATIONS__', annotations), 'utf8');
 await writeFile(path.join(outDir, 'terraform.js'), jsonScriptPayload('__ATLAS_TERRAFORM__', terraform), 'utf8');
+// The fourth file, from whatever is in proposals/ (an empty array when nothing
+// is), so every path that writes site/data/ writes all four (decision 53).
+const proposals = await readProposals(path.join(REPO_ROOT, 'proposals'));
+await writeProposalsJs(proposals, outDir);
 
 const counts = snapshot.accounts.map((a) => `${a.alias}: ${a.regions.reduce((n, reg) => n + reg.vpcs.length, 0)} VPC(s)`);
 console.log(`Fixture written to ${outDir}`);
 console.log(`  ${snapshot.accounts.length} accounts — ${counts.join(', ')}`);
 console.log('  TGW hub-and-spoke, VPC peering, VPN, Direct Connect, inter-region TGW peering, 1 ghost account.');
+console.log(`  ${proposals.length} proposal(s) from proposals/.`);

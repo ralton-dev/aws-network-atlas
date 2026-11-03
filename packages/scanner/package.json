@@ -8,6 +8,8 @@
     "bundle": "tsx src/cli.ts bundle",
     "tf-import": "tsx src/cli.ts tf-import",
     "tf-blocks": "tsx src/cli.ts tf-blocks",
+    "propose": "tsx src/cli.ts propose",
+    "describe": "tsx src/cli.ts describe",
     "fixture": "tsx src/fixture.ts",
     "typecheck": "tsc -p tsconfig.json"
   },

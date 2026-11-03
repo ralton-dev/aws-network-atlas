@@ -18,6 +18,8 @@
     "bundle": "npm run --workspace @atlas/scanner bundle --",
     "tf-import": "npm run --workspace @atlas/scanner tf-import --",
     "tf-blocks": "npm run --workspace @atlas/scanner tf-blocks --",
+    "propose": "npm run --workspace @atlas/scanner propose --",
+    "describe": "npm run --workspace @atlas/scanner describe --",
     "fixture": "npm run --workspace @atlas/scanner fixture",
     "dev": "npm run --workspace @atlas/viewer dev",
     "build": "npm run --workspaces --if-present build",
