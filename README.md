@@ -29,7 +29,13 @@ the viewer immediately — no AWS, no scan:
 open site/index.html            # or just double-click it
 ```
 
-It renders a fabricated 3-account org (prod / shared-services / dev) with a
+It opens on an empty canvas with the **Inventory** panel open: switch on an
+account with the eye beside its name, or press *show all* for the whole estate.
+(A one-account estate skips this step and opens straight onto its diagram.)
+Link straight to all three with
+`site/index.html#/?accounts=111111111111,222222222222,333333333333`.
+
+The demo is a fabricated 3-account org (prod / shared-services / dev) with a
 Transit Gateway hub-and-spoke, cross-account VPC peering, Site-to-Site VPN,
 Direct Connect, inter-region TGW peering, a "ghost" unscanned account, a
 3-tier security-group chain, CloudFront, IAM with cross-account trust, KMS/ACM/
@@ -147,6 +153,25 @@ not just core topology.
 - **Inventory** — every resource found, grouped by account ▸ region ▸ service, including
   things that aren't on the diagram.
 - **Details panel** — click anything for properties, tags, rules, and your notes.
+
+**Choosing accounts.** The overview draws only the accounts you switch on, and only those
+are built and laid out in the browser, so a large estate opens fast and each box is one you
+asked for. Switch accounts on and off with the eye on each account in the **Inventory**
+panel, or *show all* / *show none* at its top. With several accounts scanned the viewer
+opens with none selected and asks you to add one; with exactly one it selects that account
+and opens as it always has. The selection is part of the overview URL —
+`#/?accounts=<id>,<id>`, sorted, so a link reproduces the same view — and is remembered in
+the browser, so returning to the overview, reloading, or opening plain `#/` brings it back;
+a URL that names accounts takes precedence over the remembered selection. (A one-account
+estate keeps plain `#/`, so positions it saved before the picker existed still apply.
+Positions dragged under any other selection, including the old show-all overview of a
+multi-account estate, are kept per selection and do not carry over to a different one.) A
+link into an account that is switched off — a TGW attachment, peering, trust, RAM share,
+DNS alias, SSO grant, CloudFront origin — is still drawn, to a dashed box named after that
+account and subtitled *not shown · click to add*; click the box (its header, where no
+resource covers it) to add the account. The resources inside it are named from the scan and
+read *not shown*. An account that was never scanned keeps the `Account <id>` / *not
+scanned* box.
 
 The viewer is a single committed file (`site/index.html`). Re-scanning only rewrites
 `site/data/*.js` — the viewer itself never needs rebuilding to pick up new data.
@@ -531,6 +556,13 @@ plainly that the diagram draws none of them.
   "regionConcurrency": 4
 }
 ```
+
+An account's optional `name` is how the viewer labels it: the Inventory picker and the
+switched-off ghost boxes show `name (account id)`, and a drawn account's box is titled with
+the name over its id. Without one the scanner falls back to the account's IAM alias, and
+without that the viewer shows the bare id. On an estate of more than a
+couple of accounts, set it — it is the difference between choosing accounts by name and
+by twelve digits.
 
 Regions with nothing beyond an untouched default VPC count as *empty*; excluded ones are
 listed in the snapshot (and shown as a note in the overview) so nothing disappears silently.

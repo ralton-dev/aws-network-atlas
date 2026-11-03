@@ -67,6 +67,23 @@ Bodies here are paragraphs, not bullet lists.
 `tsx` is a scanner devDependency that npm hoists to root `node_modules/.bin`,
 so root scripts can use it without a new dependency.
 
+### The overview is built from the selected accounts
+
+Since `ACCOUNT-PICKER.md` (2026-11) `App.tsx` builds the overview from
+`withAccounts(index, selected)`, a derived index whose `snapshot.accounts` is
+filtered and whose `all`, `byKey` and `accountLabel` still span the estate.
+`packages/viewer/src/model/selection.ts` **owns the account filter**: never add
+a loop to `overview.ts` with a filter of its own — extend `selection.ts`. The
+trap is the other way round. Any lookup in `overview.ts` that resolves a thing
+*by account* (an owner, a target, a reverse grant) must either fall through to
+`ensureGhostAccount`, or build its map from `index.all` rather than from
+`index.snapshot.accounts`; otherwise it silently draws nothing, or draws a
+switched-off account's resource inside a selected one. Nine sites had to be
+fixed for exactly this (`b3835b3`, `5e4fdc4`: CloudFront→LB, S3 origin owner,
+private zone→VPC, VPN→TGW, DX gateway and VIF→VGW, reverse trust, reverse RAM
+share, DNS alias targets, reverse SSO grant) — they are the precedent, and the
+cases in `test/selection.test.ts` are the pattern for pinning a new one.
+
 ### The published dependency
 
 `tf-import-blocks` was `packages/tf-import-blocks` until 2026-08. It is now an
@@ -140,6 +157,19 @@ where the defect lives. In this plan every package that found a serious bug
 found it by refusing to test only against the fixture — the state parser's
 worst defect surfaced only against a hand-built state with provider aliases,
 a deposed instance and a legacy flatmap resource.
+
+**2026-11-03, the account picker.** The plan pointed the hunt for "the index I
+was handed is the whole estate" at a few named helpers; it found more than the
+plan named — nine lookup sites, fixed in two unplanned packages. The pattern that kept it safe: a
+new branch runs only when the selection left accounts out (gated on
+`b.omitted`), so the show-all build cannot move — prove it by hashing
+`JSON.stringify(buildOverview(index))` on `HEAD:site/data/data.js` before and
+after. Two more things it learned. A ghost account box holding only leaves is
+grid-packed by `layout.ts`, which drops any edge between them as a self-loop;
+a container that must keep its internal edges has to be marked for ELK, as
+`addAccountId` ghosts now are. And a fresh `npm install` with current npm
+rewrites `package-lock.json` with `"peer": true` markers — that is noise from
+the npm version, not a plan change; do not stage it with a package's work.
 
 ## Committed build artifacts
 
