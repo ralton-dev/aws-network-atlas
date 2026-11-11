@@ -1,7 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>ralton-dev/.github"
+    "github>ralton-dev/.github",
+    "github>ralton-dev/.github:runtimes"
   ],
   "dependencyDashboardTitle": "Renovate Dashboard — terraform_graphing"
 }
