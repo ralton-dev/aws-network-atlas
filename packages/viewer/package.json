@@ -13,7 +13,7 @@
     "@atlas/proposal": "*",
     "@atlas/schema": "*",
     "@xyflow/react": "^12.11.1",
-    "elkjs": "^0.11.1",
+    "elkjs": "^0.12.0",
     "minisearch": "^7.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
