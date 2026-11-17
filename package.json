@@ -29,6 +29,6 @@
     "coverage": "node tools/coverage-audit/generate.cjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=26"
   }
 }
