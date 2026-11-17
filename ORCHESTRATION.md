@@ -16,7 +16,7 @@ about the wider repo.
 
 - **No CI runs this repo's code.** There is one workflow,
   `.github/workflows/dependency-audit.yml`, and it is a dependency audit only:
-  on Node 24 it runs `npm audit --json` against the committed lock — it
+  on Node 26 it runs `npm audit --json` against the committed lock — it
   installs nothing and runs no lifecycle scripts, typecheck or test — and fails
   when the report counts any high or critical vulnerability (or the audit feed
   itself fails), keeping the JSON report as an artifact for 30 days. It runs
@@ -38,10 +38,12 @@ about the wider repo.
   retrofitting it at the end is miserable.
 - **The root `test` script must not rely on the runner expanding a glob.** It
   used to be `tsx --test "packages/*/test/**/*.test.ts"`; Node only learned to
-  expand that itself in 22, so on the Node 20 this repo's `engines` promises to
-  support it arrived as a literal path and the whole suite did not run. It is
-  now a `find … -exec tsx --test {} +`, which discovers the same files on 20 and
-  23 and still exits non-zero when a test fails. The failure mode of getting
+  expand that itself in 22, so on the Node 20 this repo's `engines` then
+  promised to support it arrived as a literal path and the whole suite did not
+  run. It is now a `find … -exec tsx --test {} +`, which discovers the same
+  files on 20 and 23 and still exits non-zero when a test fails. `engines` has
+  required Node 26 since 2026-11-17, but the `find` form stays: it costs
+  nothing and does not depend on the runner. The failure mode of getting
   this wrong is **silence**, not redness — a sibling repo saw `# tests 0` with
   exit 0 — so anyone touching it should compare the discovered count before and
   after, and check that a deliberately failing test still turns the gate red.
@@ -123,10 +125,11 @@ cases in `test/selection.test.ts` are the pattern for pinning a new one.
 ### The published dependency
 
 `tf-import-blocks` was `packages/tf-import-blocks` until 2026-08. It is now an
-ordinary npm dependency of both the scanner and the viewer, pinned `^0.1.0`, and
+ordinary npm dependency of both the scanner and the viewer, pinned `^1.0.0`, and
 its source and CI live in **its own repo**, `ralton-dev/tf-import-blocks`
-(public, MIT, `main` protected, CI on Node 20 and 24). It is **not** in this
-repo and must not come back: `packages/scanner/test/consumed-from-npm.test.ts`
+(public, MIT, `main` protected, Node 26 or newer since its 1.0.0). It is
+**not** in this repo and must not come back:
+`packages/scanner/test/consumed-from-npm.test.ts`
 fails the moment it resolves from inside `packages/`.
 
 Consequences a cold orchestrator will otherwise hit:
