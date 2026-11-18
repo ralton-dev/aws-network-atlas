@@ -1,0 +1,7 @@
+[
+  {
+    "ghsa": "GHSA-fc5q-39xc-vjpf",
+    "reason": "picomatch ReDoS (high). Since 2026-11-17 the advisory covers every picomatch release (<= 4.0.7) and has no patched version. Here picomatch is reached only through the viewer's build tools (vite, vite > tinyglobby > fdir, vite-plugin-singlefile, vite-plugin-svgr > @rollup/pluginutils), all devDependencies matching the build's own fixed patterns; neither the scanner CLI nor the committed site/index.html contains or loads it, and `npm audit --omit=dev` is clean. Accepted by Ben on 2026-11-18.",
+    "removeWhen": "A picomatch release that fixes GHSA-fc5q-39xc-vjpf is published. Remove this entry, and let Renovate update picomatch."
+  }
+]

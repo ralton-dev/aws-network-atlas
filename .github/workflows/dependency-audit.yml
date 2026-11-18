@@ -13,6 +13,7 @@ name: Dependency audit
       - "**/package-lock.json"
       - "**/npm-shrinkwrap.json"
       - ".github/workflows/dependency-audit.yml"
+      - ".github/dependency-audit-ignore.json"
   push:
     branches:
       - main
@@ -22,6 +23,7 @@ name: Dependency audit
       - "**/package-lock.json"
       - "**/npm-shrinkwrap.json"
       - ".github/workflows/dependency-audit.yml"
+      - ".github/dependency-audit-ignore.json"
 permissions:
   contents: read
 concurrency:
@@ -42,15 +44,22 @@ jobs:
       - name: Audit every locked runtime and development dependency
         run: |
           # Read the existing lock only; do not install packages or run lifecycle scripts.
+          # The complete, unfiltered report is retained; accepted advisories are applied below.
           set +e
           npm audit --json > dependency-audit.json
           native_status=$?
           set -e
           NATIVE_AUDIT_STATUS="$native_status" node --input-type=module <<'NODE'
-          import { readFileSync } from 'node:fs';
+          import { existsSync, readFileSync } from 'node:fs';
+
+          const ACCEPTED_FILE = '.github/dependency-audit-ignore.json';
+          const SEVERITIES = ['info', 'low', 'moderate', 'high', 'critical'];
+          const rank = (severity) => SEVERITIES.indexOf(severity);
+          const BLOCKING = rank('high');
+
           const report = JSON.parse(readFileSync('dependency-audit.json', 'utf8'));
           const counts = report.metadata?.vulnerabilities;
-          if (report.error || !counts || !Number.isFinite(counts.high) || !Number.isFinite(counts.critical)) {
+          if (report.error || report.auditReportVersion !== 2 || !counts || !Number.isFinite(counts.high) || !Number.isFinite(counts.critical)) {
             throw new Error('Audit feed failed or returned an unsupported report; inspect the artifact.');
           }
           const status = Number(process.env.NATIVE_AUDIT_STATUS);
@@ -58,7 +67,84 @@ jobs:
           if (status > 1 || (status !== 0 && !Object.values(counts).some(value => Number(value) > 0))) {
             throw new Error(`Native audit failed with status ${status}.`);
           }
-          if (counts.high + counts.critical > 0) process.exit(1);
+
+          // Accepted advisories: a JSON array of { "ghsa": "GHSA-....", "reason": "...", "removeWhen": "..." }.
+          // A missing file means nothing is accepted.
+          const accepted = new Map();
+          if (existsSync(ACCEPTED_FILE)) {
+            const entries = JSON.parse(readFileSync(ACCEPTED_FILE, 'utf8'));
+            if (!Array.isArray(entries)) throw new Error(`${ACCEPTED_FILE} must be a JSON array.`);
+            for (const entry of entries) {
+              const complete = /^GHSA(-[0-9a-z]{4}){3}$/.test(entry?.ghsa ?? '') &&
+                typeof entry.reason === 'string' && entry.reason.trim() !== '' &&
+                typeof entry.removeWhen === 'string' && entry.removeWhen.trim() !== '';
+              if (!complete) throw new Error(`${ACCEPTED_FILE}: each entry needs ghsa, reason and removeWhen: ${JSON.stringify(entry)}`);
+              if (accepted.has(entry.ghsa)) throw new Error(`${ACCEPTED_FILE}: ${entry.ghsa} is listed twice.`);
+              accepted.set(entry.ghsa, entry);
+            }
+          }
+
+          // npm lists every vulnerable package, including each package that is only vulnerable because it
+          // depends on another one (its "via" list then names that package). The findings are the advisory
+          // objects at the ends of those chains, each with its own severity: judge those, not the packages.
+          const vulnerabilities = report.vulnerabilities;
+          if (!vulnerabilities || typeof vulnerabilities !== 'object' || Array.isArray(vulnerabilities)) {
+            if (SEVERITIES.some(severity => Number(counts[severity]) > 0)) {
+              throw new Error('Audit report counts vulnerabilities but has no vulnerabilities object; inspect the artifact.');
+            }
+          }
+          const packages = Object.entries(vulnerabilities ?? {});
+          const tally = Object.fromEntries(SEVERITIES.map(severity => [severity, 0]));
+          for (const [name, entry] of packages) {
+            if (!(entry?.severity in tally)) throw new Error(`"${name}" has an unknown severity; inspect the artifact.`);
+            tally[entry.severity] += 1;
+          }
+          if (SEVERITIES.some(severity => tally[severity] !== Number(counts[severity] ?? 0))) {
+            throw new Error(`Vulnerable packages ${JSON.stringify(tally)} do not match the counts; inspect the artifact.`);
+          }
+
+          const advisories = new Map();
+          const rootsOf = (name, seen = new Set()) => {
+            const roots = new Set();
+            if (seen.has(name)) return roots; // a dependency cycle, or a package already followed
+            seen.add(name);
+            const entry = vulnerabilities[name];
+            if (!entry) throw new Error(`"${name}" is named in a via list but has no entry; inspect the artifact.`);
+            for (const via of entry.via ?? []) {
+              if (typeof via === 'string') {
+                for (const id of rootsOf(via, seen)) roots.add(id);
+                continue;
+              }
+              const id = String(via?.url ?? '').match(/GHSA(-[0-9a-z]{4}){3}$/)?.[0];
+              if (!id || rank(via.severity) < 0) throw new Error(`Unreadable advisory under "${name}": ${JSON.stringify(via)}`);
+              advisories.set(id, { id, severity: via.severity, package: via.name, title: via.title });
+              roots.add(id);
+            }
+            return roots;
+          };
+          for (const [name, entry] of packages) {
+            const roots = [...rootsOf(name)].map(id => advisories.get(id));
+            const worst = Math.max(-1, ...roots.map(advisory => rank(advisory.severity)));
+            if (rank(entry.severity) >= BLOCKING && worst < rank(entry.severity)) {
+              const found = roots.map(advisory => `${advisory.id} (${advisory.severity})`).join(', ') || 'no advisory';
+              throw new Error(`"${name}" is rated ${entry.severity} but traces to ${found}; inspect the artifact.`);
+            }
+          }
+
+          const describe = advisory => `${advisory.id} ${advisory.severity} ${advisory.package}: ${advisory.title}`;
+          const found = [...advisories.values()].sort((a, b) => rank(b.severity) - rank(a.severity) || a.id.localeCompare(b.id));
+          const open = found.filter(advisory => rank(advisory.severity) >= BLOCKING && !accepted.has(advisory.id));
+          console.log(`Accepted (${ACCEPTED_FILE}):`, accepted.size ? '' : 'none');
+          for (const [id, entry] of accepted) {
+            const advisory = advisories.get(id);
+            console.log(`  ${advisory ? describe(advisory) : `${id}: not in this report`}. Remove when: ${entry.removeWhen}`);
+            if (!advisory) console.log(`::warning::${id} is accepted in ${ACCEPTED_FILE} but no longer reported; remove the entry.`);
+          }
+          console.log('Open high/critical advisories:', open.length ? '' : 'none');
+          for (const advisory of open) console.log(`  ${describe(advisory)}`);
+          const below = found.filter(advisory => rank(advisory.severity) < BLOCKING && !accepted.has(advisory.id));
+          console.log('Below high (reported, not failing):', below.map(advisory => `${advisory.id} ${advisory.severity}`).join(', ') || 'none');
+          if (open.length > 0) process.exit(1);
           NODE
       - name: Retain complete audit report
         if: always()
